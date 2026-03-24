@@ -1,0 +1,264 @@
+support_cards:
+- id: r_001
+  name: 謹厳実直
+  rarity: R
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 10
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 4.3
+    value_type: para_bonus
+  - trigger: da_lesson_end
+    stat: da
+    value: 3
+    value_type: flat
+  - trigger: special_training
+    stat: da
+    value: 13
+    value_type: flat
+    max_count: 3
+- id: r_002
+  name: 念入りにストレッチ
+  rarity: R
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 10
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 33
+    value_type: flat
+  - trigger: vi_lesson_end
+    stat: vi
+    value: 3
+    value_type: flat
+  - trigger: rest
+    stat: vi
+    value: 11
+    value_type: flat
+- id: r_003
+  name: 全力、その後
+  rarity: R
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 10
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 33
+    value_type: flat
+  - trigger: vo_lesson_end
+    stat: vo
+    value: 3
+    value_type: flat
+  - trigger: rest
+    stat: vo
+    value: 11
+    value_type: flat
+- id: r_004
+  name: 枝毛をくるり
+  rarity: R
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 10
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 33
+    value_type: flat
+  - trigger: da_lesson_end
+    stat: da
+    value: 3
+    value_type: flat
+  - trigger: rest
+    stat: da
+    value: 11
+    value_type: flat
+- id: r_005
+  name: 王子様のひと呼吸
+  rarity: R
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 10
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 33
+    value_type: flat
+  - trigger: vo_normal_end
+    stat: vo
+    value: 9
+    value_type: flat
+  - trigger: outing_end
+    stat: vo
+    value: 7
+    value_type: flat
+- id: r_006
+  name: ひたむき居残りレッスン
+  rarity: R
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 10
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 33
+    value_type: flat
+  - trigger: vi_normal_end
+    stat: vi
+    value: 9
+    value_type: flat
+  - trigger: activity_supply
+    stat: vi
+    value: 8
+    value_type: flat
+- id: r_007
+  name: 憧れを目指して
+  rarity: R
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 10
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 33
+    value_type: flat
+  - trigger: da_normal_end
+    stat: da
+    value: 9
+    value_type: flat
+  - trigger: activity_supply
+    stat: da
+    value: 8
+    value_type: flat
+- id: r_008
+  name: スイッチON！
+  rarity: R
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 10
+    value_type: flat
+  - trigger: da_lesson_end
+    stat: da
+    value: 3
+    value_type: flat
+  - trigger: outing_end
+    stat: da
+    value: 7
+    value_type: flat
+- id: r_009
+  name: いめーじとれーにんぐ
+  rarity: R
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 10
+    value_type: flat
+  - trigger: vo_lesson_end
+    stat: vo
+    value: 3
+    value_type: flat
+  - trigger: class_end
+    stat: vo
+    value: 3
+    value_type: flat
+- id: r_010
+  name: 完全無欠のプランニング
+  rarity: R
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 10
+    value_type: flat
+  - trigger: vi_lesson_end
+    stat: vi
+    value: 3
+    value_type: flat
+  - trigger: class_end
+    stat: vi
+    value: 3
+    value_type: flat
+- id: r_011
+  name: わたしのペースで
+  rarity: R
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 10
+    value_type: flat
+  - trigger: vo_normal_end
+    stat: vo
+    value: 9
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    value: 8
+    value_type: flat
+- id: r_012
+  name: お姉ちゃん直伝メニュー
+  rarity: R
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 10
+    value_type: flat
+  - trigger: da_normal_end
+    stat: da
+    value: 9
+    value_type: flat
+  - trigger: class_end
+    stat: da
+    value: 3
+    value_type: flat
+- id: r_013
+  name: 頼れる先輩お姉さん
+  rarity: R
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 10
+    value_type: flat
+  - trigger: vi_normal_end
+    stat: vi
+    value: 9
+    value_type: flat
+  - trigger: outing_end
+    stat: vi
+    value: 7
+    value_type: flat

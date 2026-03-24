@@ -1,0 +1,199 @@
+<Window x:Class="SupportCardEditor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:SupportCardEditor.ViewModels"
+        Title="サポートカードエディタ"
+        Width="1000" Height="900" MinWidth="900" MinHeight="700"
+        WindowStartupLocation="CenterScreen" Background="#F5F5F5">
+
+    <Window.DataContext>
+        <vm:CardEditorViewModel/>
+    </Window.DataContext>
+
+    <Window.Resources>
+        <Style x:Key="FL" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="#555"/>
+            <Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Margin" Value="0,0,6,0"/>
+        </Style>
+        <Style x:Key="NB" TargetType="TextBox">
+            <Setter Property="Width" Value="55"/><Setter Property="Padding" Value="4,3"/>
+            <Setter Property="FontSize" Value="12"/><Setter Property="HorizontalContentAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+        </Style>
+        <Style x:Key="Sec" TargetType="Border">
+            <Setter Property="Background" Value="White"/><Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="12,10"/><Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Effect"><Setter.Value>
+                <DropShadowEffect ShadowDepth="1" BlurRadius="3" Opacity="0.1"/>
+            </Setter.Value></Setter>
+        </Style>
+        <Style x:Key="SecT" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/><Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#333"/><Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+        <Style x:Key="AbiRow" TargetType="Border">
+            <Setter Property="Padding" Value="8,6"/><Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="Background" Value="#FAFAFA"/><Setter Property="CornerRadius" Value="4"/>
+        </Style>
+
+        <!-- アビリティスロットテンプレート -->
+        <DataTemplate x:Key="AbiTemplate">
+            <Border Style="{StaticResource AbiRow}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Label}" FontSize="11" FontWeight="SemiBold" Foreground="#5C6BC0" Margin="0,0,0,3"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                        <TextBlock Text="種別" FontSize="11" Foreground="#888" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <ComboBox ItemsSource="{x:Static vm:CardEditorViewModel.AllTriggers}"
+                                  SelectedItem="{Binding SelectedTrigger}" DisplayMemberPath="DisplayName"
+                                  Width="170" FontSize="11" Padding="3,2" Margin="0,0,8,0"/>
+                        <TextBlock Text="値" FontSize="11" Foreground="#888" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="55" Padding="4,3" FontSize="12" HorizontalContentAlignment="Right" Margin="0,0,8,0"/>
+                        <TextBlock Text="回数制限" FontSize="11" Foreground="#888" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBox Text="{Binding MaxCount, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="40" Padding="4,3" FontSize="12" HorizontalContentAlignment="Right"
+                                 ToolTip="プロデュース中N回のみ発動する場合にNを入力。0=制限なし"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="説明" FontSize="11" Foreground="#888" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="420" FontSize="11" Padding="3,2"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="340"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- 左: 入力 -->
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Padding="16,12,8,12">
+            <StackPanel>
+                <TextBlock Text="サポートカードエディタ" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="0,0,0,12"/>
+
+                <!-- 基本情報 -->
+                <Border Style="{StaticResource Sec}">
+                    <StackPanel>
+                        <TextBlock Text="基本情報" Style="{StaticResource SecT}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="70"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30"/><RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/><RowDefinition Height="30"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="ID" Style="{StaticResource FL}"/>
+                            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                                <TextBox Text="{Binding CardId}" Padding="4,3" FontSize="12" Width="120"
+                                         IsReadOnly="True" Background="#F0F0F0"/>
+                                <TextBlock Text="(自動採番)" FontSize="10" Foreground="#AAA"
+                                           VerticalAlignment="Center" Margin="6,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="カード名" Style="{StaticResource FL}"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding CardName, UpdateSourceTrigger=PropertyChanged}" Padding="4,3" FontSize="12"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="レア/タイプ" Style="{StaticResource FL}"/>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                                <ComboBox ItemsSource="{Binding Rarities}" SelectedItem="{Binding SelectedRarity}" Width="70" FontSize="12" Padding="4,3" Margin="0,0,8,0"/>
+                                <ComboBox ItemsSource="{Binding CardTypes}" SelectedItem="{Binding SelectedType}" Width="70" FontSize="12" Padding="4,3"/>
+                            </StackPanel>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="プラン" Style="{StaticResource FL}"/>
+                            <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding PlanOptions}"
+                                      SelectedItem="{Binding SelectedPlan}" DisplayMemberPath="DisplayName"
+                                      Width="130" FontSize="12" Padding="4,3" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- イベントステータス (基本情報の下) -->
+                <Border Style="{StaticResource Sec}">
+                    <StackPanel>
+                        <TextBlock Text="イベントステータス" Style="{StaticResource SecT}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="上昇値" Style="{StaticResource FL}"/>
+                            <TextBox Text="{Binding EventStatus, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource NB}" Width="55"/>
+                            <TextBlock Text="※カードタイプの属性に加算" FontSize="10" Foreground="#AAA" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- サポートアビリティ -->
+                <Border Style="{StaticResource Sec}">
+                    <StackPanel>
+                        <TextBlock Text="サポートアビリティ (6個)" Style="{StaticResource SecT}"/>
+                        <ContentControl Content="{Binding Ability1}" ContentTemplate="{StaticResource AbiTemplate}" Margin="0,0,0,2"/>
+                        <ContentControl Content="{Binding Ability2}" ContentTemplate="{StaticResource AbiTemplate}" Margin="0,0,0,2"/>
+                        <ContentControl Content="{Binding Ability3}" ContentTemplate="{StaticResource AbiTemplate}" Margin="0,0,0,2"/>
+                        <ContentControl Content="{Binding Ability4}" ContentTemplate="{StaticResource AbiTemplate}" Margin="0,0,0,2"/>
+                        <ContentControl Content="{Binding Ability5}" ContentTemplate="{StaticResource AbiTemplate}" Margin="0,0,0,2"/>
+                        <ContentControl Content="{Binding Ability6}" ContentTemplate="{StaticResource AbiTemplate}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Pアイテム -->
+                <Border Style="{StaticResource Sec}">
+                    <StackPanel>
+                        <TextBlock Text="Pアイテム" Style="{StaticResource SecT}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="名前" Style="{StaticResource FL}"/>
+                            <TextBox Text="{Binding PItemName, UpdateSourceTrigger=PropertyChanged}" Width="300" FontSize="12" Padding="4,3"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="種別" FontSize="11" Foreground="#888" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <ComboBox ItemsSource="{x:Static vm:CardEditorViewModel.AllTriggers}"
+                                      SelectedItem="{Binding PItemTrigger}" DisplayMemberPath="DisplayName"
+                                      Width="170" FontSize="11" Padding="3,2" Margin="0,0,8,0"/>
+                            <TextBlock Text="値" FontSize="11" Foreground="#888" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Text="{Binding PItemValue, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource NB}" Width="55"/>
+                            <TextBlock Text="回数制限" FontSize="11" Foreground="#888" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox Text="{Binding PItemMaxCount, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="40" Padding="4,3" FontSize="12" HorizontalContentAlignment="Right"
+                                     ToolTip="プロデュース中N回のみ発動する場合にNを入力。0=制限なし"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 右: プレビュー + ボタン -->
+        <Border Grid.Column="1" Background="White" BorderBrush="#E0E0E0" BorderThickness="1,0,0,0">
+            <DockPanel Margin="12">
+                <StackPanel DockPanel.Dock="Bottom">
+                    <Border Background="#F8F8F8" CornerRadius="4" Padding="8,6" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="出力先" FontSize="11" Foreground="#888" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <TextBox Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}" Width="220" FontSize="11" Padding="3,2"/>
+                                <Button Content="..." Command="{Binding BrowseOutputCommand}" Padding="6,2" Margin="4,0,0,0" FontSize="11" Cursor="Hand"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="ファイル名" FontSize="11" Foreground="#888" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox Text="{Binding OutputFileName, UpdateSourceTrigger=PropertyChanged}" Width="150" FontSize="11" Padding="3,2"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <WrapPanel Margin="0,0,0,8">
+                        <Button Content="ファイルに追記" Command="{Binding ExportCommand}"
+                                Background="#5C6BC0" Foreground="White" Padding="16,8" FontSize="12" Margin="0,0,8,0" Cursor="Hand"/>
+                        <Button Content="YAMLコピー" Command="{Binding CopyYamlCommand}"
+                                Padding="16,8" FontSize="12" Margin="0,0,8,0" Cursor="Hand"/>
+                        <Button Content="クリア" Command="{Binding ClearCommand}"
+                                Padding="16,8" FontSize="12" Cursor="Hand"/>
+                    </WrapPanel>
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="#4CAF50" TextWrapping="Wrap"/>
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="YAML プレビュー" FontSize="13" FontWeight="SemiBold" Foreground="#333" Margin="0,0,0,8"/>
+                    <TextBox Text="{Binding YamlPreview, Mode=OneWay}" IsReadOnly="True"
+                             FontFamily="Consolas" FontSize="11" AcceptsReturn="True" TextWrapping="NoWrap"
+                             VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                             Background="#FAFAFA" BorderBrush="#E0E0E0" Padding="8"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

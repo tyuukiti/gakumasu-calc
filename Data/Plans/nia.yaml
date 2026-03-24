@@ -1,0 +1,213 @@
+plan:
+  id: "nia"
+  name: "NIA"
+  description: "NIA育成プラン"
+  total_weeks: 25
+  base_status:
+    vo: 0
+    da: 0
+    vi: 0
+  schedule:
+    - week: 1
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 4, da: 4, vi: 4 }
+      outing_effect: { vo: 2, da: 2, vi: 2 }
+      class_effect: { vo: 1, da: 1, vi: 1 }
+      consultation_effect: { vo: 1, da: 1, vi: 0 }
+    - week: 2
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 4, da: 4, vi: 4 }
+      outing_effect: { vo: 2, da: 2, vi: 2 }
+      class_effect: { vo: 1, da: 1, vi: 1 }
+      consultation_effect: { vo: 1, da: 1, vi: 0 }
+    - week: 3
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
+      lesson:
+        sp_bonus: { vo: 5, da: 5, vi: 5 }
+      outing_effect: { vo: 3, da: 3, vi: 3 }
+      class_effect: { vo: 2, da: 2, vi: 2 }
+      consultation_effect: { vo: 1, da: 1, vi: 0 }
+    - week: 4
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 5, da: 5, vi: 5 }
+      outing_effect: { vo: 3, da: 3, vi: 3 }
+      class_effect: { vo: 2, da: 2, vi: 2 }
+      consultation_effect: { vo: 1, da: 1, vi: 0 }
+    - week: 5
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 5, da: 5, vi: 5 }
+      outing_effect: { vo: 3, da: 3, vi: 3 }
+      class_effect: { vo: 2, da: 2, vi: 2 }
+      consultation_effect: { vo: 1, da: 1, vi: 0 }
+    - week: 6
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 6, da: 6, vi: 6 }
+      outing_effect: { vo: 3, da: 3, vi: 3 }
+      class_effect: { vo: 2, da: 2, vi: 2 }
+      consultation_effect: { vo: 1, da: 1, vi: 0 }
+    - week: 7
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
+      lesson:
+        sp_bonus: { vo: 6, da: 6, vi: 6 }
+      outing_effect: { vo: 3, da: 3, vi: 3 }
+      class_effect: { vo: 2, da: 2, vi: 2 }
+      consultation_effect: { vo: 1, da: 1, vi: 0 }
+    - week: 8
+      type: "fixed_event"
+      event_name: "中間試験"
+      status_gain: { vo: 8, da: 8, vi: 8 }
+    - week: 9
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 7, da: 7, vi: 7 }
+      outing_effect: { vo: 4, da: 4, vi: 4 }
+      class_effect: { vo: 3, da: 3, vi: 3 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 10
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 7, da: 7, vi: 7 }
+      outing_effect: { vo: 4, da: 4, vi: 4 }
+      class_effect: { vo: 3, da: 3, vi: 3 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 11
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
+      lesson:
+        sp_bonus: { vo: 8, da: 8, vi: 8 }
+      outing_effect: { vo: 4, da: 4, vi: 4 }
+      class_effect: { vo: 3, da: 3, vi: 3 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 12
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 8, da: 8, vi: 8 }
+      outing_effect: { vo: 4, da: 4, vi: 4 }
+      class_effect: { vo: 3, da: 3, vi: 3 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 13
+      type: "exam"
+      event_name: "中間公演"
+      status_gain: { vo: 12, da: 12, vi: 12 }
+    - week: 14
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 9, da: 9, vi: 9 }
+      outing_effect: { vo: 5, da: 5, vi: 5 }
+      class_effect: { vo: 3, da: 3, vi: 3 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 15
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
+      lesson:
+        sp_bonus: { vo: 9, da: 9, vi: 9 }
+      outing_effect: { vo: 5, da: 5, vi: 5 }
+      class_effect: { vo: 3, da: 3, vi: 3 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 16
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 10, da: 10, vi: 10 }
+      outing_effect: { vo: 5, da: 5, vi: 5 }
+      class_effect: { vo: 4, da: 4, vi: 4 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 17
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 10, da: 10, vi: 10 }
+      outing_effect: { vo: 5, da: 5, vi: 5 }
+      class_effect: { vo: 4, da: 4, vi: 4 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 18
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 10, da: 10, vi: 10 }
+      outing_effect: { vo: 5, da: 5, vi: 5 }
+      class_effect: { vo: 4, da: 4, vi: 4 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 19
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
+      lesson:
+        sp_bonus: { vo: 11, da: 11, vi: 11 }
+      outing_effect: { vo: 5, da: 5, vi: 5 }
+      class_effect: { vo: 4, da: 4, vi: 4 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 20
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 11, da: 11, vi: 11 }
+      outing_effect: { vo: 5, da: 5, vi: 5 }
+      class_effect: { vo: 4, da: 4, vi: 4 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 21
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 12, da: 12, vi: 12 }
+      outing_effect: { vo: 6, da: 6, vi: 6 }
+      class_effect: { vo: 4, da: 4, vi: 4 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 22
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 12, da: 12, vi: 12 }
+      outing_effect: { vo: 6, da: 6, vi: 6 }
+      class_effect: { vo: 4, da: 4, vi: 4 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 23
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
+      lesson:
+        sp_bonus: { vo: 12, da: 12, vi: 12 }
+      outing_effect: { vo: 6, da: 6, vi: 6 }
+      class_effect: { vo: 4, da: 4, vi: 4 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 24
+      type: "free"
+      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
+      lesson:
+        sp_bonus: { vo: 12, da: 12, vi: 12 }
+      outing_effect: { vo: 6, da: 6, vi: 6 }
+      class_effect: { vo: 4, da: 4, vi: 4 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+    - week: 25
+      type: "audition"
+      event_name: "最終オーディション"
+      status_gain: { vo: 0, da: 0, vi: 0 }
+  activity_supply:
+    available_weeks: [3, 7, 11, 15, 19, 23]
+    options:
+      - id: "supply_vo"
+        name: "ボーカル支給"
+        effect: { vo: 5, da: 0, vi: 0 }
+      - id: "supply_da"
+        name: "ダンス支給"
+        effect: { vo: 0, da: 5, vi: 0 }
+      - id: "supply_vi"
+        name: "ビジュアル支給"
+        effect: { vo: 0, da: 0, vi: 5 }
+      - id: "supply_all"
+        name: "全体支給"
+        effect: { vo: 2, da: 2, vi: 2 }

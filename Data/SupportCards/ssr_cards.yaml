@@ -1,0 +1,2272 @@
+support_cards:
+- id: ssr_001
+  name: あたしの勝ち、ですね～！
+  rarity: SSR
+  type: vi
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 28
+    value_type: sp_rate
+  - trigger: activity_supply
+    stat: vi
+    value: 17
+    value_type: flat
+  - trigger: skill_ssr_acquire
+    stat: vi
+    value: 6
+    value_type: flat
+- id: ssr_002
+  name: 合格おめでとう！
+  rarity: SSR
+  type: da
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: skill_ssr_acquire
+    stat: da
+    value: 6
+    value_type: flat
+- id: ssr_003
+  name: かかってらっしゃい！
+  rarity: SSR
+  type: vi
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: sp_end
+    stat: vi
+    value: 21
+    value_type: flat
+    condition: deck>=20
+    max_count: 4
+  - trigger: genki_acquire
+    stat: vi
+    value: 4
+    value_type: flat
+  - trigger: mental_acquire
+    stat: vi
+    value: 3
+    value_type: flat
+- id: ssr_004
+  name: 思い出の宝箱だ、ね
+  rarity: SSR
+  type: vo
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: exam_end
+    stat: vo
+    value: 22
+    value_type: flat
+    max_count: 2
+  - trigger: mental_acquire
+    stat: vo
+    value: 3
+    value_type: flat
+- id: ssr_005
+  name: 手毬のリサイタル、だね
+  rarity: SSR
+  type: vo
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: mental_acquire
+    stat: vo
+    value: 3
+    value_type: flat
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: skill_ssr_acquire
+    stat: vo
+    value: 6
+    value_type: flat
+- id: ssr_006
+  name: 堂々とサボってる！？
+  rarity: SSR
+  type: vo
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: good_impression_acquire
+    stat: vo
+    value: 4
+    value_type: flat
+  - trigger: skill_ssr_acquire
+    stat: vo
+    value: 6
+    value_type: flat
+- id: ssr_007
+  name: 自分と向き合う時間だ
+  rarity: SSR
+  type: da
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: good_condition_acquire
+    stat: da
+    value: 4
+    value_type: flat
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: sp_end
+    stat: da
+    value: 21
+    value_type: flat
+    condition: deck>=20
+    max_count: 4
+- id: ssr_008
+  name: なぜこんなところにッ！？
+  rarity: SSR
+  type: da
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: skill_ssr_acquire
+    stat: da
+    value: 6
+    value_type: flat
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+- id: ssr_009
+  name: メリクリ、おねーちゃん♪
+  rarity: SSR
+  type: da
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: skill_ssr_acquire
+    stat: da
+    value: 6
+    value_type: flat
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: skill_enhance
+    stat: da
+    value: 4
+    value_type: flat
+- id: ssr_010
+  name: やっと見つけたぞ！
+  rarity: SSR
+  type: da
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: skill_delete
+    stat: da
+    value: 11
+    value_type: flat
+- id: ssr_011
+  name: レディ・セット、ゴー！
+  rarity: SSR
+  type: vo
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: p_item_acquire
+    stat: vo
+    value: 15
+    value_type: flat
+    max_count: 6
+  - trigger: active_enhance
+    stat: vo
+    value: 9
+    value_type: flat
+- id: ssr_012
+  name: クールダウンが大切よ！
+  rarity: SSR
+  type: vi
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: consultation
+    stat: vi
+    value: 18
+    value_type: flat
+  - trigger: skill_ssr_acquire
+    stat: vi
+    value: 6
+    value_type: flat
+  - trigger: class_end
+    stat: vi
+    value: 7
+    value_type: flat
+- id: ssr_013
+  name: 月村手毬、興味深いわね
+  rarity: SSR
+  type: vo
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: activity_supply
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: skill_delete
+    stat: vo
+    value: 11
+    value_type: flat
+- id: ssr_014
+  name: これは――お城ッ！！
+  rarity: SSR
+  type: vo
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: good_condition_acquire
+    stat: vo
+    value: 4
+    value_type: flat
+  - trigger: skill_custom
+    stat: vo
+    value: 11
+    value_type: flat
+    max_count: 6
+- id: ssr_015
+  name: 大運動会、開催っ！
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: class_end
+    stat: vo
+    value: 7
+    value_type: flat
+  - trigger: sp_end
+    stat: vo
+    value: 21
+    value_type: flat
+    condition: deck>=20
+    max_count: 4
+- id: ssr_016
+  name: ちょっと詳しいんです！
+  rarity: SSR
+  type: vi
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 28
+    value_type: sp_rate
+  - trigger: sp_end
+    stat: vi
+    value: 21
+    value_type: flat
+    condition: deck>=20
+    max_count: 4
+  - trigger: skill_custom
+    stat: vi
+    value: 11
+    value_type: flat
+    max_count: 6
+- id: ssr_017
+  name: ｖギャルピーーースッｖ
+  rarity: SSR
+  type: vo
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: activity_supply
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: skill_delete
+    stat: vo
+    value: 11
+    value_type: flat
+- id: ssr_018
+  name: おっと、危ないよ
+  rarity: SSR
+  type: vo
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: class_end
+    stat: vo
+    value: 7
+    value_type: flat
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    value: 17
+    value_type: flat
+- id: ssr_019
+  name: おい、来てやったぞ！
+  rarity: SSR
+  type: da
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: p_drink_acquire
+    stat: da
+    value: 5
+    value_type: flat
+- id: ssr_020
+  name: いつまでも続けばいいのに
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: p_drink_acquire
+    stat: da
+    value: 5
+    value_type: flat
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: skill_ssr_acquire
+    stat: da
+    value: 6
+    value_type: flat
+- id: ssr_021
+  name: 放っておけない気になる子
+  rarity: SSR
+  type: vo
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: skill_delete
+    stat: vo
+    value: 11
+    value_type: flat
+  - trigger: consultation_drink
+    stat: vo
+    value: 11
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    value: 17
+    value_type: flat
+- id: ssr_022
+  name: どんな関係なんですか？
+  rarity: SSR
+  type: vo
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: genki_acquire
+    stat: vo
+    value: 4
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    value: 17
+    value_type: flat
+- id: ssr_023
+  name: いつも頑張ってるね。
+  rarity: SSR
+  type: vi
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: skill_delete
+    stat: vi
+    value: 11
+    value_type: flat
+  - trigger: vi_sp_end
+    stat: vi
+    value: 17
+    value_type: flat
+  - trigger: p_drink_acquire
+    stat: vi
+    value: 5
+    value_type: flat
+- id: ssr_024
+  name: 推し活なひととき、だね！
+  rarity: SSR
+  type: vi
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: good_impression_acquire
+    stat: vi
+    value: 4
+    value_type: flat
+  - trigger: skill_custom
+    stat: vi
+    value: 11
+    value_type: flat
+    max_count: 6
+  - trigger: activity_supply
+    stat: vi
+    value: 17
+    value_type: flat
+- id: ssr_025
+  name: よくやったな、倉本。
+  rarity: SSR
+  type: da
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: p_drink_acquire
+    stat: da
+    value: 5
+    value_type: flat
+- id: ssr_026
+  name: ひとりごとです
+  rarity: SSR
+  type: vi
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: skill_change
+    stat: vi
+    value: 21
+    value_type: flat
+    max_count: 3
+  - trigger: vi_sp_end
+    stat: vi
+    value: 17
+    value_type: flat
+  - trigger: active_delete
+    stat: vi
+    value: 22
+    value_type: flat
+    max_count: 3
+- id: ssr_027
+  name: 利用し合うのが友達！
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: exam_end
+    stat: da
+    value: 22
+    value_type: flat
+    max_count: 2
+  - trigger: skill_change
+    stat: da
+    value: 21
+    value_type: flat
+    max_count: 3
+  - trigger: class_end
+    stat: da
+    value: 7
+    value_type: flat
+- id: ssr_028
+  name: 相変わらず不器用ね
+  rarity: SSR
+  type: vo
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: good_impression_acquire
+    stat: vo
+    value: 4
+    value_type: flat
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: outing_end
+    stat: vo
+    value: 15
+    value_type: flat
+- id: ssr_029
+  name: 相手にとって不足なしよ！
+  rarity: SSR
+  type: vi
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 28
+    value_type: sp_rate
+  - trigger: vi_sp_end
+    stat: vi
+    value: 17
+    value_type: flat
+  - trigger: active_delete
+    stat: vi
+    value: 22
+    value_type: flat
+    max_count: 3
+- id: ssr_030
+  name: ここから始まるんだね！
+  rarity: SSR
+  type: da
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: skill_delete
+    stat: da
+    value: 11
+    value_type: flat
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: class_end
+    stat: da
+    value: 7
+    value_type: flat
+- id: ssr_031
+  name: ひとりで立てますか？
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: mental_acquire
+    stat: da
+    value: 3
+    value_type: flat
+- id: ssr_032
+  name: 新生活のはじまりだね
+  rarity: SSR
+  type: vi
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 28
+    value_type: sp_rate
+  - trigger: vi_lesson_end
+    stat: vi
+    value: 6
+    value_type: flat
+  - trigger: conserve_acquire
+    stat: vi
+    value: 4
+    value_type: flat
+- id: ssr_033
+  name: あなたたちのことが好き
+  rarity: SSR
+  type: da
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: mental_enhance
+    stat: da
+    value: 9
+    value_type: flat
+- id: ssr_034
+  name: 絶対にお渡ししますわっ！
+  rarity: SSR
+  type: vo
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: vo_lesson_end
+    stat: vo
+    value: 6
+    value_type: flat
+  - trigger: outing_end
+    stat: vo
+    value: 15
+    value_type: flat
+- id: ssr_035
+  name: バレンタイン♡会議中ーっ！
+  rarity: SSR
+  type: vi
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: skill_delete
+    stat: vi
+    value: 11
+    value_type: flat
+  - trigger: active_enhance
+    stat: vi
+    value: 9
+    value_type: flat
+  - trigger: vi_sp_end
+    stat: vi
+    value: 17
+    value_type: flat
+- id: ssr_036
+  name: はいっ、みんなも一緒に♪
+  rarity: SSR
+  type: vo
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: outing_end
+    stat: vo
+    value: 15
+    value_type: flat
+- id: ssr_037
+  name: これが私達の、3年間
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: class_end
+    stat: da
+    value: 7
+    value_type: flat
+- id: ssr_038
+  name: もう一度、最初から！
+  rarity: SSR
+  type: vo
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: class_end
+    stat: vo
+    value: 7
+    value_type: flat
+- id: ssr_039
+  name: 待ちなさーい！
+  rarity: SSR
+  type: da
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: active_acquire
+    stat: da
+    value: 3
+    value_type: flat
+- id: ssr_040
+  name: あったかいね
+  rarity: SSR
+  type: vi
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 28
+    value_type: sp_rate
+  - trigger: mental_acquire
+    stat: vi
+    value: 3
+    value_type: flat
+  - trigger: consultation
+    stat: vi
+    value: 18
+    value_type: flat
+- id: ssr_041
+  name: キラキラして綺麗～っ！
+  rarity: SSR
+  type: da
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: consultation
+    stat: da
+    value: 18
+    value_type: flat
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: exam_end
+    stat: da
+    value: 22
+    value_type: flat
+    max_count: 2
+- id: ssr_042
+  name: ぜったい追いついてやる！
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: class_end
+    stat: vi
+    value: 7
+    value_type: flat
+  - trigger: skill_enhance
+    stat: vi
+    value: 4
+    value_type: flat
+  - trigger: vi_sp_end
+    stat: vi
+    value: 17
+    value_type: flat
+- id: ssr_043
+  name: そろそろ焼けたかな？
+  rarity: SSR
+  type: da
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: activity_supply
+    stat: da
+    value: 17
+    value_type: flat
+- id: ssr_044
+  name: 食欲の秋なんです
+  rarity: SSR
+  type: as
+  plan: free
+  effects:
+  - trigger: equip
+    stat: all
+    value: 14
+    value_type: sp_rate
+- id: ssr_045
+  name: 会長、準備は万端です
+  rarity: SSR
+  type: vi
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: mental_enhance
+    stat: vi
+    value: 9
+    value_type: flat
+  - trigger: outing_end
+    stat: vi
+    value: 15
+    value_type: flat
+- id: ssr_046
+  name: すっかり秋色ですわね！
+  rarity: SSR
+  type: vo
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: good_condition_acquire
+    stat: vo
+    value: 4
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    value: 17
+    value_type: flat
+- id: ssr_047
+  name: 似合うんじゃない？
+  rarity: SSR
+  type: da
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: outing_end
+    stat: da
+    value: 15
+    value_type: flat
+- id: ssr_048
+  name: 二人ならあっという間だね
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: class_end
+    stat: vo
+    value: 7
+    value_type: flat
+  - trigger: skill_enhance
+    stat: vo
+    value: 4
+    value_type: flat
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+- id: ssr_049
+  name: 新たな挑戦の成功ですわ！
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 28
+    value_type: sp_rate
+  - trigger: vi_lesson_end
+    stat: vi
+    value: 6
+    value_type: flat
+  - trigger: active_acquire
+    stat: vi
+    value: 3
+    value_type: flat
+- id: ssr_050
+  name: ゆっくりと過ごしましょう
+  rarity: SSR
+  type: vi
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: vi_sp_end
+    stat: vi
+    value: 17
+    value_type: flat
+  - trigger: consultation_drink
+    stat: vi
+    value: 11
+    value_type: flat
+- id: ssr_051
+  name: あっちも行きたいですわ！
+  rarity: SSR
+  type: da
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: active_acquire
+    stat: da
+    value: 3
+    value_type: flat
+- id: ssr_052
+  name: 夏を満喫するわよ！
+  rarity: SSR
+  type: da
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: mental_enhance
+    stat: da
+    value: 9
+    value_type: flat
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: class_end
+    stat: da
+    value: 7
+    value_type: flat
+- id: ssr_053
+  name: 花火、やりませんか……？
+  rarity: SSR
+  type: vi
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: active_acquire
+    stat: vi
+    value: 3
+    value_type: flat
+  - trigger: vi_sp_end
+    stat: vi
+    value: 17
+    value_type: flat
+  - trigger: consultation
+    stat: vi
+    value: 18
+    value_type: flat
+- id: ssr_054
+  name: 夏を楽しみましょう！
+  rarity: SSR
+  type: vo
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: consultation_drink
+    stat: vo
+    value: 11
+    value_type: flat
+- id: ssr_055
+  name: 一時休戦です
+  rarity: SSR
+  type: vo
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    value: 17
+    value_type: flat
+- id: ssr_056
+  name: もうっ！　冷たいよ！
+  rarity: SSR
+  type: da
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: exam_end
+    stat: da
+    value: 22
+    value_type: flat
+    max_count: 2
+- id: ssr_057
+  name: 「ア」じゃなくて「エ」！
+  rarity: SSR
+  type: vi
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 28
+    value_type: sp_rate
+  - trigger: vi_lesson_end
+    stat: vi
+    value: 6
+    value_type: flat
+  - trigger: mental_acquire
+    stat: vi
+    value: 3
+    value_type: flat
+- id: ssr_058
+  name: 晴れたね
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: rest
+    stat: da
+    value: 22
+    value_type: flat
+  - trigger: outing_end
+    stat: da
+    value: 15
+    value_type: flat
+- id: ssr_059
+  name: まだ上がりませんように！
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: mental_enhance
+    stat: vo
+    value: 9
+    value_type: flat
+- id: ssr_060
+  name: 何やってるんだろう、
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: vo_lesson_end
+    stat: vo
+    value: 6
+    value_type: flat
+  - trigger: skill_enhance
+    stat: vo
+    value: 4
+    value_type: flat
+- id: ssr_061
+  name: あなたにも作ってあげる！
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: vi_lesson_end
+    stat: vi
+    value: 6
+    value_type: flat
+  - trigger: rest
+    stat: vi
+    value: 22
+    value_type: flat
+- id: ssr_062
+  name: お姉ちゃんに任せなさい！
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vi_sp_end
+    stat: vi
+    value: 17
+    value_type: flat
+  - trigger: skill_enhance
+    stat: vi
+    value: 4
+    value_type: flat
+- id: ssr_063
+  name: ぐぬぬぬぬ…………！
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: activity_supply
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: mental_acquire
+    stat: da
+    value: 3
+    value_type: flat
+- id: ssr_064
+  name: 次の桜の季節には。
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vo_lesson_end
+    stat: vo
+    value: 6
+    value_type: flat
+  - trigger: skill_enhance
+    stat: vo
+    value: 4
+    value_type: flat
+- id: ssr_065
+  name: お疲れ様、千奈ちゃん。
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vi_lesson_end
+    stat: vi
+    value: 6
+    value_type: flat
+  - trigger: active_acquire
+    stat: vi
+    value: 3
+    value_type: flat
+- id: ssr_066
+  name: まるで王子様みたいな
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 28
+    value_type: sp_rate
+  - trigger: vi_sp_end
+    stat: vi
+    value: 17
+    value_type: flat
+  - trigger: mental_acquire
+    stat: vi
+    value: 3
+    value_type: flat
+- id: ssr_067
+  name: おいしい顔、いただき～！
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 28
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 17
+    value_type: flat
+  - trigger: skill_enhance
+    stat: da
+    value: 4
+    value_type: flat
+- id: ssr_068
+  name: 可愛いと可愛いで可愛い！
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 28
+    value_type: sp_rate
+  - trigger: vo_sp_end
+    stat: vo
+    value: 17
+    value_type: flat
+  - trigger: active_acquire
+    stat: vo
+    value: 3
+    value_type: flat
+- id: ssr_069
+  name: 私の目に狂いはない
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: class_end
+    stat: vi
+    value: 7
+    value_type: flat
+  - trigger: skill_enhance
+    stat: vi
+    value: 4
+    value_type: flat
+- id: ssr_070
+  name: また、あんなに無理をして
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: outing_end
+    stat: vo
+    value: 15
+    value_type: flat
+  - trigger: mental_acquire
+    stat: vo
+    value: 3
+    value_type: flat
+- id: ssr_071
+  name: あら、奇遇ね
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: vo_lesson_end
+    stat: vo
+    value: 6
+    value_type: flat
+  - trigger: class_end
+    stat: vo
+    value: 7
+    value_type: flat
+- id: ssr_072
+  name: まじか。
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: da_lesson_end
+    stat: da
+    value: 6
+    value_type: flat
+  - trigger: consultation
+    stat: da
+    value: 18
+    value_type: flat
+- id: ssr_073
+  name: ほら、一緒に持と♪
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: da_lesson_end
+    stat: da
+    value: 6
+    value_type: flat
+  - trigger: active_acquire
+    stat: da
+    value: 3
+    value_type: flat
+- id: ssr_074
+  name: きみは、自慢の生徒です
+  rarity: SSR
+  type: as
+  plan: free
+  effects:
+  - trigger: equip
+    stat: all
+    value: 14
+    value_type: sp_rate
+- id: ssr_075
+  name: みいつけた。
+  rarity: SSR
+  type: vo
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: genki_acquire
+    stat: vo
+    value: 3
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    value: 12
+    value_type: flat
+- id: ssr_076
+  name: オシャレもメイクも♪
+  rarity: SSR
+  type: vi
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: outing_end
+    stat: vi
+    value: 11
+    value_type: flat
+  - trigger: exam_end
+    stat: vi
+    value: 17
+    value_type: flat
+    max_count: 2
+- id: ssr_077
+  name: 貸せ、手本を見せてやる！
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 21
+    value_type: sp_rate
+  - trigger: p_item_acquire
+    stat: vi
+    value: 11
+    value_type: flat
+    max_count: 6
+- id: ssr_078
+  name: ぜったいに取るんだ！
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 21
+    value_type: sp_rate
+  - trigger: skill_ssr_acquire
+    stat: vo
+    value: 5
+    value_type: flat
+- id: ssr_079
+  name: 盛り上げてこー！
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 21
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 13
+    value_type: flat
+  - trigger: class_end
+    stat: da
+    value: 5
+    value_type: flat
+- id: ssr_080
+  name: お母さんか！
+  rarity: SSR
+  type: da
+  plan: free
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: da_sp_end
+    stat: da
+    value: 13
+    value_type: flat
+  - trigger: consultation
+    stat: da
+    value: 8
+    value_type: flat
+- id: ssr_081
+  name: わたしと美鈴、超仲良し
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vi_sp_end
+    stat: vi
+    value: 13
+    value_type: flat
+  - trigger: active_acquire
+    stat: vi
+    value: 2
+    value_type: flat
+- id: ssr_082
+  name: さあ、もう一戦！
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vo_sp_end
+    stat: vo
+    value: 13
+    value_type: flat
+  - trigger: mental_acquire
+    stat: vo
+    value: 2
+    value_type: flat
+- id: ssr_083
+  name: プロデュースって大変ね
+  rarity: SSR
+  type: da
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 21
+    value_type: sp_rate
+  - trigger: exam_end
+    stat: da
+    value: 17
+    value_type: flat
+    max_count: 2
+- id: ssr_084
+  name: 1人たりとも欠ける事なく
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 21
+    value_type: sp_rate
+  - trigger: consultation
+    stat: vo
+    value: 14
+    value_type: flat
+- id: ssr_085
+  name: 第2回教室パーティー！
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 21
+    value_type: sp_rate
+  - trigger: vi_lesson_end
+    stat: vi
+    value: 4
+    value_type: flat
+  - trigger: exam_end
+    stat: vi
+    value: 17
+    value_type: flat
+    max_count: 2
+- id: ssr_086
+  name: すっかり仲良しって感じ♪
+  rarity: SSR
+  type: da
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 21
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    value: 13
+    value_type: flat
+  - trigger: exam_end
+    stat: da
+    value: 17
+    value_type: flat
+    max_count: 2
+- id: ssr_087
+  name: 迷子のおしらせです
+  rarity: SSR
+  type: vi
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 21
+    value_type: sp_rate
+  - trigger: mental_acquire
+    stat: vi
+    value: 2
+    value_type: flat
+  - trigger: mental_enhance
+    stat: vi
+    value: 7
+    value_type: flat
+- id: ssr_088
+  name: みんなの意見を聞かせて♪
+  rarity: SSR
+  type: vo
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 21
+    value_type: sp_rate
+  - trigger: class_end
+    stat: vo
+    value: 5
+    value_type: flat
+  - trigger: active_enhance
+    stat: vo
+    value: 7
+    value_type: flat
+- id: ssr_089
+  name: さみだれ
+  rarity: SSR
+  type: vi
+  plan: anomaly
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vi_sp_end
+    stat: vi
+    value: 13
+    value_type: flat
+  - trigger: mental_enhance
+    stat: vi
+    value: 7
+    value_type: flat
+- id: ssr_090
+  name: こいつらめんどくさー
+  rarity: SSR
+  type: vo
+  plan: sense
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 8.5
+    value_type: para_bonus
+  - trigger: vo_sp_end
+    stat: vo
+    value: 13
+    value_type: flat
+  - trigger: mental_enhance
+    stat: vo
+    value: 7
+    value_type: flat
+- id: ssr_091
+  name: わたしたち、やればできる
+  rarity: SSR
+  type: da
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: da
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: da
+    value: 8.5
+    value_type: para_bonus
+  - trigger: da_sp_end
+    stat: da
+    value: 13
+    value_type: flat
+  - trigger: mental_enhance
+    stat: da
+    value: 7
+    value_type: flat
+- id: ssr_092
+  name: 仲直りしましょう
+  rarity: SSR
+  type: vo
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vo
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    value: 65
+    value_type: flat
+  - trigger: class_end
+    stat: vo
+    value: 5
+    value_type: flat
+  - trigger: skill_delete
+    stat: vo
+    value: 8
+    value_type: flat
+- id: ssr_093
+  name: 仕事のつもりで臨みなさい
+  rarity: SSR
+  type: vi
+  plan: free
+  effects:
+  - trigger: equip
+    stat: vi
+    value: 20
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    value: 65
+    value_type: flat
+  - trigger: vi_lesson_end
+    stat: vi
+    value: 4
+    value_type: flat
+  - trigger: mental_acquire
+    stat: vi
+    value: 2
+    value_type: flat

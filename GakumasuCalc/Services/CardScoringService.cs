@@ -1,0 +1,612 @@
+﻿using GakumasuCalc.Models;
+
+namespace GakumasuCalc.Services;
+
+public class CardScoringService
+{
+    public const int STAT_CAP = 2800;
+
+    public class CardScore
+    {
+        public SupportCard Card { get; set; } = null!;
+        public int TotalValue { get; set; }
+        /// <summary>属性別の寄与内訳 (キャップ適用前)</summary>
+        public int RawVo { get; set; }
+        public int RawDa { get; set; }
+        public int RawVi { get; set; }
+        /// <summary>効果別の内訳</summary>
+        public List<EffectBreakdown> Breakdowns { get; set; } = new();
+    }
+
+    public class EffectBreakdown
+    {
+        public string Reason { get; set; } = string.Empty;
+        public string Stat { get; set; } = string.Empty;
+        public double Value { get; set; }
+    }
+
+    public class DeckResult
+    {
+        public string Label { get; set; } = string.Empty;
+        public List<CardScore> SelectedCards { get; set; } = new();
+        public int TotalValue => SelectedCards.Sum(c => c.TotalValue);
+    }
+
+    /// <summary>
+    /// 属性ごとの枚数制約+ステータス上限2800を考慮して最適6枚を選択する。
+    /// </summary>
+    /// <param name="spCounts">属性ごとのSP率カード必要枚数 (例: {"da":1, "vi":1})</param>
+    public DeckResult SelectOptimalDeck(
+        TrainingPlan plan,
+        List<SupportCard> allCards,
+        Dictionary<string, int> lessonAllocation,
+        Dictionary<string, int> cardTypeSlots,
+        List<string> mainStats,
+        Dictionary<string, int>? spCounts = null,
+        string? planType = null,
+        AdditionalCounts? additionalCounts = null)
+    {
+        var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats);
+
+        if (additionalCounts != null)
+        {
+            foreach (var kvp in additionalCounts.ToDictionary())
+            {
+                if (kvp.Value > 0)
+                    triggerCounts[kvp.Key] = triggerCounts.GetValueOrDefault(kvp.Key) + kvp.Value;
+            }
+        }
+
+        // 育成タイプでフィルタ
+        var eligible = allCards;
+        if (!string.IsNullOrEmpty(planType))
+        {
+            eligible = allCards
+                .Where(c => string.IsNullOrEmpty(c.Plan)
+                            || c.Plan == planType
+                            || c.Plan == "free")
+                .ToList();
+        }
+
+        // レッスン・イベント等のカード無しベースステータスを推定
+        var baseStats = EstimateBaseStats(plan, lessonAllocation);
+
+        // 全カードの属性別寄与を事前計算
+        var cardContributions = eligible
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation))
+            .ToList();
+
+        // 全カードプール (フィルタ外も補充用に)
+        var allContributions = allCards
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation))
+            .ToList();
+
+        // 属性枠ごとに選択 (上限考慮)
+        var selected = new List<CardScore>();
+        var usedIds = new HashSet<string>();
+
+        // 現在の累積ステータス (ベース + 選択済みカード)
+        int accVo = baseStats.Vo, accDa = baseStats.Da, accVi = baseStats.Vi;
+
+        // ステップ1: SP率カードをユーザ指定枚数分、先に確保
+        if (spCounts != null)
+        {
+            foreach (var kvp in spCounts)
+            {
+                var stat = kvp.Key;
+                int need = kvp.Value;
+                if (need <= 0) continue;
+
+                // この属性のSP率を持つカードをステータス寄与順で選ぶ
+                var spCandidates = cardContributions
+                    .Where(cs => (cs.Card.Type == stat || cs.Card.Type == "all")
+                                 && !usedIds.Contains(cs.Card.Id)
+                                 && cs.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"))
+                    .ToList();
+
+                for (int i = 0; i < need; i++)
+                {
+                    var best = SelectBestCard(spCandidates, usedIds, accVo, accDa, accVi);
+                    if (best == null) break;
+
+                    selected.Add(best);
+                    usedIds.Add(best.Card.Id);
+                    accVo += best.RawVo;
+                    accDa += best.RawDa;
+                    accVi += best.RawVi;
+                }
+            }
+        }
+
+        // ステップ2: 残りの枠をステータス寄与が高い順にグリーディ選択
+        foreach (var kvp in cardTypeSlots.OrderByDescending(k => k.Value))
+        {
+            var type = kvp.Key;
+            int count = kvp.Value;
+            if (count <= 0) continue;
+
+            // SP率で既に選ばれた分を引く
+            int alreadyForType = selected.Count(cs => cs.Card.Type == type);
+            count -= alreadyForType;
+            if (count <= 0) continue;
+
+            var candidates = cardContributions
+                .Where(cs => (cs.Card.Type == type || cs.Card.Type == "all")
+                             && !usedIds.Contains(cs.Card.Id))
+                .ToList();
+
+            for (int i = 0; i < count; i++)
+            {
+                var best = SelectBestCard(candidates, usedIds, accVo, accDa, accVi);
+                if (best == null) break;
+
+                selected.Add(best);
+                usedIds.Add(best.Card.Id);
+                accVo += best.RawVo;
+                accDa += best.RawDa;
+                accVi += best.RawVi;
+            }
+        }
+
+        // 6枠に満たない場合、フィルタ済みから補充
+        if (selected.Count < 6)
+        {
+            var remaining = cardContributions
+                .Where(cs => !usedIds.Contains(cs.Card.Id))
+                .ToList();
+
+            while (selected.Count < 6)
+            {
+                var best = SelectBestCard(remaining, usedIds, accVo, accDa, accVi);
+                if (best == null) break;
+
+                selected.Add(best);
+                usedIds.Add(best.Card.Id);
+                accVo += best.RawVo;
+                accDa += best.RawDa;
+                accVi += best.RawVi;
+            }
+        }
+
+        // それでも6枠未満なら全カードから補充
+        if (selected.Count < 6)
+        {
+            var fallback = allContributions
+                .Where(cs => !usedIds.Contains(cs.Card.Id))
+                .ToList();
+
+            while (selected.Count < 6)
+            {
+                var best = SelectBestCard(fallback, usedIds, accVo, accDa, accVi);
+                if (best == null) break;
+
+                selected.Add(best);
+                usedIds.Add(best.Card.Id);
+                accVo += best.RawVo;
+                accDa += best.RawDa;
+                accVi += best.RawVi;
+            }
+        }
+
+        // キャップ適用後の実効値でTotalValueを再計算
+        RecalculateWithCap(selected, baseStats);
+
+        selected = selected.OrderByDescending(cs => cs.TotalValue).ToList();
+
+        return new DeckResult
+        {
+            Label = GenerateLabel(cardTypeSlots),
+            SelectedCards = selected
+        };
+    }
+
+    /// <summary>
+    /// キャップを考慮して最も有効なカードを選択する。
+    /// 各候補について、追加した場合のキャップ後合計の増分が最大のものを選ぶ。
+    /// </summary>
+    private CardScore? SelectBestCard(
+        List<CardScore> candidates,
+        HashSet<string> usedIds,
+        int currentVo, int currentDa, int currentVi)
+    {
+        CardScore? best = null;
+        int bestGain = int.MinValue;
+
+        foreach (var cs in candidates)
+        {
+            if (usedIds.Contains(cs.Card.Id)) continue;
+
+            // キャップ適用後の実効増分
+            int newVo = Math.Min(currentVo + cs.RawVo, STAT_CAP);
+            int newDa = Math.Min(currentDa + cs.RawDa, STAT_CAP);
+            int newVi = Math.Min(currentVi + cs.RawVi, STAT_CAP);
+
+            int cappedVo = Math.Min(currentVo, STAT_CAP);
+            int cappedDa = Math.Min(currentDa, STAT_CAP);
+            int cappedVi = Math.Min(currentVi, STAT_CAP);
+
+            int gain = (newVo - cappedVo) + (newDa - cappedDa) + (newVi - cappedVi);
+
+            if (gain > bestGain)
+            {
+                bestGain = gain;
+                best = cs;
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// 選択完了後、キャップ適用後の実効TotalValueを再計算する。
+    /// </summary>
+    private void RecalculateWithCap(List<CardScore> selected, StatusValues baseStats)
+    {
+        // カード無しのベースステータスから順に積み上げてキャップ適用
+        int accVo = baseStats.Vo, accDa = baseStats.Da, accVi = baseStats.Vi;
+
+        foreach (var cs in selected)
+        {
+            int prevTotal = Math.Min(accVo, STAT_CAP) + Math.Min(accDa, STAT_CAP) + Math.Min(accVi, STAT_CAP);
+
+            accVo += cs.RawVo;
+            accDa += cs.RawDa;
+            accVi += cs.RawVi;
+
+            int newTotal = Math.Min(accVo, STAT_CAP) + Math.Min(accDa, STAT_CAP) + Math.Min(accVi, STAT_CAP);
+
+            cs.TotalValue = newTotal - prevTotal;
+        }
+    }
+
+    /// <summary>
+    /// カード無しのベースステータス推定（レッスン＋授業＋イベント等の基礎値）
+    /// </summary>
+    private StatusValues EstimateBaseStats(TrainingPlan plan, Dictionary<string, int> lessonAllocation)
+    {
+        int vo = 0, da = 0, vi = 0;
+
+        // レッスンのSPパーフェクト基礎値を配分に従って加算
+        var lessonWeeks = plan.Schedule
+            .Where(w => w.Lessons.Count > 0)
+            .OrderBy(w => w.Week)
+            .ToList();
+
+        // 各属性のレッスン回数分、後ろの週(高い値)から割り当て
+        var weekQueue = new Queue<WeekSchedule>(lessonWeeks.OrderByDescending(w => w.Week));
+
+        foreach (var stat in lessonAllocation.OrderByDescending(kv => kv.Value))
+        {
+            int count = stat.Value;
+            var tempWeeks = new List<WeekSchedule>();
+
+            // キューから取り出して割り当て
+            for (int i = 0; i < count && weekQueue.Count > 0; i++)
+            {
+                var w = weekQueue.Dequeue();
+                var lesson = w.GetLesson(stat.Key);
+                if (lesson != null)
+                {
+                    vo += lesson.SpBonus.Vo;
+                    da += lesson.SpBonus.Da;
+                    vi += lesson.SpBonus.Vi;
+                }
+            }
+        }
+
+        // 授業の基礎値（メイン属性に全額配分と仮定）
+        foreach (var week in plan.Schedule)
+        {
+            if (week.Classes.Count > 0)
+            {
+                // 最大値の授業を加算
+                var bestClass = week.Classes.OrderByDescending(c => c.SpBonus.Total).First();
+                vo += bestClass.SpBonus.Vo;
+                da += bestClass.SpBonus.Da;
+                vi += bestClass.SpBonus.Vi;
+            }
+
+            // 固定イベント
+            if (week.IsFixedEvent && week.StatusGain != null)
+            {
+                vo += week.StatusGain.Vo;
+                da += week.StatusGain.Da;
+                vi += week.StatusGain.Vi;
+            }
+        }
+
+        return new StatusValues(vo, da, vi);
+    }
+
+    public List<DeckResult> SelectMultiplePatterns(
+        TrainingPlan plan,
+        List<SupportCard> allCards,
+        List<string> mainStats,
+        string subStat,
+        int totalLessonWeeks,
+        Dictionary<string, int>? spCounts = null,
+        string? planType = null,
+        AdditionalCounts? additionalCounts = null)
+    {
+        var results = new List<DeckResult>();
+
+        if (mainStats.Count < 2) return results;
+
+        var main1 = mainStats[0];
+        var main2 = mainStats[1];
+
+        // SP率カードの必要枚数を属性別に集計
+        int spMain1 = spCounts?.GetValueOrDefault(main1) ?? 0;
+        int spMain2 = spCounts?.GetValueOrDefault(main2) ?? 0;
+        int spSub = spCounts?.GetValueOrDefault(subStat) ?? 0;
+
+        // カード枚数パターン (メイン1:メイン2:サブ = 合計6枚)
+        var patterns = new List<(int m1, int m2, int sub)>
+        {
+            (3, 2, 1),
+            (2, 3, 1),
+            (3, 3, 0),
+            (2, 2, 2),
+        };
+
+        foreach (var (m1, m2, sub) in patterns)
+        {
+            // SP枚数を満たせないパターンはスキップ
+            if (m1 < spMain1 || m2 < spMain2 || sub < spSub) continue;
+
+            // カード枚数
+            var cardTypeSlots = new Dictionary<string, int>
+            {
+                [main1] = m1,
+                [main2] = m2,
+                [subStat] = sub
+            };
+
+            // レッスン配分はカード枚数とは独立にメイン属性に均等配分
+            var lessonAllocation = new Dictionary<string, int>
+            {
+                [main1] = 0,
+                [main2] = 0,
+                [subStat] = 0
+            };
+            int remaining = totalLessonWeeks;
+            lessonAllocation[main1] += remaining / 2;
+            lessonAllocation[main2] += remaining - remaining / 2;
+
+            var result = SelectOptimalDeck(
+                plan, allCards, lessonAllocation, cardTypeSlots,
+                mainStats, spCounts, planType, additionalCounts);
+            results.Add(result);
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// カード1枚の属性別寄与を計算
+    /// </summary>
+    private CardScore CalculateCardContribution(
+        SupportCard card,
+        Dictionary<string, int> triggerCounts,
+        Dictionary<string, int> lessonAllocation)
+    {
+        double vo = 0, da = 0, vi = 0;
+        var breakdowns = new List<EffectBreakdown>();
+
+        foreach (var effect in card.Effects)
+        {
+            // SP率は突破確率であり理論値計算では不要（全SPクリア前提）
+            if (effect.ValueType == "sp_rate") continue;
+
+            double value = effect.ValueType switch
+            {
+                "flat" => CalculateFlatValue(effect, triggerCounts),
+                "para_bonus" => CalculateParaBonusValue(effect, lessonAllocation),
+                _ => 0
+            };
+
+            if (Math.Abs(value) < 0.01) continue;
+
+            // 内訳の理由テキスト生成
+            var reason = BuildReasonText(effect, triggerCounts);
+
+            switch (effect.Stat)
+            {
+                case "vo": vo += value; break;
+                case "da": da += value; break;
+                case "vi": vi += value; break;
+                case "all":
+                    vo += value / 3.0;
+                    da += value / 3.0;
+                    vi += value / 3.0;
+                    break;
+                default:
+                    vo += value / 3.0;
+                    da += value / 3.0;
+                    vi += value / 3.0;
+                    break;
+            }
+
+            breakdowns.Add(new EffectBreakdown
+            {
+                Reason = reason,
+                Stat = effect.Stat,
+                Value = Math.Round(value, 1)
+            });
+        }
+
+        int iVo = (int)Math.Floor(vo);
+        int iDa = (int)Math.Floor(da);
+        int iVi = (int)Math.Floor(vi);
+
+        return new CardScore
+        {
+            Card = card,
+            RawVo = iVo,
+            RawDa = iDa,
+            RawVi = iVi,
+            TotalValue = iVo + iDa + iVi,
+            Breakdowns = breakdowns
+        };
+    }
+
+    private static string TriggerDisplayName(string trigger) => trigger switch
+    {
+        "equip" => "装備",
+        "sp_end" => "SP終了",
+        "lesson_end" => "レッスン終了",
+        "class_end" => "授業終了",
+        "outing_end" => "お出かけ終了",
+        "consultation" => "相談",
+        "activity_supply" => "活動支給",
+        "exam_end" => "試験終了",
+        "special_training" => "特別指導",
+        "skill_ssr_acquire" => "スキル(SSR)獲得",
+        "skill_enhance" => "スキル強化",
+        "skill_delete" => "スキル削除",
+        "skill_custom" => "スキルカスタム",
+        "skill_change" => "スキルチェンジ",
+        "active_enhance" => "アクティブ強化",
+        "active_delete" => "アクティブ削除",
+        "mental_acquire" => "メンタル獲得",
+        "mental_enhance" => "メンタル強化",
+        "active_acquire" => "アクティブ獲得",
+        "genki_acquire" => "元気獲得",
+        "good_condition_acquire" => "好調獲得",
+        "good_impression_acquire" => "好印象獲得",
+        "conserve_acquire" => "温存獲得",
+        "p_item_acquire" => "Pアイテム獲得",
+        "p_drink_acquire" => "Pドリンク獲得",
+        "consultation_drink" => "相談ドリンク交換",
+        "rest" => "休憩",
+        "vo_sp_end" => "VoSP終了",
+        "da_sp_end" => "DaSP終了",
+        "vi_sp_end" => "ViSP終了",
+        "vo_lesson_end" => "Voレッスン終了",
+        "da_lesson_end" => "Daレッスン終了",
+        "vi_lesson_end" => "Viレッスン終了",
+        _ => trigger
+    };
+
+    private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts)
+    {
+        var triggerName = TriggerDisplayName(effect.Trigger);
+        var stat = effect.Stat.ToUpper();
+
+        if (effect.Trigger == "equip")
+        {
+            return effect.ValueType switch
+            {
+                "sp_rate" => $"{stat} SP率+{effect.Value}%",
+                "para_bonus" => $"パラボ+{effect.Value}%",
+                _ => $"{stat} 初期値+{(int)effect.Value}"
+            };
+        }
+
+        int fires = triggerCounts.GetValueOrDefault(effect.Trigger, 0);
+        if (effect.MaxCount.HasValue)
+            fires = Math.Min(fires, effect.MaxCount.Value);
+
+        var countInfo = effect.MaxCount.HasValue
+            ? $"({fires}/{effect.MaxCount}回)"
+            : $"(×{fires})";
+
+        return effect.ValueType switch
+        {
+            "flat" => $"{triggerName} {stat}+{(int)effect.Value} {countInfo}",
+            _ => $"{triggerName} {stat}+{effect.Value}% {countInfo}"
+        };
+    }
+
+    private Dictionary<string, int> CountTriggers(
+        TrainingPlan plan,
+        Dictionary<string, int> lessonAllocation,
+        List<string> mainStats)
+    {
+        var counts = new Dictionary<string, int>();
+
+        var lessonWeeks = plan.Schedule
+            .Where(w => w.Lessons.Count > 0)
+            .OrderBy(w => w.Week)
+            .ToList();
+
+        int totalLessons = lessonAllocation.Values.Sum();
+        counts["sp_end"] = Math.Min(totalLessons, lessonWeeks.Count);
+        counts["lesson_end"] = counts["sp_end"];
+
+        // 属性別SP終了・レッスン終了トリガー
+        foreach (var kvp in lessonAllocation)
+        {
+            if (kvp.Value <= 0) continue;
+            counts[$"{kvp.Key}_sp_end"] = kvp.Value;       // vo_sp_end, da_sp_end, vi_sp_end
+            counts[$"{kvp.Key}_lesson_end"] = kvp.Value;    // vo_lesson_end, da_lesson_end, vi_lesson_end
+        }
+
+        foreach (var week in plan.Schedule)
+        {
+            if (week.IsFixedEvent)
+            {
+                counts["exam_end"] = counts.GetValueOrDefault("exam_end") + 1;
+                continue;
+            }
+
+            if (week.Lessons.Count > 0)
+                continue;
+
+            var actions = week.AvailableActions;
+            if (actions.Contains("activity_supply"))
+                counts["activity_supply"] = counts.GetValueOrDefault("activity_supply") + 1;
+            else if (actions.Contains("outing"))
+                counts["outing_end"] = counts.GetValueOrDefault("outing_end") + 1;
+            else if (actions.Contains("consultation"))
+                counts["consultation"] = counts.GetValueOrDefault("consultation") + 1;
+            else if (actions.Contains("special_training"))
+                counts["special_training"] = counts.GetValueOrDefault("special_training") + 1;
+            else if (actions.Contains("vo_class") || actions.Contains("da_class") || actions.Contains("vi_class"))
+                counts["class_end"] = counts.GetValueOrDefault("class_end") + 1;
+        }
+
+        return counts;
+    }
+
+    private double CalculateFlatValue(CardEffect effect, Dictionary<string, int> triggerCounts)
+    {
+        if (effect.Trigger == "equip")
+            return effect.Value;
+
+        int fires = triggerCounts.GetValueOrDefault(effect.Trigger, 0);
+
+        if (effect.MaxCount.HasValue)
+            fires = Math.Min(fires, effect.MaxCount.Value);
+
+        return effect.Value * fires;
+    }
+
+    private double CalculateParaBonusValue(CardEffect effect, Dictionary<string, int> lessonAllocation)
+    {
+        double avgLessonTotal = 460.0;
+        int totalLessons = lessonAllocation.Values.Sum();
+
+        return totalLessons * avgLessonTotal * (effect.Value / 100.0);
+    }
+
+    private string GenerateLabel(Dictionary<string, int> cardTypeSlots)
+    {
+        var parts = new List<string>();
+        foreach (var kvp in cardTypeSlots.OrderByDescending(k => k.Value))
+        {
+            if (kvp.Value > 0)
+            {
+                var name = kvp.Key switch
+                {
+                    "vo" => "Vocal",
+                    "da" => "Dance",
+                    "vi" => "Visual",
+                    _ => kvp.Key
+                };
+                parts.Add($"{name} {kvp.Value}");
+            }
+        }
+        return string.Join(" / ", parts) + " 編成";
+    }
+}

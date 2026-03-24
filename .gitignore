@@ -1,0 +1,30 @@
+# Build outputs
+bin/
+obj/
+
+# IDE / Editor
+.vs/
+.vscode/
+*.user
+*.suo
+
+# AI assistant
+.claude/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Card images (copyrighted assets - not included in repo)
+Data/Images/*.jpg
+Data/Images/*.jpeg
+Data/Images/*.png
+Data/Images/*.PNG
+
+# Inventory data (user-specific)
+Data/Inventory/
+
+# Legacy directory (pre-rename)
+GakumasuTool/
+

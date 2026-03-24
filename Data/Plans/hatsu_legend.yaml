@@ -1,0 +1,176 @@
+plan:
+  id: "hatsu_legend"
+  name: "初Legend"
+  description: "初めてのLegendary育成プラン"
+  total_weeks: 18
+  base_status:
+    vo: 0
+    da: 0
+    vi: 0
+  schedule:
+    # Week 1: 授業 (パラメータ上昇値: 100)
+    - week: 1
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 100, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 100, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 100 }
+
+    # Week 2: 授業 (パラメータ上昇値: 100)
+    - week: 2
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 100, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 100, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 100 }
+
+    # Week 3: おでかけ / 活動支給
+    - week: 3
+      type: "free"
+      available_actions: ["outing", "activity_supply"]
+      outing_effect: { vo: 2, da: 2, vi: 2 }
+
+    # Week 4: Vo/Da/Viレッスン (SP Perfect: 250 = 85+55×3)
+    - week: 4
+      type: "free"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 140, da: 55, vi: 55 }
+        - type: "da"
+          sp_bonus: { vo: 55, da: 140, vi: 55 }
+        - type: "vi"
+          sp_bonus: { vo: 55, da: 55, vi: 140 }
+
+    # Week 5: おでかけ / 相談 / 活動支給
+    - week: 5
+      type: "free"
+      available_actions: ["outing", "consultation", "activity_supply"]
+      outing_effect: { vo: 2, da: 2, vi: 2 }
+      consultation_effect: { vo: 1, da: 1, vi: 0 }
+
+    # Week 6: 授業 (パラメータ上昇値: 150)
+    - week: 6
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 150, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 150, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 150 }
+
+    # Week 7: Vo/Da/Viレッスン (SP Perfect: 300 = 120+60×3)
+    - week: 7
+      type: "free"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 180, da: 60, vi: 60 }
+        - type: "da"
+          sp_bonus: { vo: 60, da: 180, vi: 60 }
+        - type: "vi"
+          sp_bonus: { vo: 60, da: 60, vi: 180 }
+
+    # Week 8: 相談のみ
+    - week: 8
+      type: "free"
+      available_actions: ["consultation"]
+      consultation_effect: { vo: 1, da: 1, vi: 0 }
+
+    # Week 9: 特別指導のみ
+    - week: 9
+      type: "free"
+      available_actions: ["special_training"]
+      special_training_effect: { vo: 3, da: 3, vi: 3 }
+
+    # Week 10: 中間試験 (固定イベント) 1位: 全パラメータ+80
+    - week: 10
+      type: "fixed_event"
+      event_name: "中間試験"
+      status_gain: { vo: 80, da: 80, vi: 80 }
+
+    # Week 11: おでかけ / 活動支給
+    - week: 11
+      type: "free"
+      available_actions: ["outing", "activity_supply"]
+      outing_effect: { vo: 3, da: 3, vi: 3 }
+
+    # Week 12: Vo/Da/Viレッスン (SP Perfect: 400 = 190+70×3)
+    - week: 12
+      type: "free"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 260, da: 70, vi: 70 }
+        - type: "da"
+          sp_bonus: { vo: 70, da: 260, vi: 70 }
+        - type: "vi"
+          sp_bonus: { vo: 70, da: 70, vi: 260 }
+
+    # Week 13: おでかけ / 相談 / 活動支給
+    - week: 13
+      type: "free"
+      available_actions: ["outing", "consultation", "activity_supply"]
+      outing_effect: { vo: 3, da: 3, vi: 3 }
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+
+    # Week 14: Vo/Da/Viレッスン (SP Perfect: 550 = 280+90×3)
+    - week: 14
+      type: "free"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 370, da: 90, vi: 90 }
+        - type: "da"
+          sp_bonus: { vo: 90, da: 370, vi: 90 }
+        - type: "vi"
+          sp_bonus: { vo: 90, da: 90, vi: 370 }
+
+    # Week 15: 授業 (パラメータ上昇値: 200)
+    - week: 15
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 200, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 200, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 200 }
+
+    # Week 16: Vo/Da/Viレッスン (SP Perfect: 800 = 455+115×3)
+    - week: 16
+      type: "free"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 570, da: 115, vi: 115 }
+        - type: "da"
+          sp_bonus: { vo: 115, da: 570, vi: 115 }
+        - type: "vi"
+          sp_bonus: { vo: 115, da: 115, vi: 570 }
+
+    # Week 17: 相談 / 特別指導
+    - week: 17
+      type: "free"
+      available_actions: ["consultation", "special_training"]
+      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      special_training_effect: { vo: 5, da: 5, vi: 5 }
+
+    # Week 18: 最終試験 (固定イベント) 1位: 全パラメータ+120
+    - week: 18
+      type: "fixed_event"
+      event_name: "最終試験"
+      status_gain: { vo: 120, da: 120, vi: 120 }
+
+  # 活動支給: ステータス加算なし（サポカのトリガー発火のみ）

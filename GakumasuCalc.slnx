@@ -1,0 +1,5 @@
+﻿<Solution>
+  <Project Path="CardInventoryManager/CardInventoryManager.csproj" />
+  <Project Path="GakumasuCalc/GakumasuCalc.csproj" />
+  <Project Path="SupportCardEditor/SupportCardEditor.csproj" />
+</Solution>

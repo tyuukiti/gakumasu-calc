@@ -1,0 +1,152 @@
+templates:
+- name: センス
+  plan_id: hatsu_legend
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    skill_change: 2
+    good_condition_acquire: 3
+    active_acquire: 3
+    mental_acquire: 3
+    consultation_drink: 6
+
+- name: ロジック（好印象）
+  plan_id: hatsu_legend
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    good_impression_acquire: 4
+    active_acquire: 3
+    mental_acquire: 3
+    consultation_drink: 6
+
+- name: ロジック（やる気）
+  plan_id: hatsu_legend
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    genki_acquire: 4
+    active_acquire: 3
+    mental_acquire: 3
+    consultation_drink: 6
+
+- name: アノマリー（強気）
+  plan_id: hatsu_legend
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    active_enhance: 3
+    active_delete: 2
+    active_acquire: 3
+    mental_acquire: 3
+    mental_enhance: 1
+    consultation_drink: 6
+
+- name: アノマリー（全力）
+  plan_id: hatsu_legend
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    active_enhance: 3
+    active_delete: 2
+    active_acquire: 3
+    mental_acquire: 3
+    mental_enhance: 1
+    conserve_acquire: 2
+    consultation_drink: 6
+
+- name: センス
+  plan_id: nia
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    skill_change: 2
+    good_condition_acquire: 3
+    active_acquire: 3
+    mental_acquire: 3
+    consultation_drink: 6
+
+- name: ロジック（好印象）
+  plan_id: nia
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    good_impression_acquire: 4
+    active_acquire: 3
+    mental_acquire: 3
+    consultation_drink: 6
+
+- name: ロジック（やる気）
+  plan_id: nia
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    genki_acquire: 4
+    active_acquire: 3
+    mental_acquire: 3
+    consultation_drink: 6
+
+- name: アノマリー（強気）
+  plan_id: nia
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    active_enhance: 3
+    active_delete: 2
+    active_acquire: 3
+    mental_acquire: 3
+    mental_enhance: 1
+    consultation_drink: 6
+
+- name: アノマリー（全力）
+  plan_id: nia
+  counts:
+    p_drink_acquire: 15
+    p_item_acquire: 6
+    skill_ssr_acquire: 8
+    skill_enhance: 4
+    skill_delete: 2
+    skill_custom: 3
+    active_enhance: 3
+    active_delete: 2
+    active_acquire: 3
+    mental_acquire: 3
+    mental_enhance: 1
+    conserve_acquire: 2
+    consultation_drink: 6

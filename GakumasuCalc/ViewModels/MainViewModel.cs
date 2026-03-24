@@ -1,0 +1,837 @@
+﻿using System.Collections.ObjectModel;
+using System.IO;
+using System.Windows.Input;
+using GakumasuCalc.Models;
+using GakumasuCalc.Services;
+
+namespace GakumasuCalc.ViewModels;
+
+public class MainViewModel : ViewModelBase
+{
+    private readonly StatusCalculationService _calculationService;
+    private readonly CardScoringService _scoringService;
+    private readonly PlanLoaderService _planLoader;
+    private readonly SupportCardLoaderService _cardLoader;
+    private readonly InventoryService _inventoryService;
+    private List<SupportCard> _allCards = new();
+    private List<CardInventoryEntry> _inventory = new();
+
+    private TrainingPlan? _selectedPlan;
+    private CalculationResult? _result;
+    private int _resultMaxValue = 1;
+
+    // 所持カードフィルタ
+    private bool _ownedOnly;
+
+    // 育成タイプ
+    private string _selectedPlanType = "sense";
+
+    // 属性設定
+    private string _voRole = "サブ";
+    private string _daRole = "サブ";
+    private string _viRole = "サブ";
+    private int _voSpCount;
+    private int _daSpCount;
+    private int _viSpCount;
+
+    // 追加カウント
+    private int _pDrinkAcquire;
+    private int _pItemAcquire;
+    private int _skillSsrAcquire;
+    private int _skillEnhance;
+    private int _skillDelete;
+    private int _skillCustom;
+    private int _skillChange;
+    private int _activeEnhance;
+    private int _activeDelete;
+    private int _mentalAcquire;
+    private int _mentalEnhance;
+    private int _activeAcquire;
+    private int _genkiAcquire;
+    private int _goodConditionAcquire;
+    private int _goodImpressionAcquire;
+    private int _conserveAcquire;
+    private int _consultationDrink;
+
+    // パターン計算の元データ保持
+    private List<CardScoringService.DeckResult> _deckResults = new();
+    private List<string> _lastMainStats = new();
+    private int _lastLessonWeekCount;
+
+    public ObservableCollection<TrainingPlan> AvailablePlans { get; } = new();
+    public ObservableCollection<TurnChoiceViewModel> TurnChoices { get; } = new();
+    public ObservableCollection<DeckCardViewModel> DeckCards { get; } = new();
+    public ObservableCollection<PatternResultViewModel> PatternResults { get; } = new();
+
+    private PatternResultViewModel? _selectedPattern;
+    public PatternResultViewModel? SelectedPattern
+    {
+        get => _selectedPattern;
+        set
+        {
+            if (SetProperty(ref _selectedPattern, value) && value != null)
+            {
+                // 選択状態の更新
+                foreach (var p in PatternResults)
+                    p.IsSelected = (p == value);
+                ApplySelectedPattern(value.Index);
+            }
+        }
+    }
+
+    public List<string> RoleOptions { get; } = new() { "メイン", "サブ" };
+    public List<PlanTypeOption> PlanTypeOptions { get; } = new()
+    {
+        new("sense", "センス"),
+        new("logic", "ロジック"),
+        new("anomaly", "アノマリー"),
+    };
+
+    public bool OwnedOnly
+    {
+        get => _ownedOnly;
+        set => SetProperty(ref _ownedOnly, value);
+    }
+
+    public string SelectedPlanType
+    {
+        get => _selectedPlanType;
+        set => SetProperty(ref _selectedPlanType, value);
+    }
+
+    public TrainingPlan? SelectedPlan
+    {
+        get => _selectedPlan;
+        set
+        {
+            if (SetProperty(ref _selectedPlan, value))
+                OnPlanChanged();
+        }
+    }
+
+    // 属性ロール
+    public string VoRole { get => _voRole; set => SetProperty(ref _voRole, value); }
+    public string DaRole { get => _daRole; set => SetProperty(ref _daRole, value); }
+    public string ViRole { get => _viRole; set => SetProperty(ref _viRole, value); }
+
+    // SP枚数
+    public int VoSpCount { get => _voSpCount; set => SetProperty(ref _voSpCount, value); }
+    public int DaSpCount { get => _daSpCount; set => SetProperty(ref _daSpCount, value); }
+    public int ViSpCount { get => _viSpCount; set => SetProperty(ref _viSpCount, value); }
+
+    // 追加カウントプロパティ
+    public int PDrinkAcquire { get => _pDrinkAcquire; set => SetProperty(ref _pDrinkAcquire, value); }
+    public int PItemAcquire { get => _pItemAcquire; set => SetProperty(ref _pItemAcquire, value); }
+    public int SkillSsrAcquire { get => _skillSsrAcquire; set => SetProperty(ref _skillSsrAcquire, value); }
+    public int SkillEnhance { get => _skillEnhance; set => SetProperty(ref _skillEnhance, value); }
+    public int SkillDelete { get => _skillDelete; set => SetProperty(ref _skillDelete, value); }
+    public int SkillCustom { get => _skillCustom; set => SetProperty(ref _skillCustom, value); }
+    public int SkillChange { get => _skillChange; set => SetProperty(ref _skillChange, value); }
+    public int ActiveEnhance { get => _activeEnhance; set => SetProperty(ref _activeEnhance, value); }
+    public int ActiveDelete { get => _activeDelete; set => SetProperty(ref _activeDelete, value); }
+    public int MentalAcquire { get => _mentalAcquire; set => SetProperty(ref _mentalAcquire, value); }
+    public int MentalEnhance { get => _mentalEnhance; set => SetProperty(ref _mentalEnhance, value); }
+    public int ActiveAcquire { get => _activeAcquire; set => SetProperty(ref _activeAcquire, value); }
+    public int GenkiAcquire { get => _genkiAcquire; set => SetProperty(ref _genkiAcquire, value); }
+    public int GoodConditionAcquire { get => _goodConditionAcquire; set => SetProperty(ref _goodConditionAcquire, value); }
+    public int GoodImpressionAcquire { get => _goodImpressionAcquire; set => SetProperty(ref _goodImpressionAcquire, value); }
+    public int ConserveAcquire { get => _conserveAcquire; set => SetProperty(ref _conserveAcquire, value); }
+    public int ConsultationDrink { get => _consultationDrink; set => SetProperty(ref _consultationDrink, value); }
+
+    // イベント回数テンプレート
+    private List<EventCountTemplate> _allEventCountTemplates = new();
+    public ObservableCollection<EventCountTemplate> EventCountTemplates { get; } = new();
+
+    private EventCountTemplate? _selectedEventTemplate;
+    public EventCountTemplate? SelectedEventTemplate
+    {
+        get => _selectedEventTemplate;
+        set
+        {
+            if (SetProperty(ref _selectedEventTemplate, value) && value != null)
+                ApplyEventTemplate(value);
+        }
+    }
+
+    // 計算結果
+    public CalculationResult? Result
+    {
+        get => _result;
+        private set
+        {
+            SetProperty(ref _result, value);
+            OnPropertyChanged(nameof(HasResult));
+            OnPropertyChanged(nameof(ResultVo));
+            OnPropertyChanged(nameof(ResultDa));
+            OnPropertyChanged(nameof(ResultVi));
+            OnPropertyChanged(nameof(ResultTotal));
+            OnPropertyChanged(nameof(VoBarWidth));
+            OnPropertyChanged(nameof(DaBarWidth));
+            OnPropertyChanged(nameof(ViBarWidth));
+        }
+    }
+
+    public bool HasResult => Result != null;
+    public int ResultVo => Result?.FinalStatus.Vo ?? 0;
+    public int ResultDa => Result?.FinalStatus.Da ?? 0;
+    public int ResultVi => Result?.FinalStatus.Vi ?? 0;
+    public int ResultTotal => Result?.FinalStatus.Total ?? 0;
+
+    public int ResultMaxValue
+    {
+        get => _resultMaxValue;
+        private set => SetProperty(ref _resultMaxValue, value);
+    }
+
+    public double VoBarWidth => ResultMaxValue > 0 ? (double)ResultVo / ResultMaxValue * 300 : 0;
+    public double DaBarWidth => ResultMaxValue > 0 ? (double)ResultDa / ResultMaxValue * 300 : 0;
+    public double ViBarWidth => ResultMaxValue > 0 ? (double)ResultVi / ResultMaxValue * 300 : 0;
+
+    public string DeckLabel
+    {
+        get
+        {
+            if (DeckCards.Count == 0) return string.Empty;
+            return DeckCards.FirstOrDefault()?.DeckLabel ?? string.Empty;
+        }
+    }
+
+    public int DeckTotal => DeckCards.Sum(c => c.StatValue);
+
+    public ICommand CalculateCommand { get; }
+    public ICommand ResetCommand { get; }
+    public ICommand SelectPatternCommand { get; }
+    public ICommand RecalcLessonCommand { get; }
+    public ICommand CopyResultCommand { get; }
+
+    public MainViewModel()
+    {
+        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        var dataDir = Path.Combine(baseDir, "Data");
+
+        if (!Directory.Exists(dataDir))
+        {
+            var projectRoot = FindProjectRoot(baseDir);
+            if (projectRoot != null)
+                dataDir = Path.Combine(projectRoot, "Data");
+        }
+
+        var yamlService = new YamlDataService();
+        _planLoader = new PlanLoaderService(yamlService, Path.Combine(dataDir, "Plans"));
+        _cardLoader = new SupportCardLoaderService(yamlService, Path.Combine(dataDir, "SupportCards"));
+        _inventoryService = new InventoryService(Path.Combine(dataDir, "Inventory", "inventory.yaml"));
+        _calculationService = new StatusCalculationService();
+        _scoringService = new CardScoringService();
+
+        LoadEventCountTemplates(yamlService, Path.Combine(dataDir, "Templates", "event_count_templates.yaml"));
+
+        CalculateCommand = new RelayCommand(ExecuteCalculate);
+        ResetCommand = new RelayCommand(ExecuteReset);
+        SelectPatternCommand = new RelayCommand(o =>
+        {
+            if (o is PatternResultViewModel pattern)
+                SelectedPattern = pattern;
+        });
+        RecalcLessonCommand = new RelayCommand(ExecuteRecalcLesson);
+        CopyResultCommand = new RelayCommand(ExecuteCopyResult);
+
+        LoadData();
+    }
+
+    private void LoadData()
+    {
+        try
+        {
+            var plans = _planLoader.LoadAllPlans();
+            AvailablePlans.Clear();
+            foreach (var plan in plans)
+                AvailablePlans.Add(plan);
+
+            _allCards = _cardLoader.LoadAllCards();
+            _inventory = _inventoryService.Load();
+
+            if (AvailablePlans.Count > 0)
+                SelectedPlan = AvailablePlans[0];
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"データ読み込みエラー: {ex.Message}");
+        }
+    }
+
+    private void OnPlanChanged()
+    {
+        TurnChoices.Clear();
+        if (_selectedPlan == null) return;
+
+        foreach (var week in _selectedPlan.Schedule)
+        {
+            TurnChoices.Add(new TurnChoiceViewModel(week, _selectedPlan.ActivitySupply));
+        }
+
+        FilterEventCountTemplates();
+
+        Result = null;
+        DeckCards.Clear();
+        OnPropertyChanged(nameof(DeckLabel));
+        OnPropertyChanged(nameof(DeckTotal));
+    }
+
+    private void ExecuteCalculate()
+    {
+        if (_selectedPlan == null) return;
+
+        var lessonWeekCount = _selectedPlan.Schedule.Count(w => w.Lessons.Count > 0);
+
+        // メイン属性リスト
+        var mainStats = new List<string>();
+        if (VoRole == "メイン") mainStats.Add("vo");
+        if (DaRole == "メイン") mainStats.Add("da");
+        if (ViRole == "メイン") mainStats.Add("vi");
+
+        // サブ属性を特定
+        var subStat = new[] { "vo", "da", "vi" }.First(s => !mainStats.Contains(s));
+
+        // 追加カウント構築
+        var additional = BuildAdditionalCounts();
+
+        // 所持フィルタ + 凸倍率適用
+        var candidateCards = GetCandidateCards();
+
+        // SP率カード枚数
+        var spCounts = new Dictionary<string, int>();
+        if (VoSpCount > 0) spCounts["vo"] = VoSpCount;
+        if (DaSpCount > 0) spCounts["da"] = DaSpCount;
+        if (ViSpCount > 0) spCounts["vi"] = ViSpCount;
+
+        // 複数パターン一括計算
+        var patterns = _scoringService.SelectMultiplePatterns(
+            _selectedPlan, candidateCards, mainStats, subStat, lessonWeekCount,
+            spCounts: spCounts, planType: SelectedPlanType, additionalCounts: additional);
+
+        _deckResults = patterns;
+        _lastMainStats = mainStats;
+        _lastLessonWeekCount = lessonWeekCount;
+
+        PatternResults.Clear();
+        int bestIndex = 0;
+        int bestTotal = int.MinValue;
+
+        for (int i = 0; i < patterns.Count; i++)
+        {
+            var pattern = patterns[i];
+            var vm = new PatternResultViewModel { Label = pattern.Label, Index = i };
+            foreach (var cs in pattern.SelectedCards)
+            {
+                var breakdown = string.Join("\n", cs.Breakdowns
+                    .Select(b => $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
+                vm.Cards.Add(new DeckCardViewModel
+                {
+                    CardName = cs.Card.Name,
+                    CardType = cs.Card.Type,
+                    CardPlan = cs.Card.Plan,
+                    StatValue = cs.TotalValue,
+                    RawVo = cs.RawVo,
+                    RawDa = cs.RawDa,
+                    RawVi = cs.RawVi,
+                    DeckLabel = pattern.Label,
+                    BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}"
+                });
+            }
+            PatternResults.Add(vm);
+
+            if (pattern.TotalValue > bestTotal)
+            {
+                bestTotal = pattern.TotalValue;
+                bestIndex = i;
+            }
+        }
+
+        OnPropertyChanged(nameof(PatternResults));
+
+        // 最高スコアのパターンをデフォルト選択
+        if (PatternResults.Count > 0)
+            SelectedPattern = PatternResults[bestIndex];
+    }
+
+    /// <summary>
+    /// 選択されたパターンで詳細計算を実行する
+    /// </summary>
+    private void ApplySelectedPattern(int patternIndex)
+    {
+        if (_selectedPlan == null || patternIndex < 0 || patternIndex >= _deckResults.Count)
+            return;
+
+        var pattern = _deckResults[patternIndex];
+
+        // このパターンのレッスン配分を復元
+        var allocation = BuildLessonAllocationFromPattern(pattern, _lastMainStats, _lastLessonWeekCount);
+        AutoAssignTurnChoices(allocation, _lastMainStats);
+
+        var selectedCards = pattern.SelectedCards.Select(cs => cs.Card).ToList();
+        var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices);
+
+        DeckCards.Clear();
+        foreach (var cs in pattern.SelectedCards)
+        {
+            var breakdown = string.Join("\n", cs.Breakdowns
+                .Select(b => $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
+            DeckCards.Add(new DeckCardViewModel
+            {
+                CardName = cs.Card.Name,
+                CardType = cs.Card.Type,
+                CardPlan = cs.Card.Plan,
+                StatValue = cs.TotalValue,
+                RawVo = cs.RawVo,
+                RawDa = cs.RawDa,
+                RawVi = cs.RawVi,
+                DeckLabel = pattern.Label,
+                BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}"
+            });
+        }
+        OnPropertyChanged(nameof(DeckLabel));
+        OnPropertyChanged(nameof(DeckTotal));
+
+        var maxStat = Math.Max(ResultVo, Math.Max(ResultDa, ResultVi));
+        ResultMaxValue = maxStat > 0 ? maxStat : 1;
+        OnPropertyChanged(nameof(VoBarWidth));
+        OnPropertyChanged(nameof(DaBarWidth));
+        OnPropertyChanged(nameof(ViBarWidth));
+    }
+
+    /// <summary>
+    /// パターンのラベルからレッスン配分を復元する
+    /// </summary>
+    private Dictionary<string, int> BuildLessonAllocationFromPattern(
+        CardScoringService.DeckResult pattern, List<string> mainStats, int totalLessonWeeks)
+    {
+        // パターンラベルからカード枚数を取得し、それをレッスン配分として使う
+        // ラベル例: "Dance 3 / Visual 2 / Vocal 1 編成"
+        var allocation = new Dictionary<string, int> { ["vo"] = 0, ["da"] = 0, ["vi"] = 0 };
+
+        foreach (var part in pattern.Label.Replace(" 編成", "").Split(" / "))
+        {
+            var tokens = part.Trim().Split(' ');
+            if (tokens.Length == 2 && int.TryParse(tokens[1], out int count))
+            {
+                var stat = tokens[0] switch
+                {
+                    "Vocal" => "vo",
+                    "Dance" => "da",
+                    "Visual" => "vi",
+                    _ => ""
+                };
+                if (!string.IsNullOrEmpty(stat))
+                    allocation[stat] = count;
+            }
+        }
+
+        // 残りをメインに配分
+        int assigned = allocation.Values.Sum();
+        int remaining = totalLessonWeeks - assigned;
+        if (remaining > 0 && mainStats.Count > 0)
+        {
+            allocation[mainStats[0]] += remaining / 2;
+            allocation[mainStats.Count > 1 ? mainStats[1] : mainStats[0]] += remaining - remaining / 2;
+        }
+
+        return allocation;
+    }
+
+    /// <summary>
+    /// メイン/サブとSP枚数からレッスン配分を構築。
+    /// SP枚数 = その属性のレッスンに割り当てる週数。
+    /// 残りのレッスン週はメイン属性に均等配分。
+    /// </summary>
+    private Dictionary<string, int> BuildLessonAllocation(int totalLessonWeeks)
+    {
+        var allocation = new Dictionary<string, int>
+        {
+            ["vo"] = VoSpCount,
+            ["da"] = DaSpCount,
+            ["vi"] = ViSpCount
+        };
+
+        int assigned = allocation.Values.Sum();
+        int remaining = totalLessonWeeks - assigned;
+
+        // 残りをメイン属性に配分
+        var mains = new List<string>();
+        if (VoRole == "メイン") mains.Add("vo");
+        if (DaRole == "メイン") mains.Add("da");
+        if (ViRole == "メイン") mains.Add("vi");
+
+        if (mains.Count > 0 && remaining > 0)
+        {
+            int perMain = remaining / mains.Count;
+            int extra = remaining % mains.Count;
+            foreach (var stat in mains)
+            {
+                allocation[stat] += perMain;
+                if (extra > 0)
+                {
+                    allocation[stat]++;
+                    extra--;
+                }
+            }
+        }
+
+        return allocation;
+    }
+
+    /// <summary>
+    /// ターン選択を自動設定する。
+    /// レッスン週: メイン属性のレッスンのみ選択（サブ属性のレッスンは選ばない）
+    /// 授業週: サブ属性の授業を選択
+    /// </summary>
+    private void AutoAssignTurnChoices(Dictionary<string, int> allocation, List<string> mainStats)
+    {
+        var subStat = new[] { "vo", "da", "vi" }.First(s => !mainStats.Contains(s));
+
+        // メインのレッスンActionType一覧
+        var mainLessonActions = mainStats.Select(s => s switch
+        {
+            "vo" => ActionType.VoLesson,
+            "da" => ActionType.DaLesson,
+            _ => ActionType.ViLesson
+        }).ToHashSet();
+
+        // サブの授業ActionType
+        var subClassAction = subStat switch
+        {
+            "vo" => ActionType.VoClass,
+            "da" => ActionType.DaClass,
+            _ => ActionType.ViClass
+        };
+
+        // レッスン週: メイン属性のみ割り当て (後半の週を優先)
+        var lessonTurns = TurnChoices
+            .Where(tc => !tc.IsFixedEvent && tc.AvailableActions.Any(a =>
+                a is ActionType.VoLesson or ActionType.DaLesson or ActionType.ViLesson))
+            .OrderByDescending(tc => tc.Week)
+            .ToList();
+
+        var remaining = new Dictionary<string, int>(allocation);
+
+        // メイン属性のレッスンを割当数分、後半の週から割り当て
+        foreach (var stat in mainStats.OrderByDescending(s => remaining.GetValueOrDefault(s, 0)))
+        {
+            var actionType = stat switch
+            {
+                "vo" => ActionType.VoLesson,
+                "da" => ActionType.DaLesson,
+                _ => ActionType.ViLesson
+            };
+
+            int count = remaining.GetValueOrDefault(stat, 0);
+            foreach (var tc in lessonTurns.Where(t => t.AvailableActions.Contains(actionType)).ToList())
+            {
+                if (count <= 0) break;
+                tc.SelectedAction = actionType;
+                lessonTurns.Remove(tc);
+                count--;
+            }
+        }
+
+        // 残ったレッスン週もメイン属性の最初のレッスンを設定（サブは絶対選ばない）
+        var defaultMainLesson = mainStats[0] switch
+        {
+            "vo" => ActionType.VoLesson,
+            "da" => ActionType.DaLesson,
+            _ => ActionType.ViLesson
+        };
+        foreach (var tc in lessonTurns)
+        {
+            if (tc.AvailableActions.Contains(defaultMainLesson))
+                tc.SelectedAction = defaultMainLesson;
+            else
+            {
+                // 2番目のメインを試す
+                var secondMain = mainStats.Count > 1 ? mainStats[1] switch
+                {
+                    "vo" => ActionType.VoLesson,
+                    "da" => ActionType.DaLesson,
+                    _ => ActionType.ViLesson
+                } : defaultMainLesson;
+                if (tc.AvailableActions.Contains(secondMain))
+                    tc.SelectedAction = secondMain;
+            }
+        }
+
+        // 授業週: サブ属性の授業を選択
+        foreach (var tc in TurnChoices)
+        {
+            if (tc.IsFixedEvent) continue;
+
+            var hasLesson = tc.AvailableActions.Any(a =>
+                a is ActionType.VoLesson or ActionType.DaLesson or ActionType.ViLesson);
+            var hasClass = tc.AvailableActions.Any(a =>
+                a is ActionType.VoClass or ActionType.DaClass or ActionType.ViClass);
+
+            if (hasLesson) continue; // レッスン週は上で設定済み
+
+            if (hasClass && tc.AvailableActions.Contains(subClassAction))
+            {
+                tc.SelectedAction = subClassAction;
+            }
+            else if (tc.AvailableActions.Contains(ActionType.ActivitySupply))
+                tc.SelectedAction = ActionType.ActivitySupply;
+            else if (tc.AvailableActions.Contains(ActionType.Outing))
+                tc.SelectedAction = ActionType.Outing;
+            else if (tc.AvailableActions.Contains(ActionType.Consultation))
+                tc.SelectedAction = ActionType.Consultation;
+            else if (tc.AvailableActions.Contains(ActionType.SpecialTraining))
+                tc.SelectedAction = ActionType.SpecialTraining;
+            else if (hasClass)
+            {
+                // サブの授業がない場合、メイン属性の授業を選択
+                var mainClassAction = mainStats[0] switch
+                {
+                    "vo" => ActionType.VoClass,
+                    "da" => ActionType.DaClass,
+                    _ => ActionType.ViClass
+                };
+                if (tc.AvailableActions.Contains(mainClassAction))
+                    tc.SelectedAction = mainClassAction;
+                else if (tc.AvailableActions.Count > 0)
+                    tc.SelectedAction = tc.AvailableActions[0];
+            }
+            else if (tc.AvailableActions.Count > 0)
+                tc.SelectedAction = tc.AvailableActions[0];
+        }
+    }
+
+    private AdditionalCounts BuildAdditionalCounts()
+    {
+        return new AdditionalCounts
+        {
+            PDrinkAcquire = PDrinkAcquire,
+            PItemAcquire = PItemAcquire,
+            SkillSsrAcquire = SkillSsrAcquire,
+            SkillEnhance = SkillEnhance,
+            SkillDelete = SkillDelete,
+            SkillCustom = SkillCustom,
+            SkillChange = SkillChange,
+            ActiveEnhance = ActiveEnhance,
+            ActiveDelete = ActiveDelete,
+            MentalAcquire = MentalAcquire,
+            MentalEnhance = MentalEnhance,
+            ActiveAcquire = ActiveAcquire,
+            GenkiAcquire = GenkiAcquire,
+            GoodConditionAcquire = GoodConditionAcquire,
+            GoodImpressionAcquire = GoodImpressionAcquire,
+            ConserveAcquire = ConserveAcquire,
+            ConsultationDrink = ConsultationDrink,
+        };
+    }
+
+    private void ApplyEventTemplate(EventCountTemplate template)
+    {
+        var c = template.Counts;
+        PDrinkAcquire = c.PDrinkAcquire;
+        PItemAcquire = c.PItemAcquire;
+        SkillSsrAcquire = c.SkillSsrAcquire;
+        SkillEnhance = c.SkillEnhance;
+        SkillDelete = c.SkillDelete;
+        SkillCustom = c.SkillCustom;
+        SkillChange = c.SkillChange;
+        ActiveEnhance = c.ActiveEnhance;
+        ActiveDelete = c.ActiveDelete;
+        MentalAcquire = c.MentalAcquire;
+        MentalEnhance = c.MentalEnhance;
+        ActiveAcquire = c.ActiveAcquire;
+        GenkiAcquire = c.GenkiAcquire;
+        GoodConditionAcquire = c.GoodConditionAcquire;
+        GoodImpressionAcquire = c.GoodImpressionAcquire;
+        ConserveAcquire = c.ConserveAcquire;
+        ConsultationDrink = c.ConsultationDrink;
+    }
+
+    private void LoadEventCountTemplates(YamlDataService yamlService, string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                var file = yamlService.LoadFromFile<EventCountTemplateFile>(filePath);
+                _allEventCountTemplates = file.Templates;
+                FilterEventCountTemplates();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"テンプレート読み込みエラー: {ex.Message}");
+        }
+    }
+
+    private void FilterEventCountTemplates()
+    {
+        var planId = _selectedPlan?.Id ?? string.Empty;
+        EventCountTemplates.Clear();
+        foreach (var t in _allEventCountTemplates)
+        {
+            if (string.IsNullOrEmpty(t.PlanId) || t.PlanId == planId)
+                EventCountTemplates.Add(t);
+        }
+        SelectedEventTemplate = null;
+    }
+
+    /// <summary>
+    /// サポカを変えずに現在のターン選択で再計算する
+    /// </summary>
+    private void ExecuteRecalcLesson()
+    {
+        if (_selectedPlan == null || _selectedPattern == null) return;
+        if (_selectedPattern.Index < 0 || _selectedPattern.Index >= _deckResults.Count) return;
+
+        var pattern = _deckResults[_selectedPattern.Index];
+        var selectedCards = pattern.SelectedCards.Select(cs => cs.Card).ToList();
+
+        // 現在のターン選択をそのまま使って再計算
+        var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices);
+
+        var maxStat = Math.Max(ResultVo, Math.Max(ResultDa, ResultVi));
+        ResultMaxValue = maxStat > 0 ? maxStat : 1;
+        OnPropertyChanged(nameof(VoBarWidth));
+        OnPropertyChanged(nameof(DaBarWidth));
+        OnPropertyChanged(nameof(ViBarWidth));
+    }
+
+    /// <summary>
+    /// 所持フィルタと凸倍率を適用したカードリストを返す
+    /// </summary>
+    private List<SupportCard> GetCandidateCards()
+    {
+        if (!OwnedOnly)
+            return _allCards;
+
+        var ownedIds = _inventory
+            .Where(e => e.Owned)
+            .Select(e => e.CardId)
+            .ToHashSet();
+
+        return _allCards.Where(c => ownedIds.Contains(c.Id)).ToList();
+    }
+
+    private void ExecuteReset()
+    {
+        VoRole = "サブ"; DaRole = "サブ"; ViRole = "サブ";
+        VoSpCount = 0; DaSpCount = 0; ViSpCount = 0;
+        PDrinkAcquire = 0; PItemAcquire = 0; SkillSsrAcquire = 0;
+        SkillEnhance = 0; SkillDelete = 0; SkillCustom = 0; SkillChange = 0;
+        ActiveEnhance = 0; ActiveDelete = 0;
+        MentalAcquire = 0; MentalEnhance = 0; ActiveAcquire = 0;
+        GenkiAcquire = 0; GoodConditionAcquire = 0;
+        GoodImpressionAcquire = 0; ConserveAcquire = 0; ConsultationDrink = 0;
+        DeckCards.Clear();
+        OnPlanChanged();
+    }
+
+    private void ExecuteCopyResult()
+    {
+        if (Result == null) return;
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Vo: {ResultVo:N0}  Da: {ResultDa:N0}  Vi: {ResultVi:N0}");
+        sb.AppendLine($"合計: {ResultTotal:N0}");
+
+        if (SelectedPattern != null)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"[{SelectedPattern.Label}]");
+            foreach (var card in SelectedPattern.Cards)
+                sb.AppendLine($"  {card.CardTypeDisplay} {card.CardName} ({card.StatValue:N0})");
+        }
+
+        System.Windows.Clipboard.SetText(sb.ToString());
+    }
+
+    private static string? FindProjectRoot(string startDir)
+    {
+        var dir = new DirectoryInfo(startDir);
+        while (dir != null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "GakumasuCalc.slnx")))
+                return dir.FullName;
+            dir = dir.Parent;
+        }
+        return null;
+    }
+}
+
+public class DeckCardViewModel : ViewModelBase
+{
+    public string CardName { get; set; } = string.Empty;
+    public string CardType { get; set; } = string.Empty;
+    public string CardPlan { get; set; } = string.Empty;
+    public int StatValue { get; set; }
+    public int RawVo { get; set; }
+    public int RawDa { get; set; }
+    public int RawVi { get; set; }
+    public string DeckLabel { get; set; } = string.Empty;
+    public string BreakdownText { get; set; } = string.Empty;
+
+    public string CardTypeDisplay => CardType switch
+    {
+        "vo" => "Vo",
+        "da" => "Da",
+        "vi" => "Vi",
+        "all" => "All",
+        _ => CardType
+    };
+
+    public string CardPlanDisplay => CardPlan switch
+    {
+        "sense" => "セ",
+        "logic" => "ロ",
+        "anomaly" => "ア",
+        "free" => "フ",
+        _ => ""
+    };
+}
+
+public class PatternResultViewModel : ViewModelBase
+{
+    private bool _isSelected;
+
+    public string Label { get; set; } = string.Empty;
+    public ObservableCollection<DeckCardViewModel> Cards { get; set; } = new();
+    public int Total => Cards.Sum(c => c.StatValue);
+    public int Index { get; set; }
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => SetProperty(ref _isSelected, value);
+    }
+}
+
+public class PlanTypeOption
+{
+    public string Value { get; }
+    public string DisplayName { get; }
+
+    public PlanTypeOption(string value, string displayName)
+    {
+        Value = value;
+        DisplayName = displayName;
+    }
+
+    public override string ToString() => DisplayName;
+}
+
+public class EventCountTemplate
+{
+    public string Name { get; set; } = string.Empty;
+    public string PlanId { get; set; } = string.Empty;
+    public AdditionalCounts Counts { get; set; } = new();
+
+    public override string ToString() => Name;
+}
+
+public class EventCountTemplateFile
+{
+    public List<EventCountTemplate> Templates { get; set; } = new();
+}
