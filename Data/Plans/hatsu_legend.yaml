@@ -1,7 +1,7 @@
 plan:
   id: "hatsu_legend"
   name: "初Legend"
-  description: "初めてのLegendary育成プラン"
+  description: "初Legend育成プラン"
   total_weeks: 18
   base_status:
     vo: 0
@@ -36,7 +36,6 @@ plan:
     - week: 3
       type: "free"
       available_actions: ["outing", "activity_supply"]
-      outing_effect: { vo: 2, da: 2, vi: 2 }
 
     # Week 4: Vo/Da/Viレッスン (SP Perfect: 250 = 85+55×3)
     - week: 4
@@ -54,8 +53,6 @@ plan:
     - week: 5
       type: "free"
       available_actions: ["outing", "consultation", "activity_supply"]
-      outing_effect: { vo: 2, da: 2, vi: 2 }
-      consultation_effect: { vo: 1, da: 1, vi: 0 }
 
     # Week 6: 授業 (パラメータ上昇値: 150)
     - week: 6
@@ -85,13 +82,11 @@ plan:
     - week: 8
       type: "free"
       available_actions: ["consultation"]
-      consultation_effect: { vo: 1, da: 1, vi: 0 }
 
     # Week 9: 特別指導のみ
     - week: 9
       type: "free"
       available_actions: ["special_training"]
-      special_training_effect: { vo: 3, da: 3, vi: 3 }
 
     # Week 10: 中間試験 (固定イベント) 1位: 全パラメータ+80
     - week: 10
@@ -103,7 +98,6 @@ plan:
     - week: 11
       type: "free"
       available_actions: ["outing", "activity_supply"]
-      outing_effect: { vo: 3, da: 3, vi: 3 }
 
     # Week 12: Vo/Da/Viレッスン (SP Perfect: 400 = 190+70×3)
     - week: 12
@@ -121,8 +115,6 @@ plan:
     - week: 13
       type: "free"
       available_actions: ["outing", "consultation", "activity_supply"]
-      outing_effect: { vo: 3, da: 3, vi: 3 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
 
     # Week 14: Vo/Da/Viレッスン (SP Perfect: 550 = 280+90×3)
     - week: 14
@@ -164,13 +156,9 @@ plan:
     - week: 17
       type: "free"
       available_actions: ["consultation", "special_training"]
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
-      special_training_effect: { vo: 5, da: 5, vi: 5 }
 
     # Week 18: 最終試験 (固定イベント) 1位: 全パラメータ+120
     - week: 18
       type: "fixed_event"
       event_name: "最終試験"
       status_gain: { vo: 120, da: 120, vi: 120 }
-
-  # 活動支給: ステータス加算なし（サポカのトリガー発火のみ）

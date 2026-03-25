@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <AssemblyName>サポカ所持管理</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

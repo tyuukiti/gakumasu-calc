@@ -35,73 +35,79 @@ TRIGGER_PATTERNS = [
     # Initial value
     (r"(Vo|Da|Vi)初期値\+(\d+)", "initial_value"),
     # Attribute-specific SP end
-    (r"(Vo|Da|Vi)SP終了時(Vo|Da|Vi)\+(\d+)", "attr_sp_end"),
+    (r"(Vo|Da|Vi)SP終了時.*?(Vo|Da|Vi)\+(\d+)", "attr_sp_end"),
     # SP end with deck condition
     (r"SP終了時デッキ(\d+)枚以上(Vo|Da|Vi)\+(\d+)", "sp_end_deck"),
     # SP end (generic)
-    (r"SP終了時(Vo|Da|Vi)\+(\d+)", "sp_end"),
+    (r"SP終了時.*?(Vo|Da|Vi)\+(\d+)", "sp_end"),
     # Lesson-specific end
-    (r"(Vo|Da|Vi)レス終了時(Vo|Da|Vi)\+(\d+)", "lesson_end"),
+    (r"(Vo|Da|Vi)レス終了時.*?(Vo|Da|Vi)\+(\d+)", "lesson_end"),
     # Class/business end
-    (r"授業営業終了時(Vo|Da|Vi)\+(\d+)", "class_end"),
+    (r"授業営業終了時.*?(Vo|Da|Vi)\+(\d+)", "class_end"),
     # Outing end
-    (r"(?:お出かけ|おでかけ)終了時(Vo|Da|Vi)\+(\d+)", "outing_end"),
+    (r"(?:お出かけ|おでかけ)終了時.*?(Vo|Da|Vi)\+(\d+)", "outing_end"),
     # Consultation selection
-    (r"相談選択時(Vo|Da|Vi)\+(\d+)", "consultation"),
+    (r"相談選択時.*?(Vo|Da|Vi)\+(\d+)", "consultation"),
     # Activity supply / gift
-    (r"活動支給差し入れ選択時(Vo|Da|Vi)\+(\d+)", "activity_supply"),
+    (r"活動支給差し入れ選択時.*?(Vo|Da|Vi)\+(\d+)", "activity_supply"),
     # Exam/audition end
-    (r"試験・オデ終了時(Vo|Da|Vi)\+(\d+)", "exam_end"),
+    (r"試験オデ終了時.*?(Vo|Da|Vi)\+(\d+)", "exam_end"),
     # Special training start
-    (r"特別指導開始時(Vo|Da|Vi)\+(\d+)", "special_training"),
+    (r"特別指導開始時.*?(Vo|Da|Vi)\+(\d+)", "special_training"),
     # Skill (SSR) acquire
-    (r"スキル（SSR）獲得時(Vo|Da|Vi)\+(\d+)", "skill_ssr_acquire"),
+    (r"スキル（SSR）獲得時.*?(Vo|Da|Vi)\+(\d+)", "skill_ssr_acquire"),
     # Skill enhance
-    (r"スキル強化時(Vo|Da|Vi)\+(\d+)", "skill_enhance"),
+    (r"スキル強化時.*?(Vo|Da|Vi)\+(\d+)", "skill_enhance"),
     # Active enhance
-    (r"アクティブ強化時(Vo|Da|Vi)\+(\d+)", "active_enhance"),
+    (r"アクティブ強化時.*?(Vo|Da|Vi)\+(\d+)", "active_enhance"),
     # Mental enhance
-    (r"メンタル強化時(Vo|Da|Vi)\+(\d+)", "mental_enhance"),
+    (r"メンタル強化時.*?(Vo|Da|Vi)\+(\d+)", "mental_enhance"),
     # Skill delete
-    (r"スキル削除時(Vo|Da|Vi)\+(\d+)", "skill_delete"),
+    (r"スキル削除時.*?(Vo|Da|Vi)\+(\d+)", "skill_delete"),
     # Active delete
-    (r"アクティブ削除時(Vo|Da|Vi)\+(\d+)", "active_delete"),
+    (r"アクティブ削除時.*?(Vo|Da|Vi)\+(\d+)", "active_delete"),
     # Mental delete
-    (r"メンタル削除時(Vo|Da|Vi)\+(\d+)", "mental_delete"),
+    (r"メンタル削除時.*?(Vo|Da|Vi)\+(\d+)", "mental_delete"),
     # Skill custom
-    (r"スキルカスタム時(Vo|Da|Vi)\+(\d+)", "skill_custom"),
+    (r"スキルカスタム時.*?(Vo|Da|Vi)\+(\d+)", "skill_custom"),
     # Skill change
-    (r"スキルチェンジ時(Vo|Da|Vi)\+(\d+)", "skill_change"),
+    (r"スキルチェンジ時.*?(Vo|Da|Vi)\+(\d+)", "skill_change"),
     # Mental acquire
-    (r"メンタル獲得時(Vo|Da|Vi)\+(\d+)", "mental_acquire"),
+    (r"メンタル獲得時.*?(Vo|Da|Vi)\+(\d+)", "mental_acquire"),
+    # Concentration card acquire (item trigger)
+    (r"集中カード獲得時.*?(Vo|Da|Vi)\+(\d+)", "concentration_acquire"),
+    # Power/full-force card acquire (item trigger)
+    (r"全力カード獲得時.*?(Vo|Da|Vi)\+(\d+)", "power_card_acquire"),
+    # Motivation card acquire (item trigger)
+    (r"やる気カード獲得時.*?(Vo|Da|Vi)\+(\d+)", "motivation_acquire"),
     # Genki card acquire
-    (r"元気カード獲得時(Vo|Da|Vi)\+(\d+)", "genki_acquire"),
+    (r"元気カード獲得時.*?(Vo|Da|Vi)\+(\d+)", "genki_acquire"),
     # Good condition card acquire
-    (r"好調カード獲得時(Vo|Da|Vi)\+(\d+)", "good_condition_acquire"),
+    (r"好調カード獲得時.*?(Vo|Da|Vi)\+(\d+)", "good_condition_acquire"),
     # Good impression card acquire
-    (r"好印象カード獲得時(Vo|Da|Vi)\+(\d+)", "good_impression_acquire"),
+    (r"好印象カード獲得時.*?(Vo|Da|Vi)\+(\d+)", "good_impression_acquire"),
     # Conserve card acquire
-    (r"温存カード獲得時(Vo|Da|Vi)\+(\d+)", "conserve_acquire"),
+    (r"温存カード獲得時.*?(Vo|Da|Vi)\+(\d+)", "conserve_acquire"),
     # Aggressive card acquire
-    (r"強気カード獲得時(Vo|Da|Vi)\+(\d+)", "aggressive_acquire"),
+    (r"強気カード獲得時.*?(Vo|Da|Vi)\+(\d+)", "aggressive_acquire"),
     # P-item acquire
-    (r"Pアイテム獲得時(Vo|Da|Vi)\+(\d+)", "p_item_acquire"),
+    (r"Pアイテム獲得時.*?(Vo|Da|Vi)\+(\d+)", "p_item_acquire"),
     # P-drink acquire
-    (r"Pドリンク獲得時(Vo|Da|Vi)\+(\d+)", "p_drink_acquire"),
+    (r"Pドリンク獲得時.*?(Vo|Da|Vi)\+(\d+)", "p_drink_acquire"),
     # Consultation + drink exchange
-    (r"相談Pドリンク交換後(Vo|Da|Vi)\+(\d+)", "consultation_drink"),
+    (r"相談Pドリンク交換後.*?(Vo|Da|Vi)\+(\d+)", "consultation_drink"),
     # Rest selection
-    (r"休む選択時(Vo|Da|Vi)\+(\d+)", "rest"),
+    (r"休む選択時.*?(Vo|Da|Vi)\+(\d+)", "rest"),
     # Active acquire
-    (r"アクティブ獲得時(Vo|Da|Vi)\+(\d+)", "active_acquire"),
+    (r"アクティブ獲得時.*?(Vo|Da|Vi)\+(\d+)", "active_acquire"),
     # Normal lesson end (Vo通常終了時 etc)
-    (r"(Vo|Da|Vi)通常終了時(Vo|Da|Vi)\+(\d+)", "normal_lesson_end"),
+    (r"(Vo|Da|Vi)通常終了時.*?(Vo|Da|Vi)\+(\d+)", "normal_lesson_end"),
     # Generic stat bonus: just Vo+N / Da+N / Vi+N (as equip bonus)
     # This is a fallback - only matches if nothing else did
 ]
 
-# Max count pattern
-MAX_COUNT_RE = re.compile(r"[（(](\d+)回(?:のみ)?[）)]")
+# Max count pattern (handles both ability "N回のみ" and item "プロデュース中N回")
+MAX_COUNT_RE = re.compile(r"[（(](?:プロデュース中)?(\d+)回(?:のみ)?[）)]")
 
 
 def parse_type(raw):
@@ -135,6 +141,24 @@ def parse_ability_text(text):
     cleaned = strip_code_chars(text)
     # Remove all whitespace/newlines for pattern matching
     flat = cleaned.replace('\n', '').replace('\r', '').replace(' ', '').replace('\u3000', '')
+
+    # Remove middle dots and Japanese commas for consistent matching
+    flat = flat.replace('・', '').replace('、', '')
+
+    # Normalize item trigger text: 効果[の][スキル][カード] → カード
+    # e.g. 集中効果カード獲得時 → 集中カード獲得時
+    # e.g. 全力効果のスキルカード獲得時 → 全力カード獲得時
+    # e.g. 好調効果獲得時 → 好調カード獲得時
+    flat = re.sub(r'効果(?:の)?(?:スキル)?(?:カード)?(?=(?:獲得|強化)時)', 'カード', flat)
+
+    # Remove stat conditions (e.g. Da700以上の場合, ダンスが700以上の場合)
+    flat = re.sub(r'(?:Vo|Da|Vi)\d+以上の場合', '', flat)
+    flat = re.sub(r'(?:ボーカル|ダンス|ビジュアル)(?:が)?\d+以上の場合', '', flat)
+
+    # Normalize Japanese stat names to abbreviations
+    flat = re.sub(r'ボーカル上昇', 'Vo', flat)
+    flat = re.sub(r'ダンス上昇', 'Da', flat)
+    flat = re.sub(r'ビジュアル上昇', 'Vi', flat)
 
     # Skip empty or '--' abilities
     if not flat or flat == '--' or flat.startswith('--'):

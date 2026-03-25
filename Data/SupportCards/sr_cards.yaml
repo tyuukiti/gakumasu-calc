@@ -5,6 +5,11 @@ support_cards:
   type: vo
   plan: anomaly
   effects:
+  - trigger: conserve_acquire
+    stat: vo
+    value: 20
+    value_type: flat
+    max_count: 1
   - trigger: equip
     stat: vo
     value: 15
@@ -55,6 +60,11 @@ support_cards:
   type: vo
   plan: logic
   effects:
+  - trigger: vo_sp_end
+    stat: vo
+    value: 20
+    value_type: flat
+    max_count: 2
   - trigger: equip
     stat: vo
     value: 15
@@ -82,6 +92,11 @@ support_cards:
   type: vi
   plan: sense
   effects:
+  - trigger: concentration_acquire
+    stat: vi
+    value: 15
+    value_type: flat
+    max_count: 2
   - trigger: equip
     stat: vi
     value: 15
@@ -110,6 +125,11 @@ support_cards:
   type: da
   plan: anomaly
   effects:
+  - trigger: conserve_acquire
+    stat: da
+    value: 20
+    value_type: flat
+    max_count: 2
   - trigger: equip
     stat: da
     value: 15
@@ -168,6 +188,11 @@ support_cards:
   type: vi
   plan: anomaly
   effects:
+  - trigger: power_card_acquire
+    stat: vi
+    value: 15
+    value_type: flat
+    max_count: 1
   - trigger: equip
     stat: vi
     value: 15
@@ -333,6 +358,11 @@ support_cards:
   type: da
   plan: sense
   effects:
+  - trigger: good_condition_acquire
+    stat: da
+    value: 20
+    value_type: flat
+    max_count: 2
   - trigger: equip
     stat: da
     value: 15
@@ -359,6 +389,11 @@ support_cards:
   type: vi
   plan: logic
   effects:
+  - trigger: good_impression_acquire
+    stat: vi
+    value: 30
+    value_type: flat
+    max_count: 1
   - trigger: equip
     stat: vi
     value: 15
@@ -386,6 +421,11 @@ support_cards:
   type: vo
   plan: anomaly
   effects:
+  - trigger: conserve_acquire
+    stat: vo
+    value: 30
+    value_type: flat
+    max_count: 1
   - trigger: equip
     stat: vo
     value: 15
@@ -413,6 +453,11 @@ support_cards:
   type: vi
   plan: logic
   effects:
+  - trigger: special_training
+    stat: vi
+    value: 30
+    value_type: flat
+    max_count: 2
   - trigger: equip
     stat: vi
     value: 15
@@ -430,12 +475,21 @@ support_cards:
     stat: vi
     value: 13
     value_type: flat
+  - trigger: motivation_acquire
+    stat: vi
+    value: 3
+    value_type: flat
 - id: sr_017
   name: ちべたなひととき
   rarity: SR
   type: vi
   plan: sense
   effects:
+  - trigger: concentration_acquire
+    stat: vi
+    value: 30
+    value_type: flat
+    max_count: 1
   - trigger: equip
     stat: vi
     value: 15
@@ -519,6 +573,10 @@ support_cards:
     stat: da
     value: 13
     value_type: flat
+  - trigger: concentration_acquire
+    stat: da
+    value: 3
+    value_type: flat
 - id: sr_021
   name: ばたんきゅー
   rarity: SR
@@ -552,6 +610,10 @@ support_cards:
   type: da
   plan: anomaly
   effects:
+  - trigger: aggressive_acquire
+    stat: da
+    value: 6
+    value_type: flat
   - trigger: equip
     stat: da
     value: 15
@@ -605,6 +667,10 @@ support_cards:
   type: vo
   plan: free
   effects:
+  - trigger: genki_acquire
+    stat: vo
+    value: 6
+    value_type: flat
   - trigger: equip
     stat: vo
     value: 15
@@ -658,6 +724,10 @@ support_cards:
   type: vi
   plan: anomaly
   effects:
+  - trigger: power_card_acquire
+    stat: vi
+    value: 6
+    value_type: flat
   - trigger: equip
     stat: vi
     value: 15
@@ -891,6 +961,10 @@ support_cards:
   type: da
   plan: logic
   effects:
+  - trigger: motivation_acquire
+    stat: da
+    value: 6
+    value_type: flat
   - trigger: equip
     stat: da
     value: 15
@@ -1195,6 +1269,10 @@ support_cards:
   type: vo
   plan: sense
   effects:
+  - trigger: concentration_acquire
+    stat: vo
+    value: 6
+    value_type: flat
   - trigger: equip
     stat: vo
     value: 15
@@ -1213,6 +1291,10 @@ support_cards:
   type: vo
   plan: logic
   effects:
+  - trigger: motivation_acquire
+    stat: vo
+    value: 6
+    value_type: flat
   - trigger: equip
     stat: vo
     value: 15
@@ -1231,6 +1313,10 @@ support_cards:
   type: vi
   plan: logic
   effects:
+  - trigger: good_impression_acquire
+    stat: vi
+    value: 6
+    value_type: flat
   - trigger: equip
     stat: vi
     value: 15
@@ -1249,6 +1335,10 @@ support_cards:
   type: da
   plan: sense
   effects:
+  - trigger: good_condition_acquire
+    stat: da
+    value: 6
+    value_type: flat
   - trigger: equip
     stat: da
     value: 15
