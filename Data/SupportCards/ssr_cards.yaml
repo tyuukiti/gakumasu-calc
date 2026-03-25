@@ -31,6 +31,11 @@ support_cards:
   type: da
   plan: sense
   effects:
+  - trigger: concentration_acquire
+    stat: da
+    value: 35
+    value_type: flat
+    max_count: 2
   - trigger: equip
     stat: da
     value: 20
@@ -46,6 +51,10 @@ support_cards:
   - trigger: skill_ssr_acquire
     stat: da
     value: 6
+    value_type: flat
+  - trigger: concentration_acquire
+    stat: da
+    value: 4
     value_type: flat
 - id: ssr_003
   name: かかってらっしゃい！
@@ -188,6 +197,11 @@ support_cards:
   type: da
   plan: anomaly
   effects:
+  - trigger: power_card_acquire
+    stat: da
+    value: 30
+    value_type: flat
+    max_count: 2
   - trigger: equip
     stat: da
     value: 20
@@ -345,6 +359,11 @@ support_cards:
   type: vo
   plan: sense
   effects:
+  - trigger: special_training
+    stat: vo
+    value: 30
+    value_type: flat
+    max_count: 1
   - trigger: equip
     stat: vo
     value: 20
@@ -451,6 +470,11 @@ support_cards:
   type: vo
   plan: logic
   effects:
+  - trigger: motivation_acquire
+    stat: vo
+    value: 30
+    value_type: flat
+    max_count: 2
   - trigger: equip
     stat: vo
     value: 20
@@ -477,6 +501,11 @@ support_cards:
   type: da
   plan: sense
   effects:
+  - trigger: concentration_acquire
+    stat: da
+    value: 20
+    value_type: flat
+    max_count: 3
   - trigger: equip
     stat: da
     value: 20
@@ -688,6 +717,11 @@ support_cards:
   type: da
   plan: free
   effects:
+  - trigger: class_end
+    stat: da
+    value: 10
+    value_type: flat
+    max_count: 2
   - trigger: equip
     stat: da
     value: 20
@@ -821,6 +855,10 @@ support_cards:
   type: vi
   plan: anomaly
   effects:
+  - trigger: outing_end
+    stat: vi
+    value: 15
+    value_type: flat
   - trigger: equip
     stat: vi
     value: 20
@@ -1232,6 +1270,10 @@ support_cards:
   type: vi
   plan: free
   effects:
+  - trigger: class_end
+    stat: vi
+    value: 15
+    value_type: flat
   - trigger: equip
     stat: vi
     value: 20

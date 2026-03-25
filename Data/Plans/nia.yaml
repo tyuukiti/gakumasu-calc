@@ -1,213 +1,241 @@
 plan:
   id: "nia"
-  name: "NIA"
-  description: "NIA育成プラン"
-  total_weeks: 25
+  name: "NIA マスター"
+  description: "NIA マスター育成プラン"
+  total_weeks: 26
+  status_limit: 2600
   base_status:
     vo: 0
     da: 0
     vi: 0
   schedule:
+    # Week 1: 自主レッスン (SP パラメータ: 100, Pポイント: 20)
     - week: 1
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 4, da: 4, vi: 4 }
-      outing_effect: { vo: 2, da: 2, vi: 2 }
-      class_effect: { vo: 1, da: 1, vi: 1 }
-      consultation_effect: { vo: 1, da: 1, vi: 0 }
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 100, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 100, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 100 }
+
+    # Week 2: 営業 (パラメータ: 80)
     - week: 2
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 4, da: 4, vi: 4 }
-      outing_effect: { vo: 2, da: 2, vi: 2 }
-      class_effect: { vo: 1, da: 1, vi: 1 }
-      consultation_effect: { vo: 1, da: 1, vi: 0 }
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 80, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 80, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 80 }
+
+    # Week 3: おでかけ / 差し入れ
     - week: 3
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
-      lesson:
-        sp_bonus: { vo: 5, da: 5, vi: 5 }
-      outing_effect: { vo: 3, da: 3, vi: 3 }
-      class_effect: { vo: 2, da: 2, vi: 2 }
-      consultation_effect: { vo: 1, da: 1, vi: 0 }
+      available_actions: ["outing", "activity_supply"]
+
+    # Week 4: 自主レッスン (SP パラメータ: 100, Pポイント: 20)
     - week: 4
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 5, da: 5, vi: 5 }
-      outing_effect: { vo: 3, da: 3, vi: 3 }
-      class_effect: { vo: 2, da: 2, vi: 2 }
-      consultation_effect: { vo: 1, da: 1, vi: 0 }
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 100, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 100, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 100 }
+
+    # Week 5: 営業 (パラメータ: 80)
     - week: 5
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 5, da: 5, vi: 5 }
-      outing_effect: { vo: 3, da: 3, vi: 3 }
-      class_effect: { vo: 2, da: 2, vi: 2 }
-      consultation_effect: { vo: 1, da: 1, vi: 0 }
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 80, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 80, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 80 }
+
+    # Week 6: おでかけ / 相談
     - week: 6
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 6, da: 6, vi: 6 }
-      outing_effect: { vo: 3, da: 3, vi: 3 }
-      class_effect: { vo: 2, da: 2, vi: 2 }
-      consultation_effect: { vo: 1, da: 1, vi: 0 }
+      available_actions: ["outing", "consultation"]
+
+    # Week 7: 営業 (パラメータ: 80)
     - week: 7
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
-      lesson:
-        sp_bonus: { vo: 6, da: 6, vi: 6 }
-      outing_effect: { vo: 3, da: 3, vi: 3 }
-      class_effect: { vo: 2, da: 2, vi: 2 }
-      consultation_effect: { vo: 1, da: 1, vi: 0 }
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 80, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 80, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 80 }
+
+    # Week 8: 特別指導
     - week: 8
-      type: "fixed_event"
-      event_name: "中間試験"
-      status_gain: { vo: 8, da: 8, vi: 8 }
-    - week: 9
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 7, da: 7, vi: 7 }
-      outing_effect: { vo: 4, da: 4, vi: 4 }
-      class_effect: { vo: 3, da: 3, vi: 3 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["special_training"]
+
+    # Week 9: 1次オーディション
+    - week: 9
+      type: "audition"
+      event_name: "1次オーディション"
+      status_gain: { vo: 0, da: 0, vi: 0 }
+
+    # Week 10: おでかけ / 差し入れ
     - week: 10
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 7, da: 7, vi: 7 }
-      outing_effect: { vo: 4, da: 4, vi: 4 }
-      class_effect: { vo: 3, da: 3, vi: 3 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["outing", "activity_supply"]
+
+    # Week 11: 自主レッスン (SP パラメータ: 120, Pポイント: 25)
     - week: 11
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
-      lesson:
-        sp_bonus: { vo: 8, da: 8, vi: 8 }
-      outing_effect: { vo: 4, da: 4, vi: 4 }
-      class_effect: { vo: 3, da: 3, vi: 3 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 120, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 120, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 120 }
+
+    # Week 12: 営業 (パラメータ: 110)
     - week: 12
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 8, da: 8, vi: 8 }
-      outing_effect: { vo: 4, da: 4, vi: 4 }
-      class_effect: { vo: 3, da: 3, vi: 3 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 110, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 110, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 110 }
+
+    # Week 13: おでかけ / 相談 / 差し入れ
     - week: 13
-      type: "exam"
-      event_name: "中間公演"
-      status_gain: { vo: 12, da: 12, vi: 12 }
+      type: "free"
+      available_actions: ["outing", "consultation", "activity_supply"]
+
+    # Week 14: 自主レッスン (SP パラメータ: 120, Pポイント: 25)
     - week: 14
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 9, da: 9, vi: 9 }
-      outing_effect: { vo: 5, da: 5, vi: 5 }
-      class_effect: { vo: 3, da: 3, vi: 3 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 120, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 120, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 120 }
+
+    # Week 15: 営業 (パラメータ: 110)
     - week: 15
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
-      lesson:
-        sp_bonus: { vo: 9, da: 9, vi: 9 }
-      outing_effect: { vo: 5, da: 5, vi: 5 }
-      class_effect: { vo: 3, da: 3, vi: 3 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 110, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 110, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 110 }
+
+    # Week 16: 特別指導
     - week: 16
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 10, da: 10, vi: 10 }
-      outing_effect: { vo: 5, da: 5, vi: 5 }
-      class_effect: { vo: 4, da: 4, vi: 4 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["special_training"]
+
+    # Week 17: 2次オーディション
     - week: 17
-      type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 10, da: 10, vi: 10 }
-      outing_effect: { vo: 5, da: 5, vi: 5 }
-      class_effect: { vo: 4, da: 4, vi: 4 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      type: "audition"
+      event_name: "2次オーディション"
+      status_gain: { vo: 0, da: 0, vi: 0 }
+
+    # Week 18: おでかけ / 差し入れ
     - week: 18
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 10, da: 10, vi: 10 }
-      outing_effect: { vo: 5, da: 5, vi: 5 }
-      class_effect: { vo: 4, da: 4, vi: 4 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["outing", "activity_supply"]
+
+    # Week 19: 自主レッスン (SP パラメータ: 150, Pポイント: 30)
     - week: 19
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
-      lesson:
-        sp_bonus: { vo: 11, da: 11, vi: 11 }
-      outing_effect: { vo: 5, da: 5, vi: 5 }
-      class_effect: { vo: 4, da: 4, vi: 4 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 150, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 150, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 150 }
+
+    # Week 20: 営業 (パラメータ: 130)
     - week: 20
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 11, da: 11, vi: 11 }
-      outing_effect: { vo: 5, da: 5, vi: 5 }
-      class_effect: { vo: 4, da: 4, vi: 4 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 130, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 130, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 130 }
+
+    # Week 21: 相談 / 差し入れ / 特別指導
     - week: 21
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 12, da: 12, vi: 12 }
-      outing_effect: { vo: 6, da: 6, vi: 6 }
-      class_effect: { vo: 4, da: 4, vi: 4 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["consultation", "activity_supply", "special_training"]
+
+    # Week 22: 自主レッスン (SP パラメータ: 150, Pポイント: 30)
     - week: 22
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 12, da: 12, vi: 12 }
-      outing_effect: { vo: 6, da: 6, vi: 6 }
-      class_effect: { vo: 4, da: 4, vi: 4 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 150, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 150, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 150 }
+
+    # Week 23: 営業 (パラメータ: 130)
     - week: 23
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation", "activity_supply"]
-      lesson:
-        sp_bonus: { vo: 12, da: 12, vi: 12 }
-      outing_effect: { vo: 6, da: 6, vi: 6 }
-      class_effect: { vo: 4, da: 4, vi: 4 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 130, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 130, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 130 }
+
+    # Week 24: 自主レッスン (SP パラメータ: 150, Pポイント: 30)
     - week: 24
       type: "free"
-      available_actions: ["lesson", "outing", "class", "rest", "consultation"]
-      lesson:
-        sp_bonus: { vo: 12, da: 12, vi: 12 }
-      outing_effect: { vo: 6, da: 6, vi: 6 }
-      class_effect: { vo: 4, da: 4, vi: 4 }
-      consultation_effect: { vo: 2, da: 2, vi: 0 }
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 150, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 150, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 150 }
+
+    # Week 25: おでかけ / 相談 / 特別指導
     - week: 25
+      type: "free"
+      available_actions: ["outing", "consultation", "special_training"]
+
+    # Week 26: 最終オーディション
+    - week: 26
       type: "audition"
       event_name: "最終オーディション"
       status_gain: { vo: 0, da: 0, vi: 0 }
-  activity_supply:
-    available_weeks: [3, 7, 11, 15, 19, 23]
-    options:
-      - id: "supply_vo"
-        name: "ボーカル支給"
-        effect: { vo: 5, da: 0, vi: 0 }
-      - id: "supply_da"
-        name: "ダンス支給"
-        effect: { vo: 0, da: 5, vi: 0 }
-      - id: "supply_vi"
-        name: "ビジュアル支給"
-        effect: { vo: 0, da: 0, vi: 5 }
-      - id: "supply_all"
-        name: "全体支給"
-        effect: { vo: 2, da: 2, vi: 2 }
