@@ -21,7 +21,12 @@ public class InventoryViewModel : INotifyPropertyChanged
     private string _statusMessage = string.Empty;
 
     public ObservableCollection<CardInventoryItemViewModel> AllItems { get; } = new();
-    public ObservableCollection<CardInventoryItemViewModel> FilteredItems { get; } = new();
+    private ObservableCollection<CardInventoryItemViewModel> _filteredItems = new();
+    public ObservableCollection<CardInventoryItemViewModel> FilteredItems
+    {
+        get => _filteredItems;
+        private set { _filteredItems = value; OnPropertyChanged(); }
+    }
 
     public List<string> RarityOptions { get; } = new() { "すべて", "SSR", "SR", "R" };
     public List<TypeFilterOption> TypeOptions { get; } = new()
@@ -202,7 +207,6 @@ public class InventoryViewModel : INotifyPropertyChanged
 
     private void ApplyFilter()
     {
-        FilteredItems.Clear();
         var filtered = AllItems.Where(item =>
         {
             if (!string.IsNullOrEmpty(FilterText) &&
@@ -224,8 +228,7 @@ public class InventoryViewModel : INotifyPropertyChanged
         .ThenBy(i => TypeOrder(i.CardType))
         .ThenByDescending(i => CardIdNumber(i.CardId));
 
-        foreach (var item in filtered)
-            FilteredItems.Add(item);
+        FilteredItems = new ObservableCollection<CardInventoryItemViewModel>(filtered);
         OnPropertyChanged(nameof(FilteredCount));
     }
 

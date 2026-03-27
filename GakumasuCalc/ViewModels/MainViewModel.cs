@@ -79,7 +79,7 @@ public class MainViewModel : ViewModelBase
         }
     }
 
-    public List<string> RoleOptions { get; } = new() { "メイン", "サブ" };
+    public List<string> RoleOptions { get; } = new() { "メイン1", "メイン2", "サブ" };
     public List<PlanTypeOption> PlanTypeOptions { get; } = new()
     {
         new("sense", "センス"),
@@ -283,11 +283,14 @@ public class MainViewModel : ViewModelBase
 
         var lessonWeekCount = _selectedPlan.Schedule.Count(w => w.Lessons.Count > 0);
 
-        // メイン属性リスト
+        // メイン属性リスト (メイン1が先、メイン1のレッスン回数が多い)
         var mainStats = new List<string>();
-        if (VoRole == "メイン") mainStats.Add("vo");
-        if (DaRole == "メイン") mainStats.Add("da");
-        if (ViRole == "メイン") mainStats.Add("vi");
+        if (VoRole == "メイン1") mainStats.Add("vo");
+        if (DaRole == "メイン1") mainStats.Add("da");
+        if (ViRole == "メイン1") mainStats.Add("vi");
+        if (VoRole == "メイン2") mainStats.Add("vo");
+        if (DaRole == "メイン2") mainStats.Add("da");
+        if (ViRole == "メイン2") mainStats.Add("vi");
 
         // サブ属性を特定
         var subStat = new[] { "vo", "da", "vi" }.First(s => !mainStats.Contains(s));
@@ -561,12 +564,12 @@ public class MainViewModel : ViewModelBase
                 toggle = !toggle;
             }
 
-            // 中間後: メイン1:メイン2 = 1:2 (メイン2を多めに)
+            // 中間後: メイン1:メイン2 = 2:1 (メイン1を多めに)
+            // 3回中: メイン1, メイン2, メイン1 の順 (1回だけの属性を2回目に配置)
             int afterCount = 0;
             foreach (var tc in afterMid)
             {
-                // 3回中: メイン2, メイン2, メイン1 の順
-                var action = (afterCount % 3 < 2) ? main2Action : main1Action;
+                var action = (afterCount % 3 == 1) ? main2Action : main1Action;
                 if (tc.AvailableActions.Contains(action))
                     tc.SelectedAction = action;
                 else
