@@ -1,15 +1,10 @@
 support_cards:
-- id: sr_001
+- id: SP_SR_0069
   name: お近づきの印☆
   rarity: SR
   type: vo
   plan: anomaly
   effects:
-  - trigger: conserve_acquire
-    stat: vo
-    value: 20
-    value_type: flat
-    max_count: 1
   - trigger: equip
     stat: vo
     values: [15, 15, 15, 15, 15]
@@ -30,7 +25,7 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 14, 14]
     value_type: flat
-- id: sr_002
+- id: SP_SR_0068
   name: 洗濯物のバランスタワー
   rarity: SR
   type: da
@@ -54,17 +49,12 @@ support_cards:
     values: [16, 16, 16, 16, 16]
     value_type: flat
     max_count: 3
-- id: sr_003
+- id: SP_SR_0067
   name: 一番星と王子様
   rarity: SR
   type: vo
   plan: logic
   effects:
-  - trigger: vo_sp_end
-    stat: vo
-    value: 20
-    value_type: flat
-    max_count: 2
   - trigger: equip
     stat: vo
     values: [15, 15, 15, 15, 15]
@@ -86,17 +76,12 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: sr_004
+- id: SP_SR_0066
   name: 仲良しの証
   rarity: SR
   type: vi
   plan: sense
   effects:
-  - trigger: concentration_acquire
-    stat: vi
-    value: 15
-    value_type: flat
-    max_count: 2
   - trigger: equip
     stat: vi
     values: [15, 15, 15, 15, 15]
@@ -119,17 +104,12 @@ support_cards:
     values: [9, 9, 9, 18, 18]
     value_type: flat
     max_count: 3
-- id: sr_005
+- id: SP_SR_0065
   name: おひさま笑顔、満開ふたつ
   rarity: SR
   type: da
   plan: anomaly
   effects:
-  - trigger: conserve_acquire
-    stat: da
-    value: 20
-    value_type: flat
-    max_count: 2
   - trigger: equip
     stat: da
     values: [15, 15, 15, 15, 15]
@@ -153,7 +133,7 @@ support_cards:
     values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
-- id: sr_006
+- id: SP_SR_0064
   name: ぐつぐつ、いいにおい♪
   rarity: SR
   type: vo
@@ -182,17 +162,12 @@ support_cards:
     values: [16, 16, 16, 16, 16]
     value_type: flat
     max_count: 3
-- id: sr_007
+- id: SP_SR_0063
   name: 佑芽ソリレース、疾走！
   rarity: SR
   type: vi
   plan: anomaly
   effects:
-  - trigger: power_card_acquire
-    stat: vi
-    value: 15
-    value_type: flat
-    max_count: 1
   - trigger: equip
     stat: vi
     values: [15, 15, 15, 15, 15]
@@ -216,7 +191,7 @@ support_cards:
     values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
-- id: sr_008
+- id: SP_SR_0062
   name: ピコピコでポーン
   rarity: SR
   type: da
@@ -242,7 +217,7 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_009
+- id: SP_SR_0061
   name: バディ？
   rarity: SR
   type: vo
@@ -269,7 +244,7 @@ support_cards:
     values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
-- id: sr_010
+- id: SP_SR_0060
   name: 眠れる森の王子様
   rarity: SR
   type: vo
@@ -298,7 +273,7 @@ support_cards:
     values: [9, 9, 9, 18, 18]
     value_type: flat
     max_count: 3
-- id: sr_011
+- id: SP_SR_0059
   name: ごきげんような挨拶♪
   rarity: SR
   type: vi
@@ -325,7 +300,7 @@ support_cards:
     stat: vi
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: sr_012
+- id: SP_SR_0058
   name: あったか足ツボマッサージ
   rarity: SR
   type: vo
@@ -352,17 +327,12 @@ support_cards:
     stat: vo
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: sr_013
+- id: SP_SR_0057
   name: はっぴぃはろうぃ～～ん！
   rarity: SR
   type: da
   plan: sense
   effects:
-  - trigger: good_condition_acquire
-    stat: da
-    value: 20
-    value_type: flat
-    max_count: 2
   - trigger: equip
     stat: da
     values: [15, 15, 15, 15, 15]
@@ -383,17 +353,12 @@ support_cards:
     stat: da
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: sr_014
+- id: SP_SR_0056
   name: 腹筋で背筋で体幹キープ！
   rarity: SR
   type: vi
   plan: logic
   effects:
-  - trigger: good_impression_acquire
-    stat: vi
-    value: 30
-    value_type: flat
-    max_count: 1
   - trigger: equip
     stat: vi
     values: [15, 15, 15, 15, 15]
@@ -415,17 +380,12 @@ support_cards:
     values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
-- id: sr_015
+- id: SP_SR_0055
   name: トゲトゲ注意報
   rarity: SR
   type: vo
   plan: anomaly
   effects:
-  - trigger: conserve_acquire
-    stat: vo
-    value: 30
-    value_type: flat
-    max_count: 1
   - trigger: equip
     stat: vo
     values: [15, 15, 15, 15, 15]
@@ -447,17 +407,12 @@ support_cards:
     stat: vo
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: sr_016
+- id: SP_SR_0054
   name: 師弟の修行
   rarity: SR
   type: vi
   plan: logic
   effects:
-  - trigger: special_training
-    stat: vi
-    value: 30
-    value_type: flat
-    max_count: 2
   - trigger: equip
     stat: vi
     values: [15, 15, 15, 15, 15]
@@ -475,21 +430,12 @@ support_cards:
     stat: vi
     values: [13, 13, 13, 13, 13]
     value_type: flat
-  - trigger: motivation_acquire
-    stat: vi
-    value: 3
-    value_type: flat
-- id: sr_017
+- id: SP_SR_0053
   name: ちべたなひととき
   rarity: SR
   type: vi
   plan: sense
   effects:
-  - trigger: concentration_acquire
-    stat: vi
-    value: 30
-    value_type: flat
-    max_count: 1
   - trigger: equip
     stat: vi
     values: [15, 15, 15, 15, 15]
@@ -506,7 +452,7 @@ support_cards:
     stat: vi
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: sr_018
+- id: SP_SR_0052
   name: 今日は見学なんです
   rarity: SR
   type: da
@@ -533,7 +479,7 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_019
+- id: SP_SR_0051
   name: スパルタ＆スパイス
   rarity: SR
   type: vo
@@ -555,7 +501,7 @@ support_cards:
     stat: vo
     values: [2, 2, 2, 3, 3]
     value_type: flat
-- id: sr_020
+- id: SP_SR_0050
   name: むず×2ふぁっしょんしょー
   rarity: SR
   type: da
@@ -573,11 +519,7 @@ support_cards:
     stat: da
     values: [13, 13, 13, 13, 13]
     value_type: flat
-  - trigger: concentration_acquire
-    stat: da
-    value: 3
-    value_type: flat
-- id: sr_021
+- id: SP_SR_0049
   name: ばたんきゅー
   rarity: SR
   type: vi
@@ -604,16 +546,12 @@ support_cards:
     values: [16, 16, 16, 16, 16]
     value_type: flat
     max_count: 3
-- id: sr_022
+- id: SP_SR_0048
   name: あん・どぅ・とろわっ！
   rarity: SR
   type: da
   plan: anomaly
   effects:
-  - trigger: aggressive_acquire
-    stat: da
-    value: 6
-    value_type: flat
   - trigger: equip
     stat: da
     values: [15, 15, 15, 15, 15]
@@ -634,7 +572,7 @@ support_cards:
     stat: da
     values: [3, 3, 3, 3, 3]
     value_type: flat
-- id: sr_023
+- id: SP_SR_0047
   name: 主菓子、甘い、薄茶、渋み
   rarity: SR
   type: vi
@@ -661,16 +599,12 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: sr_024
+- id: SP_SR_0046
   name: 2名様、ご案内～♪
   rarity: SR
   type: vo
   plan: free
   effects:
-  - trigger: genki_acquire
-    stat: vo
-    value: 6
-    value_type: flat
   - trigger: equip
     stat: vo
     values: [15, 15, 15, 15, 15]
@@ -691,7 +625,7 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 5]
     value_type: flat
-- id: sr_025
+- id: SP_SR_0045
   name: 屈辱の2位
   rarity: SR
   type: vo
@@ -718,16 +652,12 @@ support_cards:
     stat: vo
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: sr_026
+- id: SP_SR_0044
   name: 奥義、三重とび！
   rarity: SR
   type: vi
   plan: anomaly
   effects:
-  - trigger: power_card_acquire
-    stat: vi
-    value: 6
-    value_type: flat
   - trigger: equip
     stat: vi
     values: [15, 15, 15, 15, 15]
@@ -749,7 +679,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: sr_027
+- id: SP_SR_0043
   name: ガールズ♡トーク
   rarity: SR
   type: da
@@ -775,7 +705,7 @@ support_cards:
     stat: da
     values: [6, 6, 6, 6, 6]
     value_type: flat
-- id: sr_028
+- id: SP_SR_0042
   name: 虫愛づる王子様
   rarity: SR
   type: vi
@@ -801,7 +731,7 @@ support_cards:
     stat: vi
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: sr_029
+- id: SP_SR_0041
   name: ピューとシューの二重奏
   rarity: SR
   type: da
@@ -827,7 +757,7 @@ support_cards:
     stat: da
     values: [2, 2, 2, 3, 3]
     value_type: flat
-- id: sr_030
+- id: SP_SR_0040
   name: まごころを込めて
   rarity: SR
   type: vo
@@ -845,7 +775,7 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 5]
     value_type: flat
-- id: sr_031
+- id: SP_SR_0039
   name: SSCの爆誕
   rarity: SR
   type: vi
@@ -867,7 +797,7 @@ support_cards:
     stat: vi
     values: [5, 5, 5, 10, 10]
     value_type: flat
-- id: sr_032
+- id: SP_SR_0038
   name: 目指すはテッペン
   rarity: SR
   type: da
@@ -889,7 +819,7 @@ support_cards:
     stat: da
     values: [7, 7, 7, 14, 14]
     value_type: flat
-- id: sr_033
+- id: SP_SR_0037
   name: まだまだのばしてー
   rarity: SR
   type: vi
@@ -911,7 +841,7 @@ support_cards:
     stat: vi
     values: [5, 5, 5, 10, 10]
     value_type: flat
-- id: sr_034
+- id: SP_SR_0036
   name: 基礎＞応用
   rarity: SR
   type: vo
@@ -929,7 +859,7 @@ support_cards:
     stat: vo
     values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
-- id: sr_035
+- id: SP_SR_0035
   name: カロリー/2でハッピー×2
   rarity: SR
   type: da
@@ -955,16 +885,12 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_036
+- id: SP_SR_0034
   name: きゅる～んωポーズッ☆
   rarity: SR
   type: da
   plan: logic
   effects:
-  - trigger: motivation_acquire
-    stat: da
-    value: 6
-    value_type: flat
   - trigger: equip
     stat: da
     values: [15, 15, 15, 15, 15]
@@ -986,7 +912,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: sr_037
+- id: SP_SR_0033
   name: ディカプルエックスエル！
   rarity: SR
   type: da
@@ -1004,7 +930,7 @@ support_cards:
     stat: da
     values: [7, 7, 7, 14, 14]
     value_type: flat
-- id: sr_038
+- id: SP_SR_0032
   name: サンマ、パタパタ
   rarity: SR
   type: vi
@@ -1022,7 +948,7 @@ support_cards:
     stat: vi
     values: [3, 3, 3, 3, 3]
     value_type: flat
-- id: sr_039
+- id: SP_SR_0031
   name: バズっちゃお！
   rarity: SR
   type: da
@@ -1048,7 +974,7 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_040
+- id: SP_SR_0030
   name: トンボをつかまえて
   rarity: SR
   type: da
@@ -1071,7 +997,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: sr_041
+- id: SP_SR_0029
   name: SSDのひみつ
   rarity: SR
   type: vi
@@ -1097,7 +1023,7 @@ support_cards:
     stat: vi
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_042
+- id: SP_SR_0028
   name: 興味深い飲み物
   rarity: SR
   type: vo
@@ -1123,7 +1049,7 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 5]
     value_type: flat
-- id: sr_043
+- id: SP_SR_0027
   name: 千奈の恩返し
   rarity: SR
   type: da
@@ -1145,7 +1071,7 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_044
+- id: SP_SR_0026
   name: ブレイクタイムは珈琲で
   rarity: SR
   type: vo
@@ -1167,7 +1093,7 @@ support_cards:
     stat: vo
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: sr_045
+- id: SP_SR_0025
   name: りっぱなすすき！
   rarity: SR
   type: vi
@@ -1193,7 +1119,7 @@ support_cards:
     stat: vi
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_046
+- id: SP_SR_0024
   name: キュッと締めて
   rarity: SR
   type: da
@@ -1215,7 +1141,7 @@ support_cards:
     stat: da
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: sr_047
+- id: SP_SR_0023
   name: ふわふわなお面？
   rarity: SR
   type: da
@@ -1241,7 +1167,7 @@ support_cards:
     stat: da
     values: [5, 5, 5, 10, 10]
     value_type: flat
-- id: sr_048
+- id: SP_SR_0022
   name: やさしさ、あったかい
   rarity: SR
   type: vi
@@ -1263,16 +1189,12 @@ support_cards:
     stat: vi
     values: [5, 5, 5, 10, 10]
     value_type: flat
-- id: sr_049
+- id: SP_SR_0021
   name: 第五種接近遭遇
   rarity: SR
   type: vo
   plan: sense
   effects:
-  - trigger: concentration_acquire
-    stat: vo
-    value: 6
-    value_type: flat
   - trigger: equip
     stat: vo
     values: [15, 15, 15, 15, 15]
@@ -1285,16 +1207,12 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 14, 14]
     value_type: flat
-- id: sr_050
+- id: SP_SR_0020
   name: 海、楽しまなきゃ！
   rarity: SR
   type: vo
   plan: logic
   effects:
-  - trigger: motivation_acquire
-    stat: vo
-    value: 6
-    value_type: flat
   - trigger: equip
     stat: vo
     values: [15, 15, 15, 15, 15]
@@ -1307,16 +1225,12 @@ support_cards:
     stat: vo
     values: [17, 17, 17, 17, 17]
     value_type: flat
-- id: sr_051
+- id: SP_SR_0019
   name: かちこちストレッチ
   rarity: SR
   type: vi
   plan: logic
   effects:
-  - trigger: good_impression_acquire
-    stat: vi
-    value: 6
-    value_type: flat
   - trigger: equip
     stat: vi
     values: [15, 15, 15, 15, 15]
@@ -1329,16 +1243,12 @@ support_cards:
     stat: vi
     values: [7, 7, 7, 14, 14]
     value_type: flat
-- id: sr_052
+- id: SP_SR_0018
   name: どりゃぎゃ
   rarity: SR
   type: da
   plan: sense
   effects:
-  - trigger: good_condition_acquire
-    stat: da
-    value: 6
-    value_type: flat
   - trigger: equip
     stat: da
     values: [15, 15, 15, 15, 15]
@@ -1359,7 +1269,7 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_053
+- id: SP_SR_0017
   name: パシャっとキメポ
   rarity: SR
   type: da
@@ -1381,7 +1291,7 @@ support_cards:
     stat: da
     values: [17, 17, 17, 17, 17]
     value_type: flat
-- id: sr_054
+- id: SP_SR_0016
   name: イヤホンはんぶんこ
   rarity: SR
   type: vo
@@ -1403,7 +1313,7 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 10, 10]
     value_type: flat
-- id: sr_055
+- id: SP_SR_0015
   name: 体当たりのラブコール
   rarity: SR
   type: vi
@@ -1426,7 +1336,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: sr_056
+- id: SP_SR_0014
   name: 今はあえて、背を向けて
   rarity: SR
   type: vo
@@ -1449,7 +1359,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: sr_057
+- id: SP_SR_0013
   name: のらりくらりしっかり
   rarity: SR
   type: vo
@@ -1467,7 +1377,7 @@ support_cards:
     stat: vo
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_058
+- id: SP_SR_0012
   name: 愛無き暗記は難しい
   rarity: SR
   type: vo
@@ -1489,7 +1399,7 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 5]
     value_type: flat
-- id: sr_059
+- id: SP_SR_0011
   name: てとりあしとり
   rarity: SR
   type: vi
@@ -1511,7 +1421,7 @@ support_cards:
     stat: vi
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_060
+- id: SP_SR_0010
   name: ほっぺた、ぷに
   rarity: SR
   type: vi
@@ -1529,7 +1439,7 @@ support_cards:
     stat: vi
     values: [5, 5, 5, 5, 5]
     value_type: flat
-- id: sr_061
+- id: SP_SR_0009
   name: 魅惑の大腿四頭筋
   rarity: SR
   type: da
@@ -1547,7 +1457,7 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: sr_062
+- id: SP_SR_0008
   name: ふわふわでワクワク
   rarity: SR
   type: da
@@ -1570,7 +1480,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: sr_063
+- id: SP_SR_0007
   name: 嬉し恥ずかし夢心地
   rarity: SR
   type: da
@@ -1592,7 +1502,7 @@ support_cards:
     stat: da
     values: [5, 5, 5, 5, 5]
     value_type: flat
-- id: sr_064
+- id: SP_SR_0006
   name: 実食！例のSSD
   rarity: SR
   type: da
@@ -1614,7 +1524,7 @@ support_cards:
     stat: da
     values: [7, 7, 7, 14, 14]
     value_type: flat
-- id: sr_065
+- id: SP_SR_0005
   name: マイペース、マイライフ
   rarity: SR
   type: vo
@@ -1636,7 +1546,7 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 14, 14]
     value_type: flat
-- id: sr_066
+- id: SP_SR_0004
   name: 思惑とガクガク
   rarity: SR
   type: vi
@@ -1658,7 +1568,7 @@ support_cards:
     stat: vi
     values: [7, 7, 7, 14, 14]
     value_type: flat
-- id: sr_067
+- id: SP_SR_0003
   name: ほっとけないクラスメイト
   rarity: SR
   type: vo
@@ -1680,7 +1590,7 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 10, 10]
     value_type: flat
-- id: sr_068
+- id: SP_SR_0002
   name: いつか、きっと花開く
   rarity: SR
   type: vi
@@ -1702,7 +1612,7 @@ support_cards:
     stat: vi
     values: [17, 17, 17, 17, 17]
     value_type: flat
-- id: sr_069
+- id: SP_SR_0001
   name: はじめてのお友達
   rarity: SR
   type: as
@@ -1712,7 +1622,7 @@ support_cards:
     stat: all
     values: [10.5, 10.5, 10.5, 10.5, 10.5]
     value_type: sp_rate
-- id: sr_070
+- id: SP_SR_0070
   name: 騎士とおてんば姫
   rarity: SR
   type: vi

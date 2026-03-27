@@ -1,5 +1,5 @@
 support_cards:
-- id: r_001
+- id: SP_R_0013
   name: 謹厳実直
   rarity: R
   type: da
@@ -22,7 +22,7 @@ support_cards:
     values: [7, 7, 13, 13, 13]
     value_type: flat
     max_count: 3
-- id: r_002
+- id: SP_R_0012
   name: 念入りにストレッチ
   rarity: R
   type: vi
@@ -44,7 +44,7 @@ support_cards:
     stat: vi
     values: [11, 11, 11, 11, 11]
     value_type: flat
-- id: r_003
+- id: SP_R_0011
   name: 全力、その後
   rarity: R
   type: vo
@@ -66,7 +66,7 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 11]
     value_type: flat
-- id: r_004
+- id: SP_R_0010
   name: 枝毛をくるり
   rarity: R
   type: da
@@ -88,7 +88,7 @@ support_cards:
     stat: da
     values: [11, 11, 11, 11, 11]
     value_type: flat
-- id: r_005
+- id: SP_R_0009
   name: 王子様のひと呼吸
   rarity: R
   type: vo
@@ -110,7 +110,7 @@ support_cards:
     stat: vo
     values: [4, 4, 7, 7, 7]
     value_type: flat
-- id: r_006
+- id: SP_R_0008
   name: ひたむき居残りレッスン
   rarity: R
   type: vi
@@ -132,7 +132,7 @@ support_cards:
     stat: vi
     values: [4, 4, 8, 8, 8]
     value_type: flat
-- id: r_007
+- id: SP_R_0007
   name: 憧れを目指して
   rarity: R
   type: da
@@ -154,7 +154,7 @@ support_cards:
     stat: da
     values: [4, 4, 8, 8, 8]
     value_type: flat
-- id: r_008
+- id: SP_R_0006
   name: スイッチON！
   rarity: R
   type: da
@@ -172,7 +172,7 @@ support_cards:
     stat: da
     values: [4, 4, 7, 7, 7]
     value_type: flat
-- id: r_009
+- id: SP_R_0005
   name: いめーじとれーにんぐ
   rarity: R
   type: vo
@@ -190,7 +190,7 @@ support_cards:
     stat: vo
     values: [3, 3, 3, 3, 3]
     value_type: flat
-- id: r_010
+- id: SP_R_0004
   name: 完全無欠のプランニング
   rarity: R
   type: vi
@@ -208,7 +208,7 @@ support_cards:
     stat: vi
     values: [3, 3, 3, 3, 3]
     value_type: flat
-- id: r_011
+- id: SP_R_0003
   name: わたしのペースで
   rarity: R
   type: vo
@@ -226,7 +226,7 @@ support_cards:
     stat: vo
     values: [4, 4, 8, 8, 8]
     value_type: flat
-- id: r_012
+- id: SP_R_0002
   name: お姉ちゃん直伝メニュー
   rarity: R
   type: da
@@ -244,7 +244,7 @@ support_cards:
     stat: da
     values: [3, 3, 3, 3, 3]
     value_type: flat
-- id: r_013
+- id: SP_R_0001
   name: 頼れる先輩お姉さん
   rarity: R
   type: vi

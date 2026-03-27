@@ -1,5 +1,5 @@
 support_cards:
-- id: ssr_001
+- id: SP_SSR_0093
   name: あたしの勝ち、ですね～！
   rarity: SSR
   type: vi
@@ -25,17 +25,12 @@ support_cards:
     stat: vi
     values: [5, 5, 5, 5, 6]
     value_type: flat
-- id: ssr_002
+- id: SP_SSR_0092
   name: 合格おめでとう！
   rarity: SSR
   type: da
   plan: sense
   effects:
-  - trigger: concentration_acquire
-    stat: da
-    value: 35
-    value_type: flat
-    max_count: 2
   - trigger: equip
     stat: da
     values: [20, 20, 20, 20, 20]
@@ -52,11 +47,7 @@ support_cards:
     stat: da
     values: [5, 5, 5, 6, 6]
     value_type: flat
-  - trigger: concentration_acquire
-    stat: da
-    value: 4
-    value_type: flat
-- id: ssr_003
+- id: SP_SSR_0091
   name: かかってらっしゃい！
   rarity: SSR
   type: vi
@@ -84,7 +75,7 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_004
+- id: SP_SSR_0089
   name: 思い出の宝箱だ、ね
   rarity: SSR
   type: vo
@@ -111,7 +102,7 @@ support_cards:
     stat: vo
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_005
+- id: SP_SSR_0088
   name: 手毬のリサイタル、だね
   rarity: SSR
   type: vo
@@ -137,7 +128,7 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 6]
     value_type: flat
-- id: ssr_006
+- id: SP_SSR_0086
   name: 堂々とサボってる！？
   rarity: SSR
   type: vo
@@ -163,7 +154,7 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 6]
     value_type: flat
-- id: ssr_007
+- id: SP_SSR_0085
   name: 自分と向き合う時間だ
   rarity: SSR
   type: da
@@ -191,17 +182,12 @@ support_cards:
     value_type: flat
     max_count: 4
     condition: deck>=20
-- id: ssr_008
+- id: SP_SSR_0084
   name: なぜこんなところにッ！？
   rarity: SSR
   type: da
   plan: anomaly
   effects:
-  - trigger: power_card_acquire
-    stat: da
-    value: 30
-    value_type: flat
-    max_count: 2
   - trigger: equip
     stat: da
     values: [20, 20, 20, 20, 20]
@@ -222,7 +208,7 @@ support_cards:
     stat: da
     values: [17, 17, 17, 17, 17]
     value_type: flat
-- id: ssr_009
+- id: SP_SSR_0082
   name: メリクリ、おねーちゃん♪
   rarity: SSR
   type: da
@@ -248,7 +234,7 @@ support_cards:
     stat: da
     values: [4, 4, 4, 4, 4]
     value_type: flat
-- id: ssr_010
+- id: SP_SSR_0081
   name: やっと見つけたぞ！
   rarity: SSR
   type: da
@@ -274,7 +260,7 @@ support_cards:
     stat: da
     values: [11, 11, 11, 11, 11]
     value_type: flat
-- id: ssr_011
+- id: SP_SSR_0079
   name: レディ・セット、ゴー！
   rarity: SSR
   type: vo
@@ -301,7 +287,7 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 7, 9]
     value_type: flat
-- id: ssr_012
+- id: SP_SSR_0078
   name: クールダウンが大切よ！
   rarity: SSR
   type: vi
@@ -327,7 +313,7 @@ support_cards:
     stat: vi
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_013
+- id: SP_SSR_0077
   name: 月村手毬、興味深いわね
   rarity: SSR
   type: vo
@@ -353,17 +339,12 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 11]
     value_type: flat
-- id: ssr_014
+- id: SP_SSR_0076
   name: これは――お城ッ！！
   rarity: SSR
   type: vo
   plan: sense
   effects:
-  - trigger: special_training
-    stat: vo
-    value: 30
-    value_type: flat
-    max_count: 1
   - trigger: equip
     stat: vo
     values: [20, 20, 20, 20, 20]
@@ -385,7 +366,7 @@ support_cards:
     values: [11, 11, 11, 11, 11]
     value_type: flat
     max_count: 6
-- id: ssr_015
+- id: SP_SSR_0075
   name: 大運動会、開催っ！
   rarity: SSR
   type: vo
@@ -409,7 +390,7 @@ support_cards:
     value_type: flat
     max_count: 4
     condition: deck>=20
-- id: ssr_016
+- id: SP_SSR_0074
   name: ちょっと詳しいんです！
   rarity: SSR
   type: vi
@@ -438,7 +419,7 @@ support_cards:
     values: [11, 11, 11, 11, 11]
     value_type: flat
     max_count: 6
-- id: ssr_017
+- id: SP_SSR_0073
   name: ｖギャルピーーースッｖ
   rarity: SSR
   type: vo
@@ -464,17 +445,12 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 11]
     value_type: flat
-- id: ssr_018
+- id: SP_SSR_0072
   name: おっと、危ないよ
   rarity: SSR
   type: vo
   plan: logic
   effects:
-  - trigger: motivation_acquire
-    stat: vo
-    value: 30
-    value_type: flat
-    max_count: 2
   - trigger: equip
     stat: vo
     values: [20, 20, 20, 20, 20]
@@ -495,17 +471,12 @@ support_cards:
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
-- id: ssr_019
+- id: SP_SSR_0071
   name: おい、来てやったぞ！
   rarity: SSR
   type: da
   plan: sense
   effects:
-  - trigger: concentration_acquire
-    stat: da
-    value: 20
-    value_type: flat
-    max_count: 3
   - trigger: equip
     stat: da
     values: [20, 20, 20, 20, 20]
@@ -526,7 +497,7 @@ support_cards:
     stat: da
     values: [4, 4, 4, 4, 5]
     value_type: flat
-- id: ssr_020
+- id: SP_SSR_0069
   name: いつまでも続けばいいのに
   rarity: SSR
   type: da
@@ -552,7 +523,7 @@ support_cards:
     stat: da
     values: [5, 5, 5, 5, 6]
     value_type: flat
-- id: ssr_021
+- id: SP_SSR_0067
   name: 放っておけない気になる子
   rarity: SSR
   type: vo
@@ -578,7 +549,7 @@ support_cards:
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
-- id: ssr_022
+- id: SP_SSR_0065
   name: どんな関係なんですか？
   rarity: SSR
   type: vo
@@ -604,7 +575,7 @@ support_cards:
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
-- id: ssr_023
+- id: SP_SSR_0064
   name: いつも頑張ってるね。
   rarity: SSR
   type: vi
@@ -630,7 +601,7 @@ support_cards:
     stat: vi
     values: [4, 4, 4, 4, 5]
     value_type: flat
-- id: ssr_024
+- id: SP_SSR_0063
   name: 推し活なひととき、だね！
   rarity: SSR
   type: vi
@@ -657,7 +628,7 @@ support_cards:
     stat: vi
     values: [12, 12, 12, 12, 17]
     value_type: flat
-- id: ssr_025
+- id: SP_SSR_0059
   name: よくやったな、倉本。
   rarity: SSR
   type: da
@@ -683,7 +654,7 @@ support_cards:
     stat: da
     values: [4, 4, 4, 4, 5]
     value_type: flat
-- id: ssr_026
+- id: SP_SSR_0058
   name: ひとりごとです
   rarity: SSR
   type: vi
@@ -711,17 +682,12 @@ support_cards:
     values: [17, 17, 17, 17, 22]
     value_type: flat
     max_count: 3
-- id: ssr_027
+- id: SP_SSR_0056
   name: 利用し合うのが友達！
   rarity: SSR
   type: da
   plan: free
   effects:
-  - trigger: class_end
-    stat: da
-    value: 10
-    value_type: flat
-    max_count: 2
   - trigger: equip
     stat: da
     values: [20, 20, 20, 20, 20]
@@ -744,7 +710,7 @@ support_cards:
     stat: da
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_028
+- id: SP_SSR_0055
   name: 相変わらず不器用ね
   rarity: SSR
   type: vo
@@ -770,7 +736,7 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 15]
     value_type: flat
-- id: ssr_029
+- id: SP_SSR_0053
   name: 相手にとって不足なしよ！
   rarity: SSR
   type: vi
@@ -797,7 +763,7 @@ support_cards:
     values: [22, 22, 22, 22, 22]
     value_type: flat
     max_count: 3
-- id: ssr_030
+- id: SP_SSR_0052
   name: ここから始まるんだね！
   rarity: SSR
   type: da
@@ -823,7 +789,7 @@ support_cards:
     stat: da
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_031
+- id: SP_SSR_0051
   name: ひとりで立てますか？
   rarity: SSR
   type: da
@@ -849,16 +815,12 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_032
+- id: SP_SSR_0050
   name: 新生活のはじまりだね
   rarity: SSR
   type: vi
   plan: anomaly
   effects:
-  - trigger: outing_end
-    stat: vi
-    value: 15
-    value_type: flat
   - trigger: equip
     stat: vi
     values: [20, 20, 20, 20, 20]
@@ -879,7 +841,7 @@ support_cards:
     stat: vi
     values: [3, 3, 3, 3, 4]
     value_type: flat
-- id: ssr_033
+- id: SP_SSR_0049
   name: あなたたちのことが好き
   rarity: SSR
   type: da
@@ -905,7 +867,7 @@ support_cards:
     stat: da
     values: [9, 9, 9, 9, 9]
     value_type: flat
-- id: ssr_034
+- id: SP_SSR_0048
   name: 絶対にお渡ししますわっ！
   rarity: SSR
   type: vo
@@ -931,7 +893,7 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 15]
     value_type: flat
-- id: ssr_035
+- id: SP_SSR_0047
   name: バレンタイン♡会議中ーっ！
   rarity: SSR
   type: vi
@@ -957,7 +919,7 @@ support_cards:
     stat: vi
     values: [17, 17, 17, 17, 17]
     value_type: flat
-- id: ssr_036
+- id: SP_SSR_0046
   name: はいっ、みんなも一緒に♪
   rarity: SSR
   type: vo
@@ -979,7 +941,7 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 15]
     value_type: flat
-- id: ssr_037
+- id: SP_SSR_0045
   name: これが私達の、3年間
   rarity: SSR
   type: da
@@ -1001,7 +963,7 @@ support_cards:
     stat: da
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_038
+- id: SP_SSR_0044
   name: もう一度、最初から！
   rarity: SSR
   type: vo
@@ -1027,7 +989,7 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_039
+- id: SP_SSR_0043
   name: 待ちなさーい！
   rarity: SSR
   type: da
@@ -1053,7 +1015,7 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_040
+- id: SP_SSR_0042
   name: あったかいね
   rarity: SSR
   type: vi
@@ -1079,7 +1041,7 @@ support_cards:
     stat: vi
     values: [14, 14, 14, 14, 18]
     value_type: flat
-- id: ssr_041
+- id: SP_SSR_0041
   name: キラキラして綺麗～っ！
   rarity: SSR
   type: da
@@ -1106,7 +1068,7 @@ support_cards:
     values: [22, 22, 22, 22, 22]
     value_type: flat
     max_count: 2
-- id: ssr_042
+- id: SP_SSR_0038
   name: ぜったい追いついてやる！
   rarity: SSR
   type: vi
@@ -1132,7 +1094,7 @@ support_cards:
     stat: vi
     values: [17, 17, 17, 17, 17]
     value_type: flat
-- id: ssr_043
+- id: SP_SSR_0037
   name: そろそろ焼けたかな？
   rarity: SSR
   type: da
@@ -1158,7 +1120,7 @@ support_cards:
     stat: da
     values: [12, 12, 12, 12, 17]
     value_type: flat
-- id: ssr_044
+- id: SP_SSR_0036
   name: 食欲の秋なんです
   rarity: SSR
   type: as
@@ -1168,7 +1130,7 @@ support_cards:
     stat: all
     values: [14, 14, 14, 14, 14]
     value_type: sp_rate
-- id: ssr_045
+- id: SP_SSR_0035
   name: 会長、準備は万端です
   rarity: SSR
   type: vi
@@ -1190,7 +1152,7 @@ support_cards:
     stat: vi
     values: [11, 11, 11, 11, 15]
     value_type: flat
-- id: ssr_046
+- id: SP_SSR_0034
   name: すっかり秋色ですわね！
   rarity: SSR
   type: vo
@@ -1216,7 +1178,7 @@ support_cards:
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
-- id: ssr_047
+- id: SP_SSR_0033
   name: 似合うんじゃない？
   rarity: SSR
   type: da
@@ -1238,7 +1200,7 @@ support_cards:
     stat: da
     values: [11, 11, 11, 11, 15]
     value_type: flat
-- id: ssr_048
+- id: SP_SSR_0032
   name: 二人ならあっという間だね
   rarity: SSR
   type: vo
@@ -1264,16 +1226,12 @@ support_cards:
     stat: vo
     values: [17, 17, 17, 17, 17]
     value_type: flat
-- id: ssr_049
+- id: SP_SSR_0030
   name: 新たな挑戦の成功ですわ！
   rarity: SSR
   type: vi
   plan: free
   effects:
-  - trigger: class_end
-    stat: vi
-    value: 15
-    value_type: flat
   - trigger: equip
     stat: vi
     values: [20, 20, 20, 20, 20]
@@ -1294,7 +1252,7 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_050
+- id: SP_SSR_0029
   name: ゆっくりと過ごしましょう
   rarity: SSR
   type: vi
@@ -1316,7 +1274,7 @@ support_cards:
     stat: vi
     values: [11, 11, 11, 11, 11]
     value_type: flat
-- id: ssr_051
+- id: SP_SSR_0028
   name: あっちも行きたいですわ！
   rarity: SSR
   type: da
@@ -1342,7 +1300,7 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_052
+- id: SP_SSR_0027
   name: 夏を満喫するわよ！
   rarity: SSR
   type: da
@@ -1368,7 +1326,7 @@ support_cards:
     stat: da
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_053
+- id: SP_SSR_0026
   name: 花火、やりませんか……？
   rarity: SSR
   type: vi
@@ -1394,7 +1352,7 @@ support_cards:
     stat: vi
     values: [14, 14, 14, 14, 18]
     value_type: flat
-- id: ssr_054
+- id: SP_SSR_0025
   name: 夏を楽しみましょう！
   rarity: SSR
   type: vo
@@ -1416,7 +1374,7 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 11]
     value_type: flat
-- id: ssr_055
+- id: SP_SSR_0024
   name: 一時休戦です
   rarity: SSR
   type: vo
@@ -1438,7 +1396,7 @@ support_cards:
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
-- id: ssr_056
+- id: SP_SSR_0023
   name: もうっ！　冷たいよ！
   rarity: SSR
   type: da
@@ -1465,7 +1423,7 @@ support_cards:
     values: [22, 22, 22, 22, 22]
     value_type: flat
     max_count: 2
-- id: ssr_057
+- id: SP_SSR_0022
   name: 「ア」じゃなくて「エ」！
   rarity: SSR
   type: vi
@@ -1491,7 +1449,7 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_058
+- id: SP_SSR_0021
   name: 晴れたね
   rarity: SSR
   type: da
@@ -1513,7 +1471,7 @@ support_cards:
     stat: da
     values: [11, 11, 11, 11, 15]
     value_type: flat
-- id: ssr_059
+- id: SP_SSR_0020
   name: まだ上がりませんように！
   rarity: SSR
   type: vo
@@ -1535,7 +1493,7 @@ support_cards:
     stat: vo
     values: [9, 9, 9, 9, 9]
     value_type: flat
-- id: ssr_060
+- id: SP_SSR_0019
   name: 何やってるんだろう、
   rarity: SSR
   type: vo
@@ -1561,7 +1519,7 @@ support_cards:
     stat: vo
     values: [4, 4, 4, 4, 4]
     value_type: flat
-- id: ssr_061
+- id: SP_SSR_0017
   name: あなたにも作ってあげる！
   rarity: SSR
   type: vi
@@ -1583,7 +1541,7 @@ support_cards:
     stat: vi
     values: [22, 22, 22, 22, 22]
     value_type: flat
-- id: ssr_062
+- id: SP_SSR_0015
   name: お姉ちゃんに任せなさい！
   rarity: SSR
   type: vi
@@ -1605,7 +1563,7 @@ support_cards:
     stat: vi
     values: [4, 4, 4, 4, 4]
     value_type: flat
-- id: ssr_063
+- id: SP_SSR_0014
   name: ぐぬぬぬぬ…………！
   rarity: SSR
   type: da
@@ -1627,7 +1585,7 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_064
+- id: SP_SSR_0013
   name: 次の桜の季節には。
   rarity: SSR
   type: vo
@@ -1649,7 +1607,7 @@ support_cards:
     stat: vo
     values: [4, 4, 4, 4, 4]
     value_type: flat
-- id: ssr_065
+- id: SP_SSR_0012
   name: お疲れ様、千奈ちゃん。
   rarity: SSR
   type: vi
@@ -1671,7 +1629,7 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_066
+- id: SP_SSR_0011
   name: まるで王子様みたいな
   rarity: SSR
   type: vi
@@ -1697,7 +1655,7 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_067
+- id: SP_SSR_0010
   name: おいしい顔、いただき～！
   rarity: SSR
   type: da
@@ -1723,7 +1681,7 @@ support_cards:
     stat: da
     values: [4, 4, 4, 4, 4]
     value_type: flat
-- id: ssr_068
+- id: SP_SSR_0008
   name: 可愛いと可愛いで可愛い！
   rarity: SSR
   type: vo
@@ -1749,7 +1707,7 @@ support_cards:
     stat: vo
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_069
+- id: SP_SSR_0007
   name: 私の目に狂いはない
   rarity: SSR
   type: vi
@@ -1771,7 +1729,7 @@ support_cards:
     stat: vi
     values: [4, 4, 4, 4, 4]
     value_type: flat
-- id: ssr_070
+- id: SP_SSR_0006
   name: また、あんなに無理をして
   rarity: SSR
   type: vo
@@ -1793,7 +1751,7 @@ support_cards:
     stat: vo
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_071
+- id: SP_SSR_0005
   name: あら、奇遇ね
   rarity: SSR
   type: vo
@@ -1815,7 +1773,7 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_072
+- id: SP_SSR_0004
   name: まじか。
   rarity: SSR
   type: da
@@ -1837,7 +1795,7 @@ support_cards:
     stat: da
     values: [14, 14, 14, 14, 18]
     value_type: flat
-- id: ssr_073
+- id: SP_SSR_0002
   name: ほら、一緒に持と♪
   rarity: SSR
   type: da
@@ -1859,7 +1817,7 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
-- id: ssr_074
+- id: SP_SSR_0001
   name: きみは、自慢の生徒です
   rarity: SSR
   type: as
@@ -1869,7 +1827,7 @@ support_cards:
     stat: all
     values: [14, 14, 14, 14, 14]
     value_type: sp_rate
-- id: ssr_075
+- id: SP_SSR_0090
   name: みいつけた。
   rarity: SSR
   type: vo
@@ -1891,7 +1849,7 @@ support_cards:
     stat: vo
     values: [9, 9, 9, 12, 12]
     value_type: flat
-- id: ssr_076
+- id: SP_SSR_0087
   name: オシャレもメイクも♪
   rarity: SSR
   type: vi
@@ -1914,7 +1872,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: ssr_077
+- id: SP_SSR_0083
   name: 貸せ、手本を見せてやる！
   rarity: SSR
   type: vi
@@ -1937,7 +1895,7 @@ support_cards:
     values: [8, 8, 8, 8, 11]
     value_type: flat
     max_count: 6
-- id: ssr_078
+- id: SP_SSR_0080
   name: ぜったいに取るんだ！
   rarity: SSR
   type: vo
@@ -1959,7 +1917,7 @@ support_cards:
     stat: vo
     values: [3, 3, 3, 3, 5]
     value_type: flat
-- id: ssr_079
+- id: SP_SSR_0068
   name: 盛り上げてこー！
   rarity: SSR
   type: da
@@ -1985,7 +1943,7 @@ support_cards:
     stat: da
     values: [5, 5, 5, 5, 5]
     value_type: flat
-- id: ssr_080
+- id: SP_SSR_0066
   name: お母さんか！
   rarity: SSR
   type: da
@@ -2007,7 +1965,7 @@ support_cards:
     stat: da
     values: [9, 9, 9, 14, 14]
     value_type: flat
-- id: ssr_081
+- id: SP_SSR_0057
   name: わたしと美鈴、超仲良し
   rarity: SSR
   type: vi
@@ -2029,7 +1987,7 @@ support_cards:
     stat: vi
     values: [1, 1, 1, 2, 2]
     value_type: flat
-- id: ssr_082
+- id: SP_SSR_0054
   name: さあ、もう一戦！
   rarity: SSR
   type: vo
@@ -2051,7 +2009,7 @@ support_cards:
     stat: vo
     values: [1, 1, 1, 2, 2]
     value_type: flat
-- id: ssr_083
+- id: SP_SSR_0039
   name: プロデュースって大変ね
   rarity: SSR
   type: da
@@ -2074,7 +2032,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: ssr_084
+- id: SP_SSR_0031
   name: 1人たりとも欠ける事なく
   rarity: SSR
   type: vo
@@ -2096,7 +2054,7 @@ support_cards:
     stat: vo
     values: [9, 9, 9, 14, 14]
     value_type: flat
-- id: ssr_085
+- id: SP_SSR_0018
   name: 第2回教室パーティー！
   rarity: SSR
   type: vi
@@ -2123,7 +2081,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: ssr_086
+- id: SP_SSR_0062
   name: すっかり仲良しって感じ♪
   rarity: SSR
   type: da
@@ -2150,7 +2108,7 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
-- id: ssr_087
+- id: SP_SSR_0061
   name: 迷子のおしらせです
   rarity: SSR
   type: vi
@@ -2176,7 +2134,7 @@ support_cards:
     stat: vi
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_088
+- id: SP_SSR_0060
   name: みんなの意見を聞かせて♪
   rarity: SSR
   type: vo
@@ -2202,7 +2160,7 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 7, 7]
     value_type: flat
-- id: ssr_089
+- id: SP_SSR_0040
   name: さみだれ
   rarity: SSR
   type: vi
@@ -2224,7 +2182,7 @@ support_cards:
     stat: vi
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_090
+- id: SP_SSR_0016
   name: こいつらめんどくさー
   rarity: SSR
   type: vo
@@ -2246,7 +2204,7 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_091
+- id: SP_SSR_0009
   name: わたしたち、やればできる
   rarity: SSR
   type: da
@@ -2268,7 +2226,7 @@ support_cards:
     stat: da
     values: [7, 7, 7, 7, 7]
     value_type: flat
-- id: ssr_092
+- id: SP_SSR_0070
   name: 仲直りしましょう
   rarity: SSR
   type: vo
@@ -2290,7 +2248,7 @@ support_cards:
     stat: vo
     values: [8, 8, 8, 8, 8]
     value_type: flat
-- id: ssr_093
+- id: SP_SSR_0003
   name: 仕事のつもりで臨みなさい
   rarity: SSR
   type: vi
@@ -2312,7 +2270,7 @@ support_cards:
     stat: vi
     values: [1, 1, 1, 2, 2]
     value_type: flat
-- id: ssr_094
+- id: SP_SSR_0094
   name: 進化したお弁当、気になる
   rarity: SSR
   type: vi
