@@ -21,7 +21,12 @@ public class InventoryViewModel : INotifyPropertyChanged
     private string _statusMessage = string.Empty;
 
     public ObservableCollection<CardInventoryItemViewModel> AllItems { get; } = new();
-    public ObservableCollection<CardInventoryItemViewModel> FilteredItems { get; } = new();
+    private ObservableCollection<CardInventoryItemViewModel> _filteredItems = new();
+    public ObservableCollection<CardInventoryItemViewModel> FilteredItems
+    {
+        get => _filteredItems;
+        private set { _filteredItems = value; OnPropertyChanged(); }
+    }
 
     public List<string> RarityOptions { get; } = new() { "すべて", "SSR", "SR", "R" };
     public List<TypeFilterOption> TypeOptions { get; } = new()
@@ -194,9 +199,14 @@ public class InventoryViewModel : INotifyPropertyChanged
         "vo" => 0, "da" => 1, "vi" => 2, _ => 3
     };
 
+    private static int CardIdNumber(string cardId)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(cardId, @"(\d+)$");
+        return match.Success ? int.Parse(match.Groups[1].Value) : 0;
+    }
+
     private void ApplyFilter()
     {
-        FilteredItems.Clear();
         var filtered = AllItems.Where(item =>
         {
             if (!string.IsNullOrEmpty(FilterText) &&
@@ -215,10 +225,10 @@ public class InventoryViewModel : INotifyPropertyChanged
             return true;
         })
         .OrderBy(i => RarityOrder(i.Rarity))
-        .ThenBy(i => TypeOrder(i.CardType));
+        .ThenBy(i => TypeOrder(i.CardType))
+        .ThenByDescending(i => CardIdNumber(i.CardId));
 
-        foreach (var item in filtered)
-            FilteredItems.Add(item);
+        FilteredItems = new ObservableCollection<CardInventoryItemViewModel>(filtered);
         OnPropertyChanged(nameof(FilteredCount));
     }
 

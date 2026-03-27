@@ -7,13 +7,14 @@ public class StatusCalculationService
     public CalculationResult Calculate(
         TrainingPlan plan,
         List<SupportCard> selectedCards,
-        List<TurnChoice> turnChoices)
+        List<TurnChoice> turnChoices,
+        Dictionary<string, int>? uncapLevels = null)
     {
         // Step 1: 基礎ステータス
         var baseStatus = plan.BaseStatus.Clone();
 
         // Step 2: サポートカード装備ボーナス (初期値)
-        var supportBonus = CalculateEquipBonus(selectedCards);
+        var supportBonus = CalculateEquipBonus(selectedCards, uncapLevels);
 
         // Step 3: ターン逐次計算
         var accumulated = StatusValues.Zero;
@@ -23,7 +24,7 @@ public class StatusCalculationService
         foreach (var week in plan.Schedule)
         {
             var turnChoice = turnChoices.FirstOrDefault(tc => tc.Week == week.Week);
-            var weekGain = CalculateWeekGain(week, turnChoice, selectedCards, plan, triggerCounters);
+            var weekGain = CalculateWeekGain(week, turnChoice, selectedCards, plan, triggerCounters, uncapLevels);
 
             accumulated = accumulated.Add(weekGain);
 
@@ -42,12 +43,19 @@ public class StatusCalculationService
         return new CalculationResult(finalStatus, baseStatus, supportBonus, accumulated, weekDetails);
     }
 
-    private StatusValues CalculateEquipBonus(List<SupportCard> cards)
+    public static int GetUncapLevel(SupportCard card, Dictionary<string, int>? uncapLevels)
+    {
+        if (uncapLevels != null && uncapLevels.TryGetValue(card.Id, out var level))
+            return level;
+        return 4; // デフォルト4凸
+    }
+
+    private StatusValues CalculateEquipBonus(List<SupportCard> cards, Dictionary<string, int>? uncapLevels)
     {
         var bonus = StatusValues.Zero;
         foreach (var card in cards)
         {
-            bonus = bonus.Add(card.GetInitialBonus());
+            bonus = bonus.Add(card.GetInitialBonus(GetUncapLevel(card, uncapLevels)));
         }
         return bonus;
     }
@@ -57,14 +65,15 @@ public class StatusCalculationService
         TurnChoice? turnChoice,
         List<SupportCard> cards,
         TrainingPlan plan,
-        Dictionary<string, int> triggerCounters)
+        Dictionary<string, int> triggerCounters,
+        Dictionary<string, int>? uncapLevels)
     {
         // 固定イベント
         if (week.IsFixedEvent)
         {
             var fixedGain = week.StatusGain?.Clone() ?? StatusValues.Zero;
             // 試験・オーディション終了時トリガー
-            var examTriggerGain = FireTrigger("exam_end", cards, triggerCounters);
+            var examTriggerGain = FireTrigger("exam_end", cards, triggerCounters, uncapLevels);
             return fixedGain.Add(examTriggerGain);
         }
 
@@ -73,17 +82,17 @@ public class StatusCalculationService
 
         var gain = turnChoice.ChosenAction switch
         {
-            ActionType.VoLesson => CalculateLessonGain(week, "vo", cards, triggerCounters),
-            ActionType.DaLesson => CalculateLessonGain(week, "da", cards, triggerCounters),
-            ActionType.ViLesson => CalculateLessonGain(week, "vi", cards, triggerCounters),
-            ActionType.VoClass => CalculateClassGain(week, "vo", cards, triggerCounters),
-            ActionType.DaClass => CalculateClassGain(week, "da", cards, triggerCounters),
-            ActionType.ViClass => CalculateClassGain(week, "vi", cards, triggerCounters),
-            ActionType.Outing => CalculateOutingGain(week, cards, triggerCounters),
-            ActionType.Consultation => CalculateConsultationGain(week, cards, triggerCounters),
+            ActionType.VoLesson => CalculateLessonGain(week, "vo", cards, triggerCounters, uncapLevels),
+            ActionType.DaLesson => CalculateLessonGain(week, "da", cards, triggerCounters, uncapLevels),
+            ActionType.ViLesson => CalculateLessonGain(week, "vi", cards, triggerCounters, uncapLevels),
+            ActionType.VoClass => CalculateClassGain(week, "vo", cards, triggerCounters, uncapLevels),
+            ActionType.DaClass => CalculateClassGain(week, "da", cards, triggerCounters, uncapLevels),
+            ActionType.ViClass => CalculateClassGain(week, "vi", cards, triggerCounters, uncapLevels),
+            ActionType.Outing => CalculateOutingGain(week, cards, triggerCounters, uncapLevels),
+            ActionType.Consultation => CalculateConsultationGain(week, cards, triggerCounters, uncapLevels),
             ActionType.Rest => StatusValues.Zero,
-            ActionType.ActivitySupply => CalculateSupplyGain(turnChoice, plan, cards, triggerCounters),
-            ActionType.SpecialTraining => CalculateSpecialTrainingGain(week, cards, triggerCounters),
+            ActionType.ActivitySupply => CalculateSupplyGain(turnChoice, plan, cards, triggerCounters, uncapLevels),
+            ActionType.SpecialTraining => CalculateSpecialTrainingGain(week, cards, triggerCounters, uncapLevels),
             _ => StatusValues.Zero
         };
 
@@ -92,7 +101,7 @@ public class StatusCalculationService
 
     private StatusValues CalculateLessonGain(
         WeekSchedule week, string lessonType, List<SupportCard> cards,
-        Dictionary<string, int> triggerCounters)
+        Dictionary<string, int> triggerCounters, Dictionary<string, int>? uncapLevels)
     {
         var lesson = week.GetLesson(lessonType);
         if (lesson == null)
@@ -100,35 +109,48 @@ public class StatusCalculationService
 
         var raw = lesson.SpBonus;
 
-        // パラメータボーナス% を集計 (SP率は突破確率なので理論値計算では除外)
-        double totalParaBonus = 0;
+        // パラメータボーナス% を属性別に集計
+        double paraBonusVo = 0, paraBonusDa = 0, paraBonusVi = 0;
         foreach (var card in cards)
         {
-            totalParaBonus += card.GetParaBonus();
+            var uncap = GetUncapLevel(card, uncapLevels);
+            foreach (var e in card.Effects.Where(e => e.Trigger == "equip" && e.ValueType == "para_bonus"))
+            {
+                var val = e.GetValue(uncap);
+                switch (e.Stat)
+                {
+                    case "vo": paraBonusVo += val; break;
+                    case "da": paraBonusDa += val; break;
+                    case "vi": paraBonusVi += val; break;
+                    case "all":
+                        paraBonusVo += val;
+                        paraBonusDa += val;
+                        paraBonusVi += val;
+                        break;
+                }
+            }
         }
 
-        // パラボのみ適用
-        double multiplier = 1.0 + totalParaBonus / 100.0;
-
-        int vo = (int)Math.Floor(raw.Vo * multiplier);
-        int da = (int)Math.Floor(raw.Da * multiplier);
-        int vi = (int)Math.Floor(raw.Vi * multiplier);
+        // 各属性のパラボは該当属性のレッスン上昇値にのみ適用
+        int vo = (int)Math.Floor(raw.Vo * (1.0 + paraBonusVo / 100.0));
+        int da = (int)Math.Floor(raw.Da * (1.0 + paraBonusDa / 100.0));
+        int vi = (int)Math.Floor(raw.Vi * (1.0 + paraBonusVi / 100.0));
 
         var result = new StatusValues(vo, da, vi);
 
         // SP終了時トリガー (汎用)
-        var spEndGain = FireTrigger("sp_end", cards, triggerCounters);
+        var spEndGain = FireTrigger("sp_end", cards, triggerCounters, uncapLevels);
         result = result.Add(spEndGain);
 
         // 属性別SP終了時トリガー (vo_sp_end, da_sp_end, vi_sp_end)
-        var statSpEndGain = FireTrigger($"{lessonType}_sp_end", cards, triggerCounters);
+        var statSpEndGain = FireTrigger($"{lessonType}_sp_end", cards, triggerCounters, uncapLevels);
         result = result.Add(statSpEndGain);
 
         // レッスン終了時トリガー (汎用)
-        var lessonEndGain = FireTrigger("lesson_end", cards, triggerCounters);
+        var lessonEndGain = FireTrigger("lesson_end", cards, triggerCounters, uncapLevels);
 
         // 属性別レッスン終了時トリガー (vo_lesson_end, da_lesson_end, vi_lesson_end)
-        var statLessonEndGain = FireTrigger($"{lessonType}_lesson_end", cards, triggerCounters);
+        var statLessonEndGain = FireTrigger($"{lessonType}_lesson_end", cards, triggerCounters, uncapLevels);
         lessonEndGain = lessonEndGain.Add(statLessonEndGain);
         result = result.Add(lessonEndGain);
 
@@ -137,55 +159,55 @@ public class StatusCalculationService
 
     private StatusValues CalculateClassGain(
         WeekSchedule week, string classType, List<SupportCard> cards,
-        Dictionary<string, int> triggerCounters)
+        Dictionary<string, int> triggerCounters, Dictionary<string, int>? uncapLevels)
     {
         var classConfig = week.GetClass(classType);
         var baseGain = classConfig?.SpBonus.Clone() ?? week.ClassEffect?.Clone() ?? StatusValues.Zero;
 
         // 授業終了時トリガー
-        var classEndGain = FireTrigger("class_end", cards, triggerCounters);
+        var classEndGain = FireTrigger("class_end", cards, triggerCounters, uncapLevels);
         return baseGain.Add(classEndGain);
     }
 
     private StatusValues CalculateOutingGain(
         WeekSchedule week, List<SupportCard> cards,
-        Dictionary<string, int> triggerCounters)
+        Dictionary<string, int> triggerCounters, Dictionary<string, int>? uncapLevels)
     {
         var baseGain = week.OutingEffect?.Clone() ?? StatusValues.Zero;
 
         // お出かけ終了時トリガー
-        var outingEndGain = FireTrigger("outing_end", cards, triggerCounters);
+        var outingEndGain = FireTrigger("outing_end", cards, triggerCounters, uncapLevels);
         return baseGain.Add(outingEndGain);
     }
 
     private StatusValues CalculateConsultationGain(
         WeekSchedule week, List<SupportCard> cards,
-        Dictionary<string, int> triggerCounters)
+        Dictionary<string, int> triggerCounters, Dictionary<string, int>? uncapLevels)
     {
         var baseGain = week.ConsultationEffect?.Clone() ?? StatusValues.Zero;
 
         // 相談選択時トリガー
-        var consultGain = FireTrigger("consultation", cards, triggerCounters);
+        var consultGain = FireTrigger("consultation", cards, triggerCounters, uncapLevels);
         return baseGain.Add(consultGain);
     }
 
     private StatusValues CalculateSupplyGain(
         TurnChoice turnChoice, TrainingPlan plan, List<SupportCard> cards,
-        Dictionary<string, int> triggerCounters)
+        Dictionary<string, int> triggerCounters, Dictionary<string, int>? uncapLevels)
     {
         // 活動支給自体はステータス加算なし（サポカトリガー発火のみ）
-        var supplyGain = FireTrigger("activity_supply", cards, triggerCounters);
+        var supplyGain = FireTrigger("activity_supply", cards, triggerCounters, uncapLevels);
         return supplyGain;
     }
 
     private StatusValues CalculateSpecialTrainingGain(
         WeekSchedule week, List<SupportCard> cards,
-        Dictionary<string, int> triggerCounters)
+        Dictionary<string, int> triggerCounters, Dictionary<string, int>? uncapLevels)
     {
         var baseGain = week.SpecialTrainingEffect?.Clone() ?? StatusValues.Zero;
 
         // 特別指導開始時トリガー
-        var stGain = FireTrigger("special_training", cards, triggerCounters);
+        var stGain = FireTrigger("special_training", cards, triggerCounters, uncapLevels);
         return baseGain.Add(stGain);
     }
 
@@ -195,18 +217,20 @@ public class StatusCalculationService
     /// </summary>
     private StatusValues FireTrigger(
         string trigger, List<SupportCard> cards,
-        Dictionary<string, int> triggerCounters)
+        Dictionary<string, int> triggerCounters,
+        Dictionary<string, int>? uncapLevels)
     {
         var gain = StatusValues.Zero;
 
         foreach (var card in cards)
         {
+            var uncap = GetUncapLevel(card, uncapLevels);
             foreach (var effect in card.GetEffectsByTrigger(trigger))
             {
                 if (effect.ValueType != "flat") continue;
 
                 // 発動回数チェック
-                var counterKey = $"{card.Id}_{trigger}_{effect.Stat}_{effect.Value}";
+                var counterKey = $"{card.Id}_{trigger}_{effect.Stat}";
                 triggerCounters.TryGetValue(counterKey, out int count);
 
                 if (effect.MaxCount.HasValue && count >= effect.MaxCount.Value)
@@ -214,7 +238,7 @@ public class StatusCalculationService
 
                 triggerCounters[counterKey] = count + 1;
 
-                var value = (int)effect.Value;
+                var value = (int)effect.GetValue(uncap);
                 switch (effect.Stat)
                 {
                     case "vo": gain = gain.Add(new StatusValues(value, 0, 0)); break;

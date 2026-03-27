@@ -33,12 +33,12 @@ public class SupportCard
     // ---- 計算用ヘルパー ----
 
     /// <summary>初期値ボーナス (装備時固定加算)</summary>
-    public StatusValues GetInitialBonus()
+    public StatusValues GetInitialBonus(int uncapLevel = 4)
     {
         int vo = 0, da = 0, vi = 0;
         foreach (var e in Effects.Where(e => e.Trigger == "equip" && e.ValueType == "flat"))
         {
-            var v = (int)e.Value;
+            var v = (int)e.GetValue(uncapLevel);
             switch (e.Stat)
             {
                 case "vo": vo += v; break;
@@ -50,12 +50,12 @@ public class SupportCard
     }
 
     /// <summary>SP率% (装備時)</summary>
-    public LessonBonusPercent GetSpRate()
+    public LessonBonusPercent GetSpRate(int uncapLevel = 4)
     {
         var result = new LessonBonusPercent();
         foreach (var e in Effects.Where(e => e.Trigger == "equip" && e.ValueType == "sp_rate"))
         {
-            var val = (int)Math.Round(e.Value);
+            var val = (int)Math.Round(e.GetValue(uncapLevel));
             switch (e.Stat)
             {
                 case "vo": result.VoPercent += val; break;
@@ -72,11 +72,11 @@ public class SupportCard
     }
 
     /// <summary>パラメータボーナス% (装備時)</summary>
-    public double GetParaBonus()
+    public double GetParaBonus(int uncapLevel = 4)
     {
         return Effects
             .Where(e => e.Trigger == "equip" && e.ValueType == "para_bonus")
-            .Sum(e => e.Value);
+            .Sum(e => e.GetValue(uncapLevel));
     }
 
     /// <summary>指定トリガーの効果一覧を取得</summary>
@@ -116,9 +116,14 @@ public class CardEffect
     [YamlMember(Alias = "stat")]
     public string Stat { get; set; } = string.Empty;
 
-    /// <summary>効果値</summary>
-    [YamlMember(Alias = "value")]
-    public double Value { get; set; }
+    /// <summary>凸数別の効果値 [0凸, 1凸, 2凸, 3凸, 4凸]</summary>
+    [YamlMember(Alias = "values")]
+    public List<double> Values { get; set; } = new();
+
+    /// <summary>指定凸数の効果値を取得</summary>
+    public double GetValue(int uncapLevel = 4) => Values.Count > 0
+        ? Values[Math.Clamp(uncapLevel, 0, Math.Min(4, Values.Count - 1))]
+        : 0;
 
     /// <summary>
     /// 値の種類: "flat" = 実数値加算, "sp_rate" = SP率%,

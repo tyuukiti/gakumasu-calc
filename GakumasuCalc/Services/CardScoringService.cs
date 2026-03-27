@@ -16,6 +16,8 @@ public class CardScoringService
         public int RawVi { get; set; }
         /// <summary>効果別の内訳</summary>
         public List<EffectBreakdown> Breakdowns { get; set; } = new();
+        /// <summary>レンタルカードかどうか</summary>
+        public bool IsRental { get; set; }
     }
 
     public class EffectBreakdown
@@ -44,7 +46,10 @@ public class CardScoringService
         List<string> mainStats,
         Dictionary<string, int>? spCounts = null,
         string? planType = null,
-        AdditionalCounts? additionalCounts = null)
+        AdditionalCounts? additionalCounts = null,
+        Dictionary<string, int>? uncapLevels = null,
+        List<SupportCard>? rentalPool = null,
+        int freeSlots = 0)
     {
         var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats);
 
@@ -71,14 +76,17 @@ public class CardScoringService
         // レッスン・イベント等のカード無しベースステータスを推定
         var baseStats = EstimateBaseStats(plan, lessonAllocation);
 
+        // レッスンの属性別合計SpBonusを事前計算
+        var lessonStatTotals = CalculateLessonStatTotals(plan, lessonAllocation);
+
         // 全カードの属性別寄与を事前計算
         var cardContributions = eligible
-            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation))
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels))
             .ToList();
 
         // 全カードプール (フィルタ外も補充用に)
         var allContributions = allCards
-            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation))
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels))
             .ToList();
 
         // 属性枠ごとに選択 (上限考慮)
@@ -87,6 +95,10 @@ public class CardScoringService
 
         // 現在の累積ステータス (ベース + 選択済みカード)
         int accVo = baseStats.Vo, accDa = baseStats.Da, accVi = baseStats.Vi;
+
+        // 属性枠・フリー枠の残数を管理するローカルコピー
+        var remainingSlots = new Dictionary<string, int>(cardTypeSlots);
+        int remainingFree = freeSlots;
 
         // ステップ1: SP率カードをユーザ指定枚数分、先に確保
         if (spCounts != null)
@@ -114,20 +126,24 @@ public class CardScoringService
                     accVo += best.RawVo;
                     accDa += best.RawDa;
                     accVi += best.RawVi;
+
+                    // SP率カードが属性枠にカウントされるか、フリー枠を消費するか判定
+                    if (remainingSlots.ContainsKey(stat) && remainingSlots[stat] > 0)
+                        remainingSlots[stat]--;
+                    else
+                        remainingFree = Math.Max(0, remainingFree - 1);
                 }
             }
         }
 
-        // ステップ2: 残りの枠をステータス寄与が高い順にグリーディ選択
-        foreach (var kvp in cardTypeSlots.OrderByDescending(k => k.Value))
+        // レンタルモード: 所持5枠 + レンタル1枠
+        int ownedSlots = rentalPool != null ? 5 : 6;
+
+        // ステップ2: 残りの属性枠をステータス寄与が高い順にグリーディ選択
+        foreach (var kvp in remainingSlots.OrderByDescending(k => k.Value))
         {
             var type = kvp.Key;
             int count = kvp.Value;
-            if (count <= 0) continue;
-
-            // SP率で既に選ばれた分を引く
-            int alreadyForType = selected.Count(cs => cs.Card.Type == type);
-            count -= alreadyForType;
             if (count <= 0) continue;
 
             var candidates = cardContributions
@@ -135,7 +151,7 @@ public class CardScoringService
                              && !usedIds.Contains(cs.Card.Id))
                 .ToList();
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count && selected.Count < ownedSlots; i++)
             {
                 var best = SelectBestCard(candidates, usedIds, accVo, accDa, accVi);
                 if (best == null) break;
@@ -148,14 +164,31 @@ public class CardScoringService
             }
         }
 
-        // 6枠に満たない場合、フィルタ済みから補充
-        if (selected.Count < 6)
+        // フリー枠: 属性を問わず最良のカードを選択
+        for (int i = 0; i < remainingFree && selected.Count < ownedSlots; i++)
+        {
+            var freeCandidates = cardContributions
+                .Where(cs => !usedIds.Contains(cs.Card.Id))
+                .ToList();
+
+            var best = SelectBestCard(freeCandidates, usedIds, accVo, accDa, accVi);
+            if (best == null) break;
+
+            selected.Add(best);
+            usedIds.Add(best.Card.Id);
+            accVo += best.RawVo;
+            accDa += best.RawDa;
+            accVi += best.RawVi;
+        }
+
+        // 所持枠に満たない場合、フィルタ済みから補充
+        if (selected.Count < ownedSlots)
         {
             var remaining = cardContributions
                 .Where(cs => !usedIds.Contains(cs.Card.Id))
                 .ToList();
 
-            while (selected.Count < 6)
+            while (selected.Count < ownedSlots)
             {
                 var best = SelectBestCard(remaining, usedIds, accVo, accDa, accVi);
                 if (best == null) break;
@@ -168,8 +201,36 @@ public class CardScoringService
             }
         }
 
-        // それでも6枠未満なら全カードから補充
-        if (selected.Count < 6)
+        // レンタル1枠: 全カードプールから4凸で最良の1枚を選択
+        if (rentalPool != null && selected.Count < 6)
+        {
+            var rentalUncap = new Dictionary<string, int>();
+            foreach (var c in rentalPool)
+                rentalUncap[c.Id] = 4;
+
+            var rentalContributions = rentalPool
+                .Where(c => !usedIds.Contains(c.Id))
+                .Where(c => string.IsNullOrEmpty(planType)
+                            || string.IsNullOrEmpty(c.Plan)
+                            || c.Plan == planType
+                            || c.Plan == "free")
+                .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, rentalUncap))
+                .ToList();
+
+            var bestRental = SelectBestCard(rentalContributions, usedIds, accVo, accDa, accVi);
+            if (bestRental != null)
+            {
+                bestRental.IsRental = true;
+                selected.Add(bestRental);
+                usedIds.Add(bestRental.Card.Id);
+                accVo += bestRental.RawVo;
+                accDa += bestRental.RawDa;
+                accVi += bestRental.RawVi;
+            }
+        }
+
+        // レンタルなしで6枠未満なら全カードから補充
+        if (rentalPool == null && selected.Count < 6)
         {
             var fallback = allContributions
                 .Where(cs => !usedIds.Contains(cs.Card.Id))
@@ -195,7 +256,7 @@ public class CardScoringService
 
         return new DeckResult
         {
-            Label = GenerateLabel(cardTypeSlots),
+            Label = GenerateLabel(cardTypeSlots, freeSlots),
             SelectedCards = selected
         };
     }
@@ -326,7 +387,9 @@ public class CardScoringService
         int totalLessonWeeks,
         Dictionary<string, int>? spCounts = null,
         string? planType = null,
-        AdditionalCounts? additionalCounts = null)
+        AdditionalCounts? additionalCounts = null,
+        Dictionary<string, int>? uncapLevels = null,
+        List<SupportCard>? rentalPool = null)
     {
         var results = new List<DeckResult>();
 
@@ -340,29 +403,36 @@ public class CardScoringService
         int spMain2 = spCounts?.GetValueOrDefault(main2) ?? 0;
         int spSub = spCounts?.GetValueOrDefault(subStat) ?? 0;
 
-        // カード枚数パターン (メイン1:メイン2:サブ = 合計6枚)
-        var patterns = new List<(int m1, int m2, int sub)>
+        // カード枚数パターン (メイン1:メイン2:フリー枠 = 合計6枚)
+        var patterns = new List<(int m1, int m2, int free)>
         {
             (3, 2, 1),
             (2, 3, 1),
             (3, 3, 0),
             (2, 2, 2),
+            (0, 0, 5),  // フリー5 + サブ1 (サブはcardTypeSlotsで指定)
         };
 
-        foreach (var (m1, m2, sub) in patterns)
+        foreach (var (m1, m2, free) in patterns)
         {
-            // SP枚数を満たせないパターンはスキップ
-            if (m1 < spMain1 || m2 < spMain2 || sub < spSub) continue;
+            // SP枚数を満たせないパターンはスキップ (フリー枠でSP率カードを吸収できる場合はOK)
+            int spShortage = Math.Max(0, spMain1 - m1) + Math.Max(0, spMain2 - m2);
+            if (spShortage > free) continue;
 
             // カード枚数
-            var cardTypeSlots = new Dictionary<string, int>
-            {
-                [main1] = m1,
-                [main2] = m2,
-                [subStat] = sub
-            };
+            var cardTypeSlots = new Dictionary<string, int>();
+            if (m1 > 0) cardTypeSlots[main1] = m1;
+            if (m2 > 0) cardTypeSlots[main2] = m2;
+            int freeSlots = free;
 
-            // レッスン配分はカード枚数とは独立にメイン属性に均等配分
+            // フリー5パターン: サブ属性1枚を固定枠に追加
+            if (m1 == 0 && m2 == 0)
+            {
+                cardTypeSlots[subStat] = 1;
+                freeSlots = 5;
+            }
+
+            // レッスン配分: メイン1のレッスン回数が多い
             var lessonAllocation = new Dictionary<string, int>
             {
                 [main1] = 0,
@@ -370,12 +440,12 @@ public class CardScoringService
                 [subStat] = 0
             };
             int remaining = totalLessonWeeks;
-            lessonAllocation[main1] += remaining / 2;
-            lessonAllocation[main2] += remaining - remaining / 2;
+            lessonAllocation[main1] += remaining - remaining / 2;
+            lessonAllocation[main2] += remaining / 2;
 
             var result = SelectOptimalDeck(
                 plan, allCards, lessonAllocation, cardTypeSlots,
-                mainStats, spCounts, planType, additionalCounts);
+                mainStats, spCounts, planType, additionalCounts, uncapLevels, rentalPool, freeSlots);
             results.Add(result);
         }
 
@@ -388,8 +458,11 @@ public class CardScoringService
     private CardScore CalculateCardContribution(
         SupportCard card,
         Dictionary<string, int> triggerCounts,
-        Dictionary<string, int> lessonAllocation)
+        Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
+        Dictionary<string, int>? uncapLevels)
     {
+        int uncap = StatusCalculationService.GetUncapLevel(card, uncapLevels);
         double vo = 0, da = 0, vi = 0;
         var breakdowns = new List<EffectBreakdown>();
 
@@ -398,17 +471,47 @@ public class CardScoringService
             // SP率は突破確率であり理論値計算では不要（全SPクリア前提）
             if (effect.ValueType == "sp_rate") continue;
 
+            if (effect.ValueType == "para_bonus")
+            {
+                // パラボは該当属性のレッスン上昇値にのみ適用
+                double pct = effect.GetValue(uncap) / 100.0;
+                double bonus = 0;
+                switch (effect.Stat)
+                {
+                    case "vo": bonus = lessonStatTotals.Vo * pct; vo += bonus; break;
+                    case "da": bonus = lessonStatTotals.Da * pct; da += bonus; break;
+                    case "vi": bonus = lessonStatTotals.Vi * pct; vi += bonus; break;
+                    case "all":
+                        double bVo = lessonStatTotals.Vo * pct;
+                        double bDa = lessonStatTotals.Da * pct;
+                        double bVi = lessonStatTotals.Vi * pct;
+                        vo += bVo; da += bDa; vi += bVi;
+                        bonus = bVo + bDa + bVi;
+                        break;
+                }
+
+                if (Math.Abs(bonus) < 0.01) continue;
+
+                var reason = $"パラボ({effect.Stat.ToUpper()})+{effect.GetValue(uncap)}%";
+                breakdowns.Add(new EffectBreakdown
+                {
+                    Reason = reason,
+                    Stat = effect.Stat,
+                    Value = Math.Round(bonus, 1)
+                });
+                continue;
+            }
+
             double value = effect.ValueType switch
             {
-                "flat" => CalculateFlatValue(effect, triggerCounts),
-                "para_bonus" => CalculateParaBonusValue(effect, lessonAllocation),
+                "flat" => CalculateFlatValue(effect, triggerCounts, uncap),
                 _ => 0
             };
 
             if (Math.Abs(value) < 0.01) continue;
 
             // 内訳の理由テキスト生成
-            var reason = BuildReasonText(effect, triggerCounts);
+            var reason2 = BuildReasonText(effect, triggerCounts, uncap);
 
             switch (effect.Stat)
             {
@@ -429,7 +532,7 @@ public class CardScoringService
 
             breakdowns.Add(new EffectBreakdown
             {
-                Reason = reason,
+                Reason = reason2,
                 Stat = effect.Stat,
                 Value = Math.Round(value, 1)
             });
@@ -488,18 +591,19 @@ public class CardScoringService
         _ => trigger
     };
 
-    private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts)
+    private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel)
     {
         var triggerName = TriggerDisplayName(effect.Trigger);
         var stat = effect.Stat.ToUpper();
+        var val = effect.GetValue(uncapLevel);
 
         if (effect.Trigger == "equip")
         {
             return effect.ValueType switch
             {
-                "sp_rate" => $"{stat} SP率+{effect.Value}%",
-                "para_bonus" => $"パラボ+{effect.Value}%",
-                _ => $"{stat} 初期値+{(int)effect.Value}"
+                "sp_rate" => $"{stat} SP率+{val}%",
+                "para_bonus" => $"パラボ+{val}%",
+                _ => $"{stat} 初期値+{(int)val}"
             };
         }
 
@@ -513,8 +617,8 @@ public class CardScoringService
 
         return effect.ValueType switch
         {
-            "flat" => $"{triggerName} {stat}+{(int)effect.Value} {countInfo}",
-            _ => $"{triggerName} {stat}+{effect.Value}% {countInfo}"
+            "flat" => $"{triggerName} {stat}+{(int)val} {countInfo}",
+            _ => $"{triggerName} {stat}+{val}% {countInfo}"
         };
     }
 
@@ -569,28 +673,55 @@ public class CardScoringService
         return counts;
     }
 
-    private double CalculateFlatValue(CardEffect effect, Dictionary<string, int> triggerCounts)
+    private double CalculateFlatValue(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel)
     {
+        var val = effect.GetValue(uncapLevel);
         if (effect.Trigger == "equip")
-            return effect.Value;
+            return val;
 
         int fires = triggerCounts.GetValueOrDefault(effect.Trigger, 0);
 
         if (effect.MaxCount.HasValue)
             fires = Math.Min(fires, effect.MaxCount.Value);
 
-        return effect.Value * fires;
+        return val * fires;
     }
 
-    private double CalculateParaBonusValue(CardEffect effect, Dictionary<string, int> lessonAllocation)
+    /// <summary>
+    /// レッスン配分に基づいて、全レッスンのSpBonusを属性別に合計する。
+    /// パラメータボーナスの属性別寄与計算に使用。
+    /// </summary>
+    private StatusValues CalculateLessonStatTotals(TrainingPlan plan, Dictionary<string, int> lessonAllocation)
     {
-        double avgLessonTotal = 460.0;
-        int totalLessons = lessonAllocation.Values.Sum();
+        int vo = 0, da = 0, vi = 0;
 
-        return totalLessons * avgLessonTotal * (effect.Value / 100.0);
+        var lessonWeeks = plan.Schedule
+            .Where(w => w.Lessons.Count > 0)
+            .OrderByDescending(w => w.Week)
+            .ToList();
+
+        var weekQueue = new Queue<WeekSchedule>(lessonWeeks);
+
+        foreach (var stat in lessonAllocation.OrderByDescending(kv => kv.Value))
+        {
+            int count = stat.Value;
+            for (int i = 0; i < count && weekQueue.Count > 0; i++)
+            {
+                var w = weekQueue.Dequeue();
+                var lesson = w.GetLesson(stat.Key);
+                if (lesson != null)
+                {
+                    vo += lesson.SpBonus.Vo;
+                    da += lesson.SpBonus.Da;
+                    vi += lesson.SpBonus.Vi;
+                }
+            }
+        }
+
+        return new StatusValues(vo, da, vi);
     }
 
-    private string GenerateLabel(Dictionary<string, int> cardTypeSlots)
+    private string GenerateLabel(Dictionary<string, int> cardTypeSlots, int freeSlots = 0)
     {
         var parts = new List<string>();
         foreach (var kvp in cardTypeSlots.OrderByDescending(k => k.Value))
@@ -607,6 +738,8 @@ public class CardScoringService
                 parts.Add($"{name} {kvp.Value}");
             }
         }
+        if (freeSlots > 0)
+            parts.Add($"フリー {freeSlots}");
         return string.Join(" / ", parts) + " 編成";
     }
 }
