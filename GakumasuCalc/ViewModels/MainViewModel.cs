@@ -295,8 +295,9 @@ public class MainViewModel : ViewModelBase
         // 追加カウント構築
         var additional = BuildAdditionalCounts();
 
-        // 所持フィルタ + 凸倍率適用
+        // 所持フィルタ適用
         var candidateCards = GetCandidateCards();
+        var uncapLevels = BuildUncapLevels();
 
         // SP率カード枚数
         var spCounts = new Dictionary<string, int>();
@@ -307,7 +308,8 @@ public class MainViewModel : ViewModelBase
         // 複数パターン一括計算
         var patterns = _scoringService.SelectMultiplePatterns(
             _selectedPlan, candidateCards, mainStats, subStat, lessonWeekCount,
-            spCounts: spCounts, planType: SelectedPlanType, additionalCounts: additional);
+            spCounts: spCounts, planType: SelectedPlanType, additionalCounts: additional,
+            uncapLevels: uncapLevels);
 
         _deckResults = patterns;
         _lastMainStats = mainStats;
@@ -370,7 +372,8 @@ public class MainViewModel : ViewModelBase
 
         var selectedCards = pattern.SelectedCards.Select(cs => cs.Card).ToList();
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
-        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices);
+        var uncapLevels = BuildUncapLevels();
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels);
 
         DeckCards.Clear();
         foreach (var cs in pattern.SelectedCards)
@@ -483,19 +486,13 @@ public class MainViewModel : ViewModelBase
     /// <summary>
     /// ターン選択を自動設定する。
     /// レッスン週: メイン属性のレッスンのみ選択（サブ属性のレッスンは選ばない）
+    ///   中間前: メイン1:メイン2 = 1:1
+    ///   中間後: メイン1:メイン2 = 1:2 (パラメータを早く伸ばすため)
     /// 授業週: サブ属性の授業を選択
     /// </summary>
     private void AutoAssignTurnChoices(Dictionary<string, int> allocation, List<string> mainStats)
     {
         var subStat = new[] { "vo", "da", "vi" }.First(s => !mainStats.Contains(s));
-
-        // メインのレッスンActionType一覧
-        var mainLessonActions = mainStats.Select(s => s switch
-        {
-            "vo" => ActionType.VoLesson,
-            "da" => ActionType.DaLesson,
-            _ => ActionType.ViLesson
-        }).ToHashSet();
 
         // サブの授業ActionType
         var subClassAction = subStat switch
@@ -505,57 +502,80 @@ public class MainViewModel : ViewModelBase
             _ => ActionType.ViClass
         };
 
-        // レッスン週: メイン属性のみ割り当て (後半の週を優先)
-        var lessonTurns = TurnChoices
-            .Where(tc => !tc.IsFixedEvent && tc.AvailableActions.Any(a =>
-                a is ActionType.VoLesson or ActionType.DaLesson or ActionType.ViLesson))
-            .OrderByDescending(tc => tc.Week)
-            .ToList();
-
-        var remaining = new Dictionary<string, int>(allocation);
-
-        // メイン属性のレッスンを割当数分、後半の週から割り当て
-        foreach (var stat in mainStats.OrderByDescending(s => remaining.GetValueOrDefault(s, 0)))
+        if (mainStats.Count < 2)
         {
-            var actionType = stat switch
+            // メインが1つだけの場合は全レッスンをそれに割り当て
+            var onlyAction = mainStats[0] switch
+            {
+                "vo" => ActionType.VoLesson,
+                "da" => ActionType.DaLesson,
+                _ => ActionType.ViLesson
+            };
+            foreach (var tc in TurnChoices)
+            {
+                if (!tc.IsFixedEvent && tc.AvailableActions.Contains(onlyAction))
+                    tc.SelectedAction = onlyAction;
+            }
+        }
+        else
+        {
+            // メイン2属性のレッスンアクション
+            var main1Action = mainStats[0] switch
+            {
+                "vo" => ActionType.VoLesson,
+                "da" => ActionType.DaLesson,
+                _ => ActionType.ViLesson
+            };
+            var main2Action = mainStats[1] switch
             {
                 "vo" => ActionType.VoLesson,
                 "da" => ActionType.DaLesson,
                 _ => ActionType.ViLesson
             };
 
-            int count = remaining.GetValueOrDefault(stat, 0);
-            foreach (var tc in lessonTurns.Where(t => t.AvailableActions.Contains(actionType)).ToList())
-            {
-                if (count <= 0) break;
-                tc.SelectedAction = actionType;
-                lessonTurns.Remove(tc);
-                count--;
-            }
-        }
+            // 中間試験の週を探す
+            var midExamWeek = _selectedPlan?.Schedule
+                .Where(w => w.IsFixedEvent && w.EventName == "中間試験")
+                .Select(w => w.Week)
+                .FirstOrDefault() ?? 10;
 
-        // 残ったレッスン週もメイン属性の最初のレッスンを設定（サブは絶対選ばない）
-        var defaultMainLesson = mainStats[0] switch
-        {
-            "vo" => ActionType.VoLesson,
-            "da" => ActionType.DaLesson,
-            _ => ActionType.ViLesson
-        };
-        foreach (var tc in lessonTurns)
-        {
-            if (tc.AvailableActions.Contains(defaultMainLesson))
-                tc.SelectedAction = defaultMainLesson;
-            else
+            // レッスン週を中間前後に分ける
+            var lessonTurns = TurnChoices
+                .Where(tc => !tc.IsFixedEvent && tc.AvailableActions.Any(a =>
+                    a is ActionType.VoLesson or ActionType.DaLesson or ActionType.ViLesson))
+                .OrderBy(tc => tc.Week)
+                .ToList();
+
+            var beforeMid = lessonTurns.Where(tc => tc.Week < midExamWeek).ToList();
+            var afterMid = lessonTurns.Where(tc => tc.Week > midExamWeek).ToList();
+
+            // 中間前: メイン1:メイン2 = 1:1 (交互に割り当て)
+            bool toggle = false;
+            foreach (var tc in beforeMid)
             {
-                // 2番目のメインを試す
-                var secondMain = mainStats.Count > 1 ? mainStats[1] switch
+                var action = toggle ? main2Action : main1Action;
+                if (tc.AvailableActions.Contains(action))
+                    tc.SelectedAction = action;
+                else if (tc.AvailableActions.Contains(toggle ? main1Action : main2Action))
+                    tc.SelectedAction = toggle ? main1Action : main2Action;
+                toggle = !toggle;
+            }
+
+            // 中間後: メイン1:メイン2 = 1:2 (メイン2を多めに)
+            int afterCount = 0;
+            foreach (var tc in afterMid)
+            {
+                // 3回中: メイン2, メイン2, メイン1 の順
+                var action = (afterCount % 3 < 2) ? main2Action : main1Action;
+                if (tc.AvailableActions.Contains(action))
+                    tc.SelectedAction = action;
+                else
                 {
-                    "vo" => ActionType.VoLesson,
-                    "da" => ActionType.DaLesson,
-                    _ => ActionType.ViLesson
-                } : defaultMainLesson;
-                if (tc.AvailableActions.Contains(secondMain))
-                    tc.SelectedAction = secondMain;
+                    var fallback = (action == main2Action) ? main1Action : main2Action;
+                    if (tc.AvailableActions.Contains(fallback))
+                        tc.SelectedAction = fallback;
+                }
+                afterCount++;
             }
         }
 
@@ -690,7 +710,7 @@ public class MainViewModel : ViewModelBase
 
         // 現在のターン選択をそのまま使って再計算
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
-        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices);
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels());
 
         var maxStat = Math.Max(ResultVo, Math.Max(ResultDa, ResultVi));
         ResultMaxValue = maxStat > 0 ? maxStat : 1;
@@ -700,7 +720,7 @@ public class MainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 所持フィルタと凸倍率を適用したカードリストを返す
+    /// 所持フィルタを適用したカードリストを返す
     /// </summary>
     private List<SupportCard> GetCandidateCards()
     {
@@ -713,6 +733,14 @@ public class MainViewModel : ViewModelBase
             .ToHashSet();
 
         return _allCards.Where(c => ownedIds.Contains(c.Id)).ToList();
+    }
+
+    /// <summary>
+    /// インベントリから凸数辞書を構築する
+    /// </summary>
+    private Dictionary<string, int> BuildUncapLevels()
+    {
+        return _inventory.ToDictionary(e => e.CardId, e => e.Uncap);
     }
 
     private void ExecuteReset()

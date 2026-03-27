@@ -186,7 +186,7 @@ public class CardEditorViewModel : ViewModelBase
         if (EventStatus > 0)
             card.Effects.Add(new CardEffect
             {
-                Trigger = "equip", Stat = stat, Value = EventStatus,
+                Trigger = "equip", Stat = stat, Values = Enumerable.Repeat((double)EventStatus, 5).ToList(),
                 ValueType = "flat", Description = "イベントステータス"
             });
 
@@ -196,7 +196,7 @@ public class CardEditorViewModel : ViewModelBase
             {
                 Trigger = PItemTrigger.Value,
                 Stat = stat,
-                Value = PItemValue,
+                Values = Enumerable.Repeat((double)PItemValue, 5).ToList(),
                 ValueType = "flat",
                 MaxCount = PItemMaxCount > 0 ? PItemMaxCount : null,
                 Description = $"Pアイテム: {PItemName}"
@@ -341,20 +341,22 @@ public class AbilitySlot : ViewModelBase
             return null;
 
         var triggerKey = SelectedTrigger.Value;
+        // エディタでは4凸値のみ入力。全凸同値の配列を生成
+        var values = Enumerable.Repeat(Value, 5).ToList();
 
         // equip系の特殊処理
         if (triggerKey == "equip_flat")
-            return new CardEffect { Trigger = "equip", Stat = defaultStat, Value = Value, ValueType = "flat", Description = Description };
+            return new CardEffect { Trigger = "equip", Stat = defaultStat, Values = values, ValueType = "flat", Description = Description };
         if (triggerKey == "equip_sp_rate")
-            return new CardEffect { Trigger = "equip", Stat = defaultStat, Value = Value, ValueType = "sp_rate", Description = Description };
+            return new CardEffect { Trigger = "equip", Stat = defaultStat, Values = values, ValueType = "sp_rate", Description = Description };
         if (triggerKey == "equip_para_bonus")
-            return new CardEffect { Trigger = "equip", Stat = defaultStat, Value = Value, ValueType = "para_bonus", Description = Description };
+            return new CardEffect { Trigger = "equip", Stat = defaultStat, Values = values, ValueType = "para_bonus", Description = Description };
 
         return new CardEffect
         {
             Trigger = triggerKey,
             Stat = defaultStat,
-            Value = Value,
+            Values = values,
             ValueType = "flat",
             MaxCount = MaxCount > 0 ? MaxCount : null,
             Description = Description

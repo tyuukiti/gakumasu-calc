@@ -44,7 +44,8 @@ public class CardScoringService
         List<string> mainStats,
         Dictionary<string, int>? spCounts = null,
         string? planType = null,
-        AdditionalCounts? additionalCounts = null)
+        AdditionalCounts? additionalCounts = null,
+        Dictionary<string, int>? uncapLevels = null)
     {
         var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats);
 
@@ -73,12 +74,12 @@ public class CardScoringService
 
         // 全カードの属性別寄与を事前計算
         var cardContributions = eligible
-            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation))
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, uncapLevels))
             .ToList();
 
         // 全カードプール (フィルタ外も補充用に)
         var allContributions = allCards
-            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation))
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, uncapLevels))
             .ToList();
 
         // 属性枠ごとに選択 (上限考慮)
@@ -326,7 +327,8 @@ public class CardScoringService
         int totalLessonWeeks,
         Dictionary<string, int>? spCounts = null,
         string? planType = null,
-        AdditionalCounts? additionalCounts = null)
+        AdditionalCounts? additionalCounts = null,
+        Dictionary<string, int>? uncapLevels = null)
     {
         var results = new List<DeckResult>();
 
@@ -375,7 +377,7 @@ public class CardScoringService
 
             var result = SelectOptimalDeck(
                 plan, allCards, lessonAllocation, cardTypeSlots,
-                mainStats, spCounts, planType, additionalCounts);
+                mainStats, spCounts, planType, additionalCounts, uncapLevels);
             results.Add(result);
         }
 
@@ -388,8 +390,10 @@ public class CardScoringService
     private CardScore CalculateCardContribution(
         SupportCard card,
         Dictionary<string, int> triggerCounts,
-        Dictionary<string, int> lessonAllocation)
+        Dictionary<string, int> lessonAllocation,
+        Dictionary<string, int>? uncapLevels)
     {
+        int uncap = StatusCalculationService.GetUncapLevel(card, uncapLevels);
         double vo = 0, da = 0, vi = 0;
         var breakdowns = new List<EffectBreakdown>();
 
@@ -400,15 +404,15 @@ public class CardScoringService
 
             double value = effect.ValueType switch
             {
-                "flat" => CalculateFlatValue(effect, triggerCounts),
-                "para_bonus" => CalculateParaBonusValue(effect, lessonAllocation),
+                "flat" => CalculateFlatValue(effect, triggerCounts, uncap),
+                "para_bonus" => CalculateParaBonusValue(effect, lessonAllocation, uncap),
                 _ => 0
             };
 
             if (Math.Abs(value) < 0.01) continue;
 
             // 内訳の理由テキスト生成
-            var reason = BuildReasonText(effect, triggerCounts);
+            var reason = BuildReasonText(effect, triggerCounts, uncap);
 
             switch (effect.Stat)
             {
@@ -488,18 +492,19 @@ public class CardScoringService
         _ => trigger
     };
 
-    private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts)
+    private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel)
     {
         var triggerName = TriggerDisplayName(effect.Trigger);
         var stat = effect.Stat.ToUpper();
+        var val = effect.GetValue(uncapLevel);
 
         if (effect.Trigger == "equip")
         {
             return effect.ValueType switch
             {
-                "sp_rate" => $"{stat} SP率+{effect.Value}%",
-                "para_bonus" => $"パラボ+{effect.Value}%",
-                _ => $"{stat} 初期値+{(int)effect.Value}"
+                "sp_rate" => $"{stat} SP率+{val}%",
+                "para_bonus" => $"パラボ+{val}%",
+                _ => $"{stat} 初期値+{(int)val}"
             };
         }
 
@@ -513,8 +518,8 @@ public class CardScoringService
 
         return effect.ValueType switch
         {
-            "flat" => $"{triggerName} {stat}+{(int)effect.Value} {countInfo}",
-            _ => $"{triggerName} {stat}+{effect.Value}% {countInfo}"
+            "flat" => $"{triggerName} {stat}+{(int)val} {countInfo}",
+            _ => $"{triggerName} {stat}+{val}% {countInfo}"
         };
     }
 
@@ -569,25 +574,26 @@ public class CardScoringService
         return counts;
     }
 
-    private double CalculateFlatValue(CardEffect effect, Dictionary<string, int> triggerCounts)
+    private double CalculateFlatValue(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel)
     {
+        var val = effect.GetValue(uncapLevel);
         if (effect.Trigger == "equip")
-            return effect.Value;
+            return val;
 
         int fires = triggerCounts.GetValueOrDefault(effect.Trigger, 0);
 
         if (effect.MaxCount.HasValue)
             fires = Math.Min(fires, effect.MaxCount.Value);
 
-        return effect.Value * fires;
+        return val * fires;
     }
 
-    private double CalculateParaBonusValue(CardEffect effect, Dictionary<string, int> lessonAllocation)
+    private double CalculateParaBonusValue(CardEffect effect, Dictionary<string, int> lessonAllocation, int uncapLevel)
     {
         double avgLessonTotal = 460.0;
         int totalLessons = lessonAllocation.Values.Sum();
 
-        return totalLessons * avgLessonTotal * (effect.Value / 100.0);
+        return totalLessons * avgLessonTotal * (effect.GetValue(uncapLevel) / 100.0);
     }
 
     private string GenerateLabel(Dictionary<string, int> cardTypeSlots)

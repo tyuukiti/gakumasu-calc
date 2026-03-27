@@ -12,23 +12,23 @@ support_cards:
     max_count: 1
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: equip
     stat: vo
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: consultation
     stat: vo
-    value: 14
+    values: [7, 7, 7, 14, 14]
     value_type: flat
 - id: sr_002
   name: 洗濯物のバランスタワー
@@ -38,20 +38,20 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: p_item_acquire
     stat: da
-    value: 11
+    values: [6, 6, 6, 6, 11]
     value_type: flat
     max_count: 6
   - trigger: skill_change
     stat: da
-    value: 16
+    values: [16, 16, 16, 16, 16]
     value_type: flat
     max_count: 3
 - id: sr_003
@@ -67,23 +67,23 @@ support_cards:
     max_count: 2
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: exam_end
     stat: vo
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
 - id: sr_004
@@ -99,24 +99,24 @@ support_cards:
     max_count: 2
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: p_item_acquire
     stat: vi
-    value: 11
+    values: [6, 11, 11, 11, 11]
     value_type: flat
     max_count: 6
   - trigger: skill_enhance
     stat: vi
-    value: 3
+    values: [3, 3, 3, 3, 3]
     value_type: flat
   - trigger: special_training
     stat: vi
-    value: 18
+    values: [9, 9, 9, 18, 18]
     value_type: flat
     max_count: 3
 - id: sr_005
@@ -132,25 +132,25 @@ support_cards:
     max_count: 2
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: special_training
     stat: da
-    value: 18
+    values: [9, 18, 18, 18, 18]
     value_type: flat
     max_count: 3
   - trigger: exam_end
     stat: da
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
   - trigger: p_item_acquire
     stat: da
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
 - id: sr_006
@@ -161,25 +161,25 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: sp_end
     stat: vo
-    value: 15
+    values: [8, 15, 15, 15, 15]
     value_type: flat
-    condition: deck>=20
     max_count: 4
+    condition: deck>=20
   - trigger: activity_supply
     stat: vo
-    value: 11
+    values: [6, 6, 6, 6, 11]
     value_type: flat
   - trigger: skill_change
     stat: vo
-    value: 16
+    values: [16, 16, 16, 16, 16]
     value_type: flat
     max_count: 3
 - id: sr_007
@@ -195,25 +195,25 @@ support_cards:
     max_count: 1
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: sp_end
     stat: vi
-    value: 15
+    values: [8, 15, 15, 15, 15]
     value_type: flat
-    condition: deck>=20
     max_count: 4
+    condition: deck>=20
   - trigger: conserve_acquire
     stat: vi
-    value: 3
+    values: [2, 2, 2, 2, 3]
     value_type: flat
   - trigger: p_item_acquire
     stat: vi
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
 - id: sr_008
@@ -224,23 +224,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: conserve_acquire
     stat: da
-    value: 3
+    values: [2, 3, 3, 3, 3]
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: activity_supply
     stat: da
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_009
   name: バディ？
@@ -250,23 +250,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: skill_delete
     stat: vo
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
   - trigger: vo_sp_end
     stat: vo
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: p_item_acquire
     stat: vo
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
 - id: sr_010
@@ -277,25 +277,25 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: sp_end
     stat: vo
-    value: 15
+    values: [8, 15, 15, 15, 15]
     value_type: flat
-    condition: deck>=20
     max_count: 4
+    condition: deck>=20
   - trigger: skill_delete
     stat: vo
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
   - trigger: special_training
     stat: vo
-    value: 18
+    values: [9, 9, 9, 18, 18]
     value_type: flat
     max_count: 3
 - id: sr_011
@@ -306,24 +306,24 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: equip
     stat: vi
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: p_item_acquire
     stat: vi
-    value: 11
+    values: [6, 6, 6, 6, 11]
     value_type: flat
     max_count: 6
   - trigger: skill_delete
     stat: vi
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
 - id: sr_012
   name: あったか足ツボマッサージ
@@ -333,24 +333,24 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: skill_custom
     stat: vo
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
     max_count: 6
   - trigger: outing_end
     stat: vo
-    value: 10
+    values: [10, 10, 10, 10, 10]
     value_type: flat
   - trigger: skill_delete
     stat: vo
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
 - id: sr_013
   name: はっぴぃはろうぃ～～ん！
@@ -365,23 +365,23 @@ support_cards:
     max_count: 2
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: equip
     stat: da
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: skill_delete
     stat: da
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
 - id: sr_014
   name: 腹筋で背筋で体幹キープ！
@@ -396,23 +396,23 @@ support_cards:
     max_count: 1
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: good_impression_acquire
     stat: vi
-    value: 3
+    values: [2, 3, 3, 3, 3]
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: p_item_acquire
     stat: vi
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
 - id: sr_015
@@ -428,24 +428,24 @@ support_cards:
     max_count: 1
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: skill_ssr_acquire
     stat: vo
-    value: 5
+    values: [3, 5, 5, 5, 5]
     value_type: flat
   - trigger: special_training
     stat: vo
-    value: 18
+    values: [9, 9, 9, 9, 18]
     value_type: flat
     max_count: 3
   - trigger: skill_delete
     stat: vo
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
 - id: sr_016
   name: 師弟の修行
@@ -460,20 +460,20 @@ support_cards:
     max_count: 2
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: skill_custom
     stat: vi
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
     max_count: 6
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: motivation_acquire
     stat: vi
@@ -492,19 +492,19 @@ support_cards:
     max_count: 1
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: skill_delete
     stat: vi
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
 - id: sr_018
   name: 今日は見学なんです
@@ -514,24 +514,24 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: active_delete
     stat: da
-    value: 16
+    values: [16, 16, 16, 16, 16]
     value_type: flat
     max_count: 3
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: activity_supply
     stat: da
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_019
   name: スパルタ＆スパイス
@@ -541,19 +541,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: vo_sp_end
     stat: vo
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: conserve_acquire
     stat: vo
-    value: 3
+    values: [2, 2, 2, 3, 3]
     value_type: flat
 - id: sr_020
   name: むず×2ふぁっしょんしょー
@@ -563,15 +563,15 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 6.4
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
     value_type: para_bonus
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: concentration_acquire
     stat: da
@@ -585,23 +585,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: active_delete
     stat: vi
-    value: 16
+    values: [16, 16, 16, 16, 16]
     value_type: flat
     max_count: 3
 - id: sr_022
@@ -616,23 +616,23 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: skill_enhance
     stat: da
-    value: 3
+    values: [3, 3, 3, 3, 3]
     value_type: flat
 - id: sr_023
   name: 主菓子、甘い、薄茶、渋み
@@ -642,23 +642,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: exam_end
     stat: vi
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
 - id: sr_024
@@ -673,23 +673,23 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: outing_end
     stat: vo
-    value: 10
+    values: [5, 10, 10, 10, 10]
     value_type: flat
   - trigger: skill_enhance
     stat: vo
-    value: 3
+    values: [3, 3, 3, 3, 3]
     value_type: flat
   - trigger: class_end
     stat: vo
-    value: 5
+    values: [5, 5, 5, 5, 5]
     value_type: flat
 - id: sr_025
   name: 屈辱の2位
@@ -699,24 +699,24 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: outing_end
     stat: vo
-    value: 10
+    values: [5, 10, 10, 10, 10]
     value_type: flat
   - trigger: exam_end
     stat: vo
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
   - trigger: skill_delete
     stat: vo
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
 - id: sr_026
   name: 奥義、三重とび！
@@ -730,23 +730,23 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: mental_enhance
     stat: vi
-    value: 6
+    values: [6, 6, 6, 6, 6]
     value_type: flat
   - trigger: class_end
     stat: vi
-    value: 5
+    values: [5, 5, 5, 5, 5]
     value_type: flat
   - trigger: exam_end
     stat: vi
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
 - id: sr_027
@@ -757,23 +757,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: outing_end
     stat: da
-    value: 10
+    values: [5, 10, 10, 10, 10]
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: mental_enhance
     stat: da
-    value: 6
+    values: [6, 6, 6, 6, 6]
     value_type: flat
 - id: sr_028
   name: 虫愛づる王子様
@@ -783,23 +783,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: skill_enhance
     stat: vi
-    value: 3
+    values: [3, 3, 3, 3, 3]
     value_type: flat
   - trigger: outing_end
     stat: vi
-    value: 10
+    values: [5, 5, 5, 5, 10]
     value_type: flat
   - trigger: skill_delete
     stat: vi
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
 - id: sr_029
   name: ピューとシューの二重奏
@@ -809,23 +809,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: mental_enhance
     stat: da
-    value: 6
+    values: [6, 6, 6, 6, 6]
     value_type: flat
   - trigger: class_end
     stat: da
-    value: 5
+    values: [5, 5, 5, 5, 5]
     value_type: flat
   - trigger: good_impression_acquire
     stat: da
-    value: 3
+    values: [2, 2, 2, 3, 3]
     value_type: flat
 - id: sr_030
   name: まごころを込めて
@@ -835,15 +835,15 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: outing_end
     stat: vo
-    value: 10
+    values: [5, 5, 5, 5, 10]
     value_type: flat
   - trigger: class_end
     stat: vo
-    value: 5
+    values: [5, 5, 5, 5, 5]
     value_type: flat
 - id: sr_031
   name: SSCの爆誕
@@ -853,19 +853,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: outing_end
     stat: vi
-    value: 10
+    values: [5, 5, 5, 10, 10]
     value_type: flat
 - id: sr_032
   name: 目指すはテッペン
@@ -875,19 +875,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: consultation
     stat: da
-    value: 14
+    values: [7, 7, 7, 14, 14]
     value_type: flat
 - id: sr_033
   name: まだまだのばしてー
@@ -897,19 +897,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: outing_end
     stat: vi
-    value: 10
+    values: [5, 5, 5, 10, 10]
     value_type: flat
 - id: sr_034
   name: 基礎＞応用
@@ -919,15 +919,15 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
 - id: sr_035
   name: カロリー/2でハッピー×2
@@ -937,23 +937,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: skill_enhance
     stat: da
-    value: 3
+    values: [3, 3, 3, 3, 3]
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: activity_supply
     stat: da
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_036
   name: きゅる～んωポーズッ☆
@@ -967,23 +967,23 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: exam_end
     stat: da
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
 - id: sr_037
@@ -994,15 +994,15 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: consultation
     stat: da
-    value: 14
+    values: [7, 7, 7, 14, 14]
     value_type: flat
 - id: sr_038
   name: サンマ、パタパタ
@@ -1012,15 +1012,15 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: skill_enhance
     stat: vi
-    value: 3
+    values: [3, 3, 3, 3, 3]
     value_type: flat
 - id: sr_039
   name: バズっちゃお！
@@ -1030,23 +1030,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: consultation
     stat: da
-    value: 14
+    values: [7, 14, 14, 14, 14]
     value_type: flat
   - trigger: outing_end
     stat: da
-    value: 10
+    values: [5, 5, 5, 5, 10]
     value_type: flat
   - trigger: activity_supply
     stat: da
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_040
   name: トンボをつかまえて
@@ -1056,19 +1056,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: skill_enhance
     stat: da
-    value: 3
+    values: [3, 3, 3, 3, 3]
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: exam_end
     stat: da
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
 - id: sr_041
@@ -1079,23 +1079,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: activity_supply
     stat: vi
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_042
   name: 興味深い飲み物
@@ -1105,23 +1105,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: class_end
     stat: vo
-    value: 5
+    values: [5, 5, 5, 5, 5]
     value_type: flat
 - id: sr_043
   name: 千奈の恩返し
@@ -1131,19 +1131,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: skill_delete
     stat: da
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: activity_supply
     stat: da
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_044
   name: ブレイクタイムは珈琲で
@@ -1153,19 +1153,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: vo_lesson_end
     stat: vo
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: consultation_drink
     stat: vo
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
 - id: sr_045
   name: りっぱなすすき！
@@ -1175,23 +1175,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: outing_end
     stat: vi
-    value: 10
+    values: [5, 10, 10, 10, 10]
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: activity_supply
     stat: vi
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_046
   name: キュッと締めて
@@ -1201,19 +1201,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: da_lesson_end
     stat: da
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: consultation_drink
     stat: da
-    value: 8
+    values: [8, 8, 8, 8, 8]
     value_type: flat
 - id: sr_047
   name: ふわふわなお面？
@@ -1223,23 +1223,23 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: outing_end
     stat: da
-    value: 10
+    values: [5, 5, 5, 10, 10]
     value_type: flat
 - id: sr_048
   name: やさしさ、あったかい
@@ -1249,19 +1249,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: vi_lesson_end
     stat: vi
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: outing_end
     stat: vi
-    value: 10
+    values: [5, 5, 5, 10, 10]
     value_type: flat
 - id: sr_049
   name: 第五種接近遭遇
@@ -1275,15 +1275,15 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: vo_lesson_end
     stat: vo
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: consultation
     stat: vo
-    value: 14
+    values: [7, 7, 7, 14, 14]
     value_type: flat
 - id: sr_050
   name: 海、楽しまなきゃ！
@@ -1297,15 +1297,15 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: rest
     stat: vo
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
 - id: sr_051
   name: かちこちストレッチ
@@ -1319,15 +1319,15 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: consultation
     stat: vi
-    value: 14
+    values: [7, 7, 7, 14, 14]
     value_type: flat
 - id: sr_052
   name: どりゃぎゃ
@@ -1341,23 +1341,23 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: da_lesson_end
     stat: da
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: activity_supply
     stat: da
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_053
   name: パシャっとキメポ
@@ -1367,19 +1367,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: da_lesson_end
     stat: da
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: rest
     stat: da
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
 - id: sr_054
   name: イヤホンはんぶんこ
@@ -1389,19 +1389,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: rest
     stat: vo
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
   - trigger: outing_end
     stat: vo
-    value: 10
+    values: [5, 5, 5, 10, 10]
     value_type: flat
 - id: sr_055
   name: 体当たりのラブコール
@@ -1411,19 +1411,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: exam_end
     stat: vi
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
 - id: sr_056
@@ -1434,19 +1434,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: exam_end
     stat: vo
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
 - id: sr_057
@@ -1457,15 +1457,15 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: vo_lesson_end
     stat: vo
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: activity_supply
     stat: vo
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_058
   name: 愛無き暗記は難しい
@@ -1475,19 +1475,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: vo_normal_end
     stat: vo
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: class_end
     stat: vo
-    value: 5
+    values: [5, 5, 5, 5, 5]
     value_type: flat
 - id: sr_059
   name: てとりあしとり
@@ -1497,19 +1497,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: vi_lesson_end
     stat: vi
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: activity_supply
     stat: vi
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_060
   name: ほっぺた、ぷに
@@ -1519,15 +1519,15 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: vi_normal_end
     stat: vi
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: class_end
     stat: vi
-    value: 5
+    values: [5, 5, 5, 5, 5]
     value_type: flat
 - id: sr_061
   name: 魅惑の大腿四頭筋
@@ -1537,15 +1537,15 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: da_lesson_end
     stat: da
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: activity_supply
     stat: da
-    value: 11
+    values: [6, 6, 6, 11, 11]
     value_type: flat
 - id: sr_062
   name: ふわふわでワクワク
@@ -1555,19 +1555,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 21
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: exam_end
     stat: da
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
 - id: sr_063
@@ -1578,19 +1578,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: da_normal_end
     stat: da
-    value: 13
+    values: [13, 13, 13, 13, 13]
     value_type: flat
   - trigger: class_end
     stat: da
-    value: 5
+    values: [5, 5, 5, 5, 5]
     value_type: flat
 - id: sr_064
   name: 実食！例のSSD
@@ -1600,19 +1600,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: da
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: da_lesson_end
     stat: da
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: consultation
     stat: da
-    value: 14
+    values: [7, 7, 7, 14, 14]
     value_type: flat
 - id: sr_065
   name: マイペース、マイライフ
@@ -1622,19 +1622,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: vo_lesson_end
     stat: vo
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: consultation
     stat: vo
-    value: 14
+    values: [7, 7, 7, 14, 14]
     value_type: flat
 - id: sr_066
   name: 思惑とガクガク
@@ -1644,19 +1644,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: vi_lesson_end
     stat: vi
-    value: 4
+    values: [2, 2, 2, 2, 4]
     value_type: flat
   - trigger: consultation
     stat: vi
-    value: 14
+    values: [7, 7, 7, 14, 14]
     value_type: flat
 - id: sr_067
   name: ほっとけないクラスメイト
@@ -1666,19 +1666,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vo
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vo
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: skill_enhance
     stat: vo
-    value: 3
+    values: [3, 3, 3, 3, 3]
     value_type: flat
   - trigger: outing_end
     stat: vo
-    value: 10
+    values: [5, 5, 5, 10, 10]
     value_type: flat
 - id: sr_068
   name: いつか、きっと花開く
@@ -1688,19 +1688,19 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    value: 15
+    values: [15, 15, 15, 15, 15]
     value_type: flat
   - trigger: equip
     stat: vi
-    value: 49
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: skill_enhance
     stat: vi
-    value: 3
+    values: [3, 3, 3, 3, 3]
     value_type: flat
   - trigger: rest
     stat: vi
-    value: 17
+    values: [17, 17, 17, 17, 17]
     value_type: flat
 - id: sr_069
   name: はじめてのお友達
@@ -1710,5 +1710,25 @@ support_cards:
   effects:
   - trigger: equip
     stat: all
-    value: 10.5
+    values: [10.5, 10.5, 10.5, 10.5, 10.5]
     value_type: sp_rate
+- id: sr_070
+  name: 騎士とおてんば姫
+  rarity: SR
+  type: vi
+  plan: logic
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [37, 40, 43, 46, 49]
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [10.5, 21, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: sp_end
+    stat: vi
+    values: [8, 8, 8, 15, 15]
+    value_type: flat
+    max_count: 4
+    condition: deck>=20

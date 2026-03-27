@@ -194,6 +194,12 @@ public class InventoryViewModel : INotifyPropertyChanged
         "vo" => 0, "da" => 1, "vi" => 2, _ => 3
     };
 
+    private static int CardIdNumber(string cardId)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(cardId, @"(\d+)$");
+        return match.Success ? int.Parse(match.Groups[1].Value) : 0;
+    }
+
     private void ApplyFilter()
     {
         FilteredItems.Clear();
@@ -215,7 +221,8 @@ public class InventoryViewModel : INotifyPropertyChanged
             return true;
         })
         .OrderBy(i => RarityOrder(i.Rarity))
-        .ThenBy(i => TypeOrder(i.CardType));
+        .ThenBy(i => TypeOrder(i.CardType))
+        .ThenByDescending(i => CardIdNumber(i.CardId));
 
         foreach (var item in filtered)
             FilteredItems.Add(item);
