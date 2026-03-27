@@ -16,6 +16,8 @@ public class CardScoringService
         public int RawVi { get; set; }
         /// <summary>効果別の内訳</summary>
         public List<EffectBreakdown> Breakdowns { get; set; } = new();
+        /// <summary>レンタルカードかどうか</summary>
+        public bool IsRental { get; set; }
     }
 
     public class EffectBreakdown
@@ -45,7 +47,9 @@ public class CardScoringService
         Dictionary<string, int>? spCounts = null,
         string? planType = null,
         AdditionalCounts? additionalCounts = null,
-        Dictionary<string, int>? uncapLevels = null)
+        Dictionary<string, int>? uncapLevels = null,
+        List<SupportCard>? rentalPool = null,
+        int freeSlots = 0)
     {
         var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats);
 
@@ -92,6 +96,10 @@ public class CardScoringService
         // 現在の累積ステータス (ベース + 選択済みカード)
         int accVo = baseStats.Vo, accDa = baseStats.Da, accVi = baseStats.Vi;
 
+        // 属性枠・フリー枠の残数を管理するローカルコピー
+        var remainingSlots = new Dictionary<string, int>(cardTypeSlots);
+        int remainingFree = freeSlots;
+
         // ステップ1: SP率カードをユーザ指定枚数分、先に確保
         if (spCounts != null)
         {
@@ -118,20 +126,24 @@ public class CardScoringService
                     accVo += best.RawVo;
                     accDa += best.RawDa;
                     accVi += best.RawVi;
+
+                    // SP率カードが属性枠にカウントされるか、フリー枠を消費するか判定
+                    if (remainingSlots.ContainsKey(stat) && remainingSlots[stat] > 0)
+                        remainingSlots[stat]--;
+                    else
+                        remainingFree = Math.Max(0, remainingFree - 1);
                 }
             }
         }
 
-        // ステップ2: 残りの枠をステータス寄与が高い順にグリーディ選択
-        foreach (var kvp in cardTypeSlots.OrderByDescending(k => k.Value))
+        // レンタルモード: 所持5枠 + レンタル1枠
+        int ownedSlots = rentalPool != null ? 5 : 6;
+
+        // ステップ2: 残りの属性枠をステータス寄与が高い順にグリーディ選択
+        foreach (var kvp in remainingSlots.OrderByDescending(k => k.Value))
         {
             var type = kvp.Key;
             int count = kvp.Value;
-            if (count <= 0) continue;
-
-            // SP率で既に選ばれた分を引く
-            int alreadyForType = selected.Count(cs => cs.Card.Type == type);
-            count -= alreadyForType;
             if (count <= 0) continue;
 
             var candidates = cardContributions
@@ -139,7 +151,7 @@ public class CardScoringService
                              && !usedIds.Contains(cs.Card.Id))
                 .ToList();
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count && selected.Count < ownedSlots; i++)
             {
                 var best = SelectBestCard(candidates, usedIds, accVo, accDa, accVi);
                 if (best == null) break;
@@ -152,14 +164,31 @@ public class CardScoringService
             }
         }
 
-        // 6枠に満たない場合、フィルタ済みから補充
-        if (selected.Count < 6)
+        // フリー枠: 属性を問わず最良のカードを選択
+        for (int i = 0; i < remainingFree && selected.Count < ownedSlots; i++)
+        {
+            var freeCandidates = cardContributions
+                .Where(cs => !usedIds.Contains(cs.Card.Id))
+                .ToList();
+
+            var best = SelectBestCard(freeCandidates, usedIds, accVo, accDa, accVi);
+            if (best == null) break;
+
+            selected.Add(best);
+            usedIds.Add(best.Card.Id);
+            accVo += best.RawVo;
+            accDa += best.RawDa;
+            accVi += best.RawVi;
+        }
+
+        // 所持枠に満たない場合、フィルタ済みから補充
+        if (selected.Count < ownedSlots)
         {
             var remaining = cardContributions
                 .Where(cs => !usedIds.Contains(cs.Card.Id))
                 .ToList();
 
-            while (selected.Count < 6)
+            while (selected.Count < ownedSlots)
             {
                 var best = SelectBestCard(remaining, usedIds, accVo, accDa, accVi);
                 if (best == null) break;
@@ -172,8 +201,36 @@ public class CardScoringService
             }
         }
 
-        // それでも6枠未満なら全カードから補充
-        if (selected.Count < 6)
+        // レンタル1枠: 全カードプールから4凸で最良の1枚を選択
+        if (rentalPool != null && selected.Count < 6)
+        {
+            var rentalUncap = new Dictionary<string, int>();
+            foreach (var c in rentalPool)
+                rentalUncap[c.Id] = 4;
+
+            var rentalContributions = rentalPool
+                .Where(c => !usedIds.Contains(c.Id))
+                .Where(c => string.IsNullOrEmpty(planType)
+                            || string.IsNullOrEmpty(c.Plan)
+                            || c.Plan == planType
+                            || c.Plan == "free")
+                .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, rentalUncap))
+                .ToList();
+
+            var bestRental = SelectBestCard(rentalContributions, usedIds, accVo, accDa, accVi);
+            if (bestRental != null)
+            {
+                bestRental.IsRental = true;
+                selected.Add(bestRental);
+                usedIds.Add(bestRental.Card.Id);
+                accVo += bestRental.RawVo;
+                accDa += bestRental.RawDa;
+                accVi += bestRental.RawVi;
+            }
+        }
+
+        // レンタルなしで6枠未満なら全カードから補充
+        if (rentalPool == null && selected.Count < 6)
         {
             var fallback = allContributions
                 .Where(cs => !usedIds.Contains(cs.Card.Id))
@@ -199,7 +256,7 @@ public class CardScoringService
 
         return new DeckResult
         {
-            Label = GenerateLabel(cardTypeSlots),
+            Label = GenerateLabel(cardTypeSlots, freeSlots),
             SelectedCards = selected
         };
     }
@@ -331,7 +388,8 @@ public class CardScoringService
         Dictionary<string, int>? spCounts = null,
         string? planType = null,
         AdditionalCounts? additionalCounts = null,
-        Dictionary<string, int>? uncapLevels = null)
+        Dictionary<string, int>? uncapLevels = null,
+        List<SupportCard>? rentalPool = null)
     {
         var results = new List<DeckResult>();
 
@@ -345,27 +403,34 @@ public class CardScoringService
         int spMain2 = spCounts?.GetValueOrDefault(main2) ?? 0;
         int spSub = spCounts?.GetValueOrDefault(subStat) ?? 0;
 
-        // カード枚数パターン (メイン1:メイン2:サブ = 合計6枚)
-        var patterns = new List<(int m1, int m2, int sub)>
+        // カード枚数パターン (メイン1:メイン2:フリー枠 = 合計6枚)
+        var patterns = new List<(int m1, int m2, int free)>
         {
             (3, 2, 1),
             (2, 3, 1),
             (3, 3, 0),
             (2, 2, 2),
+            (0, 0, 5),  // フリー5 + サブ1 (サブはcardTypeSlotsで指定)
         };
 
-        foreach (var (m1, m2, sub) in patterns)
+        foreach (var (m1, m2, free) in patterns)
         {
-            // SP枚数を満たせないパターンはスキップ
-            if (m1 < spMain1 || m2 < spMain2 || sub < spSub) continue;
+            // SP枚数を満たせないパターンはスキップ (フリー枠でSP率カードを吸収できる場合はOK)
+            int spShortage = Math.Max(0, spMain1 - m1) + Math.Max(0, spMain2 - m2);
+            if (spShortage > free) continue;
 
             // カード枚数
-            var cardTypeSlots = new Dictionary<string, int>
+            var cardTypeSlots = new Dictionary<string, int>();
+            if (m1 > 0) cardTypeSlots[main1] = m1;
+            if (m2 > 0) cardTypeSlots[main2] = m2;
+            int freeSlots = free;
+
+            // フリー5パターン: サブ属性1枚を固定枠に追加
+            if (m1 == 0 && m2 == 0)
             {
-                [main1] = m1,
-                [main2] = m2,
-                [subStat] = sub
-            };
+                cardTypeSlots[subStat] = 1;
+                freeSlots = 5;
+            }
 
             // レッスン配分: メイン1のレッスン回数が多い
             var lessonAllocation = new Dictionary<string, int>
@@ -380,7 +445,7 @@ public class CardScoringService
 
             var result = SelectOptimalDeck(
                 plan, allCards, lessonAllocation, cardTypeSlots,
-                mainStats, spCounts, planType, additionalCounts, uncapLevels);
+                mainStats, spCounts, planType, additionalCounts, uncapLevels, rentalPool, freeSlots);
             results.Add(result);
         }
 
@@ -656,7 +721,7 @@ public class CardScoringService
         return new StatusValues(vo, da, vi);
     }
 
-    private string GenerateLabel(Dictionary<string, int> cardTypeSlots)
+    private string GenerateLabel(Dictionary<string, int> cardTypeSlots, int freeSlots = 0)
     {
         var parts = new List<string>();
         foreach (var kvp in cardTypeSlots.OrderByDescending(k => k.Value))
@@ -673,6 +738,8 @@ public class CardScoringService
                 parts.Add($"{name} {kvp.Value}");
             }
         }
+        if (freeSlots > 0)
+            parts.Add($"フリー {freeSlots}");
         return string.Join(" / ", parts) + " 編成";
     }
 }

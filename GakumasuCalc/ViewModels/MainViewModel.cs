@@ -250,6 +250,9 @@ public class MainViewModel : ViewModelBase
             _allCards = _cardLoader.LoadAllCards();
             _inventory = _inventoryService.Load();
 
+            // 所持カードがあればデフォルトでチェックON
+            OwnedOnly = _inventory.Any(e => e.Owned);
+
             if (AvailablePlans.Count > 0)
                 SelectedPlan = AvailablePlans[0];
         }
@@ -302,6 +305,9 @@ public class MainViewModel : ViewModelBase
         var candidateCards = GetCandidateCards();
         var uncapLevels = BuildUncapLevels();
 
+        // 所持モード時: 全カードをレンタルプールとして渡す
+        List<SupportCard>? rentalPool = OwnedOnly ? _allCards : null;
+
         // SP率カード枚数
         var spCounts = new Dictionary<string, int>();
         if (VoSpCount > 0) spCounts["vo"] = VoSpCount;
@@ -312,7 +318,7 @@ public class MainViewModel : ViewModelBase
         var patterns = _scoringService.SelectMultiplePatterns(
             _selectedPlan, candidateCards, mainStats, subStat, lessonWeekCount,
             spCounts: spCounts, planType: SelectedPlanType, additionalCounts: additional,
-            uncapLevels: uncapLevels);
+            uncapLevels: uncapLevels, rentalPool: rentalPool);
 
         _deckResults = patterns;
         _lastMainStats = mainStats;
@@ -328,11 +334,12 @@ public class MainViewModel : ViewModelBase
             var vm = new PatternResultViewModel { Label = pattern.Label, Index = i };
             foreach (var cs in pattern.SelectedCards)
             {
+                var displayName = cs.IsRental ? $"{cs.Card.Name}（レンタル）" : cs.Card.Name;
                 var breakdown = string.Join("\n", cs.Breakdowns
                     .Select(b => $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
                 vm.Cards.Add(new DeckCardViewModel
                 {
-                    CardName = cs.Card.Name,
+                    CardName = displayName,
                     CardType = cs.Card.Type,
                     CardPlan = cs.Card.Plan,
                     StatValue = cs.TotalValue,
@@ -376,16 +383,20 @@ public class MainViewModel : ViewModelBase
         var selectedCards = pattern.SelectedCards.Select(cs => cs.Card).ToList();
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
         var uncapLevels = BuildUncapLevels();
+        // レンタルカードは4凸として計算
+        foreach (var cs in pattern.SelectedCards.Where(cs => cs.IsRental))
+            uncapLevels[cs.Card.Id] = 4;
         Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels);
 
         DeckCards.Clear();
         foreach (var cs in pattern.SelectedCards)
         {
+            var displayName = cs.IsRental ? $"{cs.Card.Name}（レンタル）" : cs.Card.Name;
             var breakdown = string.Join("\n", cs.Breakdowns
                 .Select(b => $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
             DeckCards.Add(new DeckCardViewModel
             {
-                CardName = cs.Card.Name,
+                CardName = displayName,
                 CardType = cs.Card.Type,
                 CardPlan = cs.Card.Plan,
                 StatValue = cs.TotalValue,
@@ -739,11 +750,15 @@ public class MainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// インベントリから凸数辞書を構築する
+    /// 凸数辞書を構築する。所持モード時はインベントリの凸数、それ以外は全カード4凸。
     /// </summary>
     private Dictionary<string, int> BuildUncapLevels()
     {
-        return _inventory.ToDictionary(e => e.CardId, e => e.Uncap);
+        if (OwnedOnly)
+            return _inventory.ToDictionary(e => e.CardId, e => e.Uncap);
+
+        // 全カード4凸
+        return _allCards.ToDictionary(c => c.Id, _ => 4);
     }
 
     private void ExecuteReset()
