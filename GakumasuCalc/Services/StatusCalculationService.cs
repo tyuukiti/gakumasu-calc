@@ -109,19 +109,32 @@ public class StatusCalculationService
 
         var raw = lesson.SpBonus;
 
-        // パラメータボーナス% を集計 (SP率は突破確率なので理論値計算では除外)
-        double totalParaBonus = 0;
+        // パラメータボーナス% を属性別に集計
+        double paraBonusVo = 0, paraBonusDa = 0, paraBonusVi = 0;
         foreach (var card in cards)
         {
-            totalParaBonus += card.GetParaBonus(GetUncapLevel(card, uncapLevels));
+            var uncap = GetUncapLevel(card, uncapLevels);
+            foreach (var e in card.Effects.Where(e => e.Trigger == "equip" && e.ValueType == "para_bonus"))
+            {
+                var val = e.GetValue(uncap);
+                switch (e.Stat)
+                {
+                    case "vo": paraBonusVo += val; break;
+                    case "da": paraBonusDa += val; break;
+                    case "vi": paraBonusVi += val; break;
+                    case "all":
+                        paraBonusVo += val;
+                        paraBonusDa += val;
+                        paraBonusVi += val;
+                        break;
+                }
+            }
         }
 
-        // パラボのみ適用
-        double multiplier = 1.0 + totalParaBonus / 100.0;
-
-        int vo = (int)Math.Floor(raw.Vo * multiplier);
-        int da = (int)Math.Floor(raw.Da * multiplier);
-        int vi = (int)Math.Floor(raw.Vi * multiplier);
+        // 各属性のパラボは該当属性のレッスン上昇値にのみ適用
+        int vo = (int)Math.Floor(raw.Vo * (1.0 + paraBonusVo / 100.0));
+        int da = (int)Math.Floor(raw.Da * (1.0 + paraBonusDa / 100.0));
+        int vi = (int)Math.Floor(raw.Vi * (1.0 + paraBonusVi / 100.0));
 
         var result = new StatusValues(vo, da, vi);
 

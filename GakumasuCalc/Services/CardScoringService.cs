@@ -72,14 +72,17 @@ public class CardScoringService
         // レッスン・イベント等のカード無しベースステータスを推定
         var baseStats = EstimateBaseStats(plan, lessonAllocation);
 
+        // レッスンの属性別合計SpBonusを事前計算
+        var lessonStatTotals = CalculateLessonStatTotals(plan, lessonAllocation);
+
         // 全カードの属性別寄与を事前計算
         var cardContributions = eligible
-            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, uncapLevels))
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels))
             .ToList();
 
         // 全カードプール (フィルタ外も補充用に)
         var allContributions = allCards
-            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, uncapLevels))
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels))
             .ToList();
 
         // 属性枠ごとに選択 (上限考慮)
@@ -364,7 +367,7 @@ public class CardScoringService
                 [subStat] = sub
             };
 
-            // レッスン配分はカード枚数とは独立にメイン属性に均等配分
+            // レッスン配分: メイン1のレッスン回数が多い
             var lessonAllocation = new Dictionary<string, int>
             {
                 [main1] = 0,
@@ -372,8 +375,8 @@ public class CardScoringService
                 [subStat] = 0
             };
             int remaining = totalLessonWeeks;
-            lessonAllocation[main1] += remaining / 2;
-            lessonAllocation[main2] += remaining - remaining / 2;
+            lessonAllocation[main1] += remaining - remaining / 2;
+            lessonAllocation[main2] += remaining / 2;
 
             var result = SelectOptimalDeck(
                 plan, allCards, lessonAllocation, cardTypeSlots,
@@ -391,6 +394,7 @@ public class CardScoringService
         SupportCard card,
         Dictionary<string, int> triggerCounts,
         Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
         Dictionary<string, int>? uncapLevels)
     {
         int uncap = StatusCalculationService.GetUncapLevel(card, uncapLevels);
@@ -402,17 +406,47 @@ public class CardScoringService
             // SP率は突破確率であり理論値計算では不要（全SPクリア前提）
             if (effect.ValueType == "sp_rate") continue;
 
+            if (effect.ValueType == "para_bonus")
+            {
+                // パラボは該当属性のレッスン上昇値にのみ適用
+                double pct = effect.GetValue(uncap) / 100.0;
+                double bonus = 0;
+                switch (effect.Stat)
+                {
+                    case "vo": bonus = lessonStatTotals.Vo * pct; vo += bonus; break;
+                    case "da": bonus = lessonStatTotals.Da * pct; da += bonus; break;
+                    case "vi": bonus = lessonStatTotals.Vi * pct; vi += bonus; break;
+                    case "all":
+                        double bVo = lessonStatTotals.Vo * pct;
+                        double bDa = lessonStatTotals.Da * pct;
+                        double bVi = lessonStatTotals.Vi * pct;
+                        vo += bVo; da += bDa; vi += bVi;
+                        bonus = bVo + bDa + bVi;
+                        break;
+                }
+
+                if (Math.Abs(bonus) < 0.01) continue;
+
+                var reason = $"パラボ({effect.Stat.ToUpper()})+{effect.GetValue(uncap)}%";
+                breakdowns.Add(new EffectBreakdown
+                {
+                    Reason = reason,
+                    Stat = effect.Stat,
+                    Value = Math.Round(bonus, 1)
+                });
+                continue;
+            }
+
             double value = effect.ValueType switch
             {
                 "flat" => CalculateFlatValue(effect, triggerCounts, uncap),
-                "para_bonus" => CalculateParaBonusValue(effect, lessonAllocation, uncap),
                 _ => 0
             };
 
             if (Math.Abs(value) < 0.01) continue;
 
             // 内訳の理由テキスト生成
-            var reason = BuildReasonText(effect, triggerCounts, uncap);
+            var reason2 = BuildReasonText(effect, triggerCounts, uncap);
 
             switch (effect.Stat)
             {
@@ -433,7 +467,7 @@ public class CardScoringService
 
             breakdowns.Add(new EffectBreakdown
             {
-                Reason = reason,
+                Reason = reason2,
                 Stat = effect.Stat,
                 Value = Math.Round(value, 1)
             });
@@ -588,12 +622,38 @@ public class CardScoringService
         return val * fires;
     }
 
-    private double CalculateParaBonusValue(CardEffect effect, Dictionary<string, int> lessonAllocation, int uncapLevel)
+    /// <summary>
+    /// レッスン配分に基づいて、全レッスンのSpBonusを属性別に合計する。
+    /// パラメータボーナスの属性別寄与計算に使用。
+    /// </summary>
+    private StatusValues CalculateLessonStatTotals(TrainingPlan plan, Dictionary<string, int> lessonAllocation)
     {
-        double avgLessonTotal = 460.0;
-        int totalLessons = lessonAllocation.Values.Sum();
+        int vo = 0, da = 0, vi = 0;
 
-        return totalLessons * avgLessonTotal * (effect.GetValue(uncapLevel) / 100.0);
+        var lessonWeeks = plan.Schedule
+            .Where(w => w.Lessons.Count > 0)
+            .OrderByDescending(w => w.Week)
+            .ToList();
+
+        var weekQueue = new Queue<WeekSchedule>(lessonWeeks);
+
+        foreach (var stat in lessonAllocation.OrderByDescending(kv => kv.Value))
+        {
+            int count = stat.Value;
+            for (int i = 0; i < count && weekQueue.Count > 0; i++)
+            {
+                var w = weekQueue.Dequeue();
+                var lesson = w.GetLesson(stat.Key);
+                if (lesson != null)
+                {
+                    vo += lesson.SpBonus.Vo;
+                    da += lesson.SpBonus.Da;
+                    vi += lesson.SpBonus.Vi;
+                }
+            }
+        }
+
+        return new StatusValues(vo, da, vi);
     }
 
     private string GenerateLabel(Dictionary<string, int> cardTypeSlots)
