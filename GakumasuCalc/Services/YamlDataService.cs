@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -18,7 +19,7 @@ public class YamlDataService
 
     public T LoadFromFile<T>(string filePath)
     {
-        var yaml = File.ReadAllText(filePath);
+        var yaml = File.ReadAllText(filePath, Encoding.UTF8);
         return _deserializer.Deserialize<T>(yaml);
     }
 

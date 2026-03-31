@@ -22,6 +22,9 @@ public class TrainingPlan
     [YamlMember(Alias = "total_weeks")]
     public int TotalWeeks { get; set; }
 
+    [YamlMember(Alias = "status_limit")]
+    public int StatusLimit { get; set; } = 2800;
+
     [YamlMember(Alias = "base_status")]
     public StatusValues BaseStatus { get; set; } = StatusValues.Zero;
 

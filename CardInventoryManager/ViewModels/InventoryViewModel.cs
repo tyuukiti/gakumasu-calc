@@ -14,6 +14,7 @@ public class InventoryViewModel : INotifyPropertyChanged
     private readonly InventoryService _inventoryService;
     private readonly SupportCardLoaderService _cardLoader;
     private readonly string _imagesDir;
+    private readonly PropertyChangedEventHandler _itemChangedHandler;
     private string _filterText = string.Empty;
     private string _filterRarity = "すべて";
     private TypeFilterOption _filterType = null!;
@@ -84,6 +85,7 @@ public class InventoryViewModel : INotifyPropertyChanged
         _inventoryService = new InventoryService(Path.Combine(dataDir, "Inventory", "inventory.yaml"));
         _imagesDir = Path.Combine(dataDir, "Images");
 
+        _itemChangedHandler = (_, _) => UpdateCounts();
         SaveCommand = new RelayCommand(Save);
         SelectAllCommand = new RelayCommand(() =>
         {
@@ -112,13 +114,15 @@ public class InventoryViewModel : INotifyPropertyChanged
             // 画像マッピング読み込み (カード名 → ファイル名)
             var imageMap = LoadImageMapping();
 
+            foreach (var item in AllItems)
+                item.PropertyChanged -= _itemChangedHandler;
             AllItems.Clear();
             foreach (var entry in entries)
             {
                 if (!cardMap.TryGetValue(entry.CardId, out var card)) continue;
                 var imagePath = ResolveImagePath(card.Name, imageMap);
                 var vm = new CardInventoryItemViewModel(entry, card, imagePath);
-                vm.PropertyChanged += (_, _) => UpdateCounts();
+                vm.PropertyChanged += _itemChangedHandler;
                 AllItems.Add(vm);
             }
 
@@ -228,7 +232,9 @@ public class InventoryViewModel : INotifyPropertyChanged
         .ThenBy(i => TypeOrder(i.CardType))
         .ThenByDescending(i => CardIdNumber(i.CardId));
 
-        FilteredItems = new ObservableCollection<CardInventoryItemViewModel>(filtered);
+        FilteredItems.Clear();
+        foreach (var item in filtered)
+            FilteredItems.Add(item);
         OnPropertyChanged(nameof(FilteredCount));
     }
 
@@ -305,8 +311,11 @@ public class CardInventoryItemViewModel : INotifyPropertyChanged
 
     public double OpacityValue => Owned ? 1.0 : 0.35;
     public string UncapDisplay => Uncap > 0 ? $"{Uncap}凸" : "-";
-    public string OwnedBorderBrush => Owned ? "#4CAF50" : "Transparent";
-    public string OwnedBorderThickness => Owned ? "2" : "0";
+    public System.Windows.Media.SolidColorBrush OwnedBorderBrush => Owned
+        ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50))
+        : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Transparent);
+    public System.Windows.Thickness OwnedBorderThickness => Owned
+        ? new System.Windows.Thickness(2) : new System.Windows.Thickness(0);
 
     public string TypeDisplay => CardType switch
     {
@@ -353,7 +362,7 @@ public class CardTypeToBrushConverter : System.Windows.Data.IValueConverter
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        => throw new NotImplementedException();
+        => System.Windows.Data.Binding.DoNothing;
 }
 
 public class RelayCommand : ICommand

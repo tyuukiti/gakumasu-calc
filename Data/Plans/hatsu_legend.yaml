@@ -3,6 +3,7 @@ plan:
   name: "初Legend"
   description: "初Legend育成プラン"
   total_weeks: 18
+  status_limit: 2800
   base_status:
     vo: 0
     da: 0
