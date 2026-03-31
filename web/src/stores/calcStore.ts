@@ -1,0 +1,403 @@
+﻿import { create } from 'zustand';
+import type {
+  TrainingPlan,
+  TurnChoice,
+  AdditionalCounts,
+  EventCountTemplate,
+  SupportCard,
+} from '../types/models';
+import { emptyAdditionalCounts } from '../types/models';
+import type { PlanType, RoleType, ActionType } from '../types/enums';
+import type { CalculationResult, DeckResult } from '../types/results';
+import type { CardInventoryEntry } from '../types/inventory';
+import { useAppStore } from './appStore';
+import { selectMultiplePatterns } from '../services/cardScoring';
+import { calculate } from '../services/statusCalculation';
+
+interface CalcState {
+  selectedPlanId: string;
+  selectedPlanType: PlanType;
+  voRole: RoleType;
+  daRole: RoleType;
+  viRole: RoleType;
+  voSpCount: number;
+  daSpCount: number;
+  viSpCount: number;
+  additionalCounts: AdditionalCounts;
+  ownedOnly: boolean;
+  deckResults: DeckResult[];
+  selectedPatternIndex: number;
+  calculationResult: CalculationResult | null;
+  errorMessage: string | null;
+
+  // internal state for re-applying patterns
+  _lastMainStats: string[];
+  _lastLessonWeekCount: number;
+
+  setSelectedPlanId: (id: string) => void;
+  setSelectedPlanType: (type: PlanType) => void;
+  setRole: (stat: 'vo' | 'da' | 'vi', role: RoleType) => void;
+  setSpCount: (stat: 'vo' | 'da' | 'vi', count: number) => void;
+  setAdditionalCount: (key: string, value: number) => void;
+  applyTemplate: (template: EventCountTemplate) => void;
+  setOwnedOnly: (v: boolean) => void;
+  executeCalculate: () => void;
+  selectPattern: (index: number) => void;
+}
+
+function getCandidateCards(
+  allCards: SupportCard[],
+  inventory: CardInventoryEntry[],
+  ownedOnly: boolean,
+): SupportCard[] {
+  if (!ownedOnly) return allCards;
+  const ownedIds = new Set(inventory.filter((e) => e.owned).map((e) => e.card_id));
+  return allCards.filter((c) => ownedIds.has(c.id));
+}
+
+function buildUncapLevels(
+  allCards: SupportCard[],
+  inventory: CardInventoryEntry[],
+  ownedOnly: boolean,
+): Record<string, number> {
+  if (ownedOnly) {
+    const levels: Record<string, number> = {};
+    for (const e of inventory) {
+      levels[e.card_id] = e.uncap;
+    }
+    return levels;
+  }
+  const levels: Record<string, number> = {};
+  for (const c of allCards) {
+    levels[c.id] = 4;
+  }
+  return levels;
+}
+
+function autoAssignTurnChoices(
+  plan: TrainingPlan,
+  mainStats: string[],
+): TurnChoice[] {
+  const subStat = ['vo', 'da', 'vi'].find((s) => !mainStats.includes(s)) ?? 'vi';
+  const subClassAction: ActionType = `${subStat}_class` as ActionType;
+
+  const choices: TurnChoice[] = [];
+
+  // Categorize weeks
+  const lessonWeeks: { week: number; available_actions: string[] }[] = [];
+  const otherWeeks: { week: number; available_actions: string[]; type: string }[] = [];
+
+  for (const week of plan.schedule) {
+    const isFixed = week.type === 'fixed_event' || week.type === 'exam' || week.type === 'audition';
+    if (isFixed) {
+      // Fixed events don't need a TurnChoice
+      continue;
+    }
+
+    const hasLesson = week.available_actions.some((a) =>
+      a === 'vo_lesson' || a === 'da_lesson' || a === 'vi_lesson',
+    );
+
+    if (hasLesson) {
+      lessonWeeks.push({ week: week.week, available_actions: week.available_actions });
+    } else {
+      otherWeeks.push({ week: week.week, available_actions: week.available_actions, type: week.type });
+    }
+  }
+
+  // Find mid-exam week
+  const midExamWeek = plan.schedule.find(
+    (w) => (w.type === 'fixed_event' || w.type === 'exam') && w.event_name === '中間試験',
+  )?.week ?? 10;
+
+  if (mainStats.length >= 2) {
+    const main1Action: ActionType = `${mainStats[0]}_lesson` as ActionType;
+    const main2Action: ActionType = `${mainStats[1]}_lesson` as ActionType;
+
+    const sortedLessons = [...lessonWeeks].sort((a, b) => a.week - b.week);
+    const beforeMid = sortedLessons.filter((w) => w.week < midExamWeek);
+    const afterMid = sortedLessons.filter((w) => w.week > midExamWeek);
+
+    // Before mid: alternate main1 / main2
+    let toggle = false;
+    for (const w of beforeMid) {
+      const action = toggle ? main2Action : main1Action;
+      const fallback = toggle ? main1Action : main2Action;
+      if (w.available_actions.includes(action)) {
+        choices.push({ week: w.week, chosen_action: action });
+      } else if (w.available_actions.includes(fallback)) {
+        choices.push({ week: w.week, chosen_action: fallback });
+      }
+      toggle = !toggle;
+    }
+
+    // After mid: 2:1 ratio (main1, main2, main1, main1, main2, main1...)
+    let afterCount = 0;
+    for (const w of afterMid) {
+      const action = (afterCount % 3 === 1) ? main2Action : main1Action;
+      const fallback = action === main2Action ? main1Action : main2Action;
+      if (w.available_actions.includes(action)) {
+        choices.push({ week: w.week, chosen_action: action });
+      } else if (w.available_actions.includes(fallback)) {
+        choices.push({ week: w.week, chosen_action: fallback });
+      }
+      afterCount++;
+    }
+  } else if (mainStats.length === 1) {
+    const onlyAction: ActionType = `${mainStats[0]}_lesson` as ActionType;
+    for (const w of lessonWeeks) {
+      if (w.available_actions.includes(onlyAction)) {
+        choices.push({ week: w.week, chosen_action: onlyAction });
+      }
+    }
+  }
+
+  // Non-lesson weeks: class (sub) > activity_supply > outing > consultation > special_training
+  for (const w of otherWeeks) {
+    const hasClass = w.available_actions.some((a) =>
+      a === 'vo_class' || a === 'da_class' || a === 'vi_class',
+    );
+
+    if (hasClass && w.available_actions.includes(subClassAction)) {
+      choices.push({ week: w.week, chosen_action: subClassAction });
+    } else if (w.available_actions.includes('activity_supply')) {
+      choices.push({ week: w.week, chosen_action: 'activity_supply' });
+    } else if (w.available_actions.includes('outing')) {
+      choices.push({ week: w.week, chosen_action: 'outing' });
+    } else if (w.available_actions.includes('consultation')) {
+      choices.push({ week: w.week, chosen_action: 'consultation' });
+    } else if (w.available_actions.includes('special_training')) {
+      choices.push({ week: w.week, chosen_action: 'special_training' });
+    } else if (hasClass) {
+      // Sub class not available, pick a main class
+      const mainClassAction: ActionType = `${mainStats[0] ?? 'vo'}_class` as ActionType;
+      if (w.available_actions.includes(mainClassAction)) {
+        choices.push({ week: w.week, chosen_action: mainClassAction });
+      } else if (w.available_actions.length > 0) {
+        choices.push({ week: w.week, chosen_action: w.available_actions[0] as ActionType });
+      }
+    } else if (w.available_actions.length > 0) {
+      choices.push({ week: w.week, chosen_action: w.available_actions[0] as ActionType });
+    }
+  }
+
+  return choices;
+}
+
+function applySelectedPatternImpl(
+  state: CalcState,
+  index: number,
+): Partial<CalcState> {
+  if (index < 0 || index >= state.deckResults.length) {
+    return { selectedPatternIndex: index };
+  }
+
+  const { plans } = useAppStore.getState();
+  const plan = plans.find((p) => p.id === state.selectedPlanId);
+  if (!plan) return { selectedPatternIndex: index, errorMessage: 'プランが見つかりません' };
+
+  const pattern = state.deckResults[index];
+  const mainStats = state._lastMainStats;
+
+  // Auto-assign turn choices
+  const turnChoices = autoAssignTurnChoices(plan, mainStats);
+
+  // Build uncap levels
+  const { cards: allCards, inventory } = useAppStore.getState();
+  const uncapLevels = buildUncapLevels(allCards, inventory, state.ownedOnly);
+
+  // Rental cards are 4 uncap
+  for (const cs of pattern.selected_cards) {
+    if (cs.is_rental) {
+      uncapLevels[cs.card.id] = 4;
+    }
+  }
+
+  const selectedCards = pattern.selected_cards.map((cs) => cs.card);
+  const result = calculate(plan, selectedCards, turnChoices, uncapLevels);
+
+  return {
+    selectedPatternIndex: index,
+    calculationResult: result,
+    errorMessage: null,
+  };
+}
+
+export const useCalcStore = create<CalcState>((set, get) => ({
+  selectedPlanId: '',
+  selectedPlanType: 'sense',
+  voRole: 'サブ',
+  daRole: 'サブ',
+  viRole: 'サブ',
+  voSpCount: 0,
+  daSpCount: 0,
+  viSpCount: 0,
+  additionalCounts: emptyAdditionalCounts(),
+  ownedOnly: false,
+  deckResults: [],
+  selectedPatternIndex: 0,
+  calculationResult: null,
+  errorMessage: null,
+  _lastMainStats: [],
+  _lastLessonWeekCount: 0,
+
+  setSelectedPlanId: (id) =>
+    set({
+      selectedPlanId: id,
+      deckResults: [],
+      calculationResult: null,
+      errorMessage: null,
+      selectedPatternIndex: 0,
+    }),
+
+  setSelectedPlanType: (type) => set({ selectedPlanType: type }),
+
+  setRole: (stat, role) => {
+    switch (stat) {
+      case 'vo':
+        set({ voRole: role });
+        break;
+      case 'da':
+        set({ daRole: role });
+        break;
+      case 'vi':
+        set({ viRole: role });
+        break;
+    }
+  },
+
+  setSpCount: (stat, count) => {
+    const val = Math.max(0, count);
+    switch (stat) {
+      case 'vo':
+        set({ voSpCount: val });
+        break;
+      case 'da':
+        set({ daSpCount: val });
+        break;
+      case 'vi':
+        set({ viSpCount: val });
+        break;
+    }
+  },
+
+  setAdditionalCount: (key, value) => {
+    const state = get();
+    set({
+      additionalCounts: {
+        ...state.additionalCounts,
+        [key]: Math.max(0, value),
+      },
+    });
+  },
+
+  applyTemplate: (template) => {
+    const counts = emptyAdditionalCounts();
+    for (const [key, value] of Object.entries(template.counts)) {
+      if (key in counts) {
+        (counts as Record<string, number>)[key] = value;
+      }
+    }
+    set({ additionalCounts: counts });
+  },
+
+  setOwnedOnly: (v) => set({ ownedOnly: v }),
+
+  executeCalculate: () => {
+    try {
+      const state = get();
+      const { cards: allCards, plans, inventory } = useAppStore.getState();
+
+      const plan = plans.find((p) => p.id === state.selectedPlanId);
+      if (!plan) {
+        set({ errorMessage: '育成プランを選択してください' });
+        return;
+      }
+
+      // Build mainStats
+      const mainStats: string[] = [];
+      if (state.voRole === 'メイン1') mainStats.push('vo');
+      if (state.daRole === 'メイン1') mainStats.push('da');
+      if (state.viRole === 'メイン1') mainStats.push('vi');
+      if (state.voRole === 'メイン2') mainStats.push('vo');
+      if (state.daRole === 'メイン2') mainStats.push('da');
+      if (state.viRole === 'メイン2') mainStats.push('vi');
+
+      // Find sub stat
+      const subStat = ['vo', 'da', 'vi'].find((s) => !mainStats.includes(s));
+      if (!subStat || mainStats.length !== 2) {
+        set({ errorMessage: 'メイン1とメイン2に異なる属性を1つずつ設定してください' });
+        return;
+      }
+
+      const lessonWeekCount = plan.schedule.filter((w) => (w.lessons?.length ?? 0) > 0).length;
+
+      // SP counts
+      const spCounts: Record<string, number> = {};
+      if (state.voSpCount > 0) spCounts['vo'] = state.voSpCount;
+      if (state.daSpCount > 0) spCounts['da'] = state.daSpCount;
+      if (state.viSpCount > 0) spCounts['vi'] = state.viSpCount;
+
+      // Candidate cards
+      const candidateCards = getCandidateCards(allCards, inventory, state.ownedOnly);
+      const uncapLevels = buildUncapLevels(allCards, inventory, state.ownedOnly);
+
+      // Rental pool: if ownedOnly, all cards are rental candidates
+      const rentalPool = state.ownedOnly ? allCards : undefined;
+
+      console.log(`計算開始: plan=${plan.id}, mainStats=${mainStats}, subStat=${subStat}, cards=${candidateCards.length}枚`);
+
+      const patterns = selectMultiplePatterns(
+        plan,
+        candidateCards,
+        mainStats,
+        subStat,
+        lessonWeekCount,
+        spCounts,
+        state.selectedPlanType,
+        state.additionalCounts,
+        uncapLevels,
+        rentalPool,
+      );
+
+      console.log(`パターン数: ${patterns.length}, 合計: ${patterns.map(p => p.total_value)}`);
+
+      // Find best pattern
+      let bestIndex = 0;
+      let bestTotal = -Infinity;
+      for (let i = 0; i < patterns.length; i++) {
+        if (patterns[i].total_value > bestTotal) {
+          bestTotal = patterns[i].total_value;
+          bestIndex = i;
+        }
+      }
+
+      set({
+        deckResults: patterns,
+        _lastMainStats: mainStats,
+        _lastLessonWeekCount: lessonWeekCount,
+        errorMessage: null,
+      });
+
+      // Apply best pattern
+      if (patterns.length > 0) {
+        const updates = applySelectedPatternImpl(
+          { ...get(), deckResults: patterns, _lastMainStats: mainStats, _lastLessonWeekCount: lessonWeekCount },
+          bestIndex,
+        );
+        set(updates as Partial<CalcState>);
+      } else {
+        set({ errorMessage: '有効な編成パターンが見つかりませんでした' });
+      }
+    } catch (e) {
+      console.error('計算エラー:', e);
+      set({ errorMessage: `計算エラー: ${(e as Error).message}` });
+    }
+  },
+
+  selectPattern: (index) => {
+    const state = get();
+    const updates = applySelectedPatternImpl(state, index);
+    set(updates as Partial<CalcState>);
+  },
+}));
