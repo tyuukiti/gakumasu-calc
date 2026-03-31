@@ -296,7 +296,14 @@ public class MainViewModel : ViewModelBase
         if (ViRole == "メイン2") mainStats.Add("vi");
 
         // サブ属性を特定
-        var subStat = new[] { "vo", "da", "vi" }.First(s => !mainStats.Contains(s));
+        var subStat = new[] { "vo", "da", "vi" }.FirstOrDefault(s => !mainStats.Contains(s));
+        if (subStat == null)
+        {
+            System.Windows.MessageBox.Show(
+                "メイン1とメイン2に異なる属性を1つずつ設定してください。\nサブ属性が特定できません。",
+                "属性設定エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
 
         // 追加カウント構築
         var additional = BuildAdditionalCounts();
