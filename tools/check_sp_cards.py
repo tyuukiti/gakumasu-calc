@@ -1,4 +1,4 @@
-import yaml, sys
+﻿import yaml, sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 targets = ['やっと見つけたぞ', 'ふわふわでワクワク', 'おっと、危ないよ', 'いつまでも続けばいいのに', 'そろそろ焼けたかな', 'ちょっと詳しいんです', 'もうっ', 'SSDのひみつ']

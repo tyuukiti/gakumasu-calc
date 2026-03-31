@@ -1,4 +1,4 @@
-import yaml, sys
+﻿import yaml, sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 for fn in ['Data/SupportCards/ssr_cards.yaml', 'Data/SupportCards/sr_cards.yaml']:
