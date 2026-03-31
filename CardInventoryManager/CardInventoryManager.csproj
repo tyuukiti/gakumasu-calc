@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="..\favicon_green.ico" Link="favicon_green.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="..\Data\**\*.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>Data\%(RecursiveDir)%(Filename)%(Extension)</Link>

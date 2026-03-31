@@ -19,4 +19,8 @@
     <ProjectReference Include="..\GakumasuCalc\GakumasuCalc.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="..\favicon_blue.ico" Link="favicon_blue.ico" />
+  </ItemGroup>
+
 </Project>
