@@ -4,7 +4,7 @@ namespace GakumasuCalc.Services;
 
 public class CardScoringService
 {
-    public const int STAT_CAP = 2800;
+    public const int DEFAULT_STAT_CAP = 2800;
 
     public class CardScore
     {
@@ -51,6 +51,7 @@ public class CardScoringService
         List<SupportCard>? rentalPool = null,
         int freeSlots = 0)
     {
+        var statCap = plan.StatusLimit;
         var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats);
 
         if (additionalCounts != null)
@@ -118,7 +119,7 @@ public class CardScoringService
 
                 for (int i = 0; i < need; i++)
                 {
-                    var best = SelectBestCard(spCandidates, usedIds, accVo, accDa, accVi);
+                    var best = SelectBestCard(spCandidates, usedIds, accVo, accDa, accVi, statCap);
                     if (best == null) break;
 
                     selected.Add(best);
@@ -153,7 +154,7 @@ public class CardScoringService
 
             for (int i = 0; i < count && selected.Count < ownedSlots; i++)
             {
-                var best = SelectBestCard(candidates, usedIds, accVo, accDa, accVi);
+                var best = SelectBestCard(candidates, usedIds, accVo, accDa, accVi, statCap);
                 if (best == null) break;
 
                 selected.Add(best);
@@ -171,7 +172,7 @@ public class CardScoringService
                 .Where(cs => !usedIds.Contains(cs.Card.Id))
                 .ToList();
 
-            var best = SelectBestCard(freeCandidates, usedIds, accVo, accDa, accVi);
+            var best = SelectBestCard(freeCandidates, usedIds, accVo, accDa, accVi, statCap);
             if (best == null) break;
 
             selected.Add(best);
@@ -190,7 +191,7 @@ public class CardScoringService
 
             while (selected.Count < ownedSlots)
             {
-                var best = SelectBestCard(remaining, usedIds, accVo, accDa, accVi);
+                var best = SelectBestCard(remaining, usedIds, accVo, accDa, accVi, statCap);
                 if (best == null) break;
 
                 selected.Add(best);
@@ -217,7 +218,7 @@ public class CardScoringService
                 .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, rentalUncap))
                 .ToList();
 
-            var bestRental = SelectBestCard(rentalContributions, usedIds, accVo, accDa, accVi);
+            var bestRental = SelectBestCard(rentalContributions, usedIds, accVo, accDa, accVi, statCap);
             if (bestRental != null)
             {
                 bestRental.IsRental = true;
@@ -238,7 +239,7 @@ public class CardScoringService
 
             while (selected.Count < 6)
             {
-                var best = SelectBestCard(fallback, usedIds, accVo, accDa, accVi);
+                var best = SelectBestCard(fallback, usedIds, accVo, accDa, accVi, statCap);
                 if (best == null) break;
 
                 selected.Add(best);
@@ -250,7 +251,7 @@ public class CardScoringService
         }
 
         // キャップ適用後の実効値でTotalValueを再計算
-        RecalculateWithCap(selected, baseStats);
+        RecalculateWithCap(selected, baseStats, statCap);
 
         selected = selected.OrderByDescending(cs => cs.TotalValue).ToList();
 
@@ -268,7 +269,8 @@ public class CardScoringService
     private CardScore? SelectBestCard(
         List<CardScore> candidates,
         HashSet<string> usedIds,
-        int currentVo, int currentDa, int currentVi)
+        int currentVo, int currentDa, int currentVi,
+        int statCap = DEFAULT_STAT_CAP)
     {
         CardScore? best = null;
         int bestGain = int.MinValue;
@@ -278,13 +280,13 @@ public class CardScoringService
             if (usedIds.Contains(cs.Card.Id)) continue;
 
             // キャップ適用後の実効増分
-            int newVo = Math.Min(currentVo + cs.RawVo, STAT_CAP);
-            int newDa = Math.Min(currentDa + cs.RawDa, STAT_CAP);
-            int newVi = Math.Min(currentVi + cs.RawVi, STAT_CAP);
+            int newVo = Math.Min(currentVo + cs.RawVo, statCap);
+            int newDa = Math.Min(currentDa + cs.RawDa, statCap);
+            int newVi = Math.Min(currentVi + cs.RawVi, statCap);
 
-            int cappedVo = Math.Min(currentVo, STAT_CAP);
-            int cappedDa = Math.Min(currentDa, STAT_CAP);
-            int cappedVi = Math.Min(currentVi, STAT_CAP);
+            int cappedVo = Math.Min(currentVo, statCap);
+            int cappedDa = Math.Min(currentDa, statCap);
+            int cappedVi = Math.Min(currentVi, statCap);
 
             int gain = (newVo - cappedVo) + (newDa - cappedDa) + (newVi - cappedVi);
 
@@ -301,20 +303,20 @@ public class CardScoringService
     /// <summary>
     /// 選択完了後、キャップ適用後の実効TotalValueを再計算する。
     /// </summary>
-    private void RecalculateWithCap(List<CardScore> selected, StatusValues baseStats)
+    private void RecalculateWithCap(List<CardScore> selected, StatusValues baseStats, int statCap = DEFAULT_STAT_CAP)
     {
         // カード無しのベースステータスから順に積み上げてキャップ適用
         int accVo = baseStats.Vo, accDa = baseStats.Da, accVi = baseStats.Vi;
 
         foreach (var cs in selected)
         {
-            int prevTotal = Math.Min(accVo, STAT_CAP) + Math.Min(accDa, STAT_CAP) + Math.Min(accVi, STAT_CAP);
+            int prevTotal = Math.Min(accVo, statCap) + Math.Min(accDa, statCap) + Math.Min(accVi, statCap);
 
             accVo += cs.RawVo;
             accDa += cs.RawDa;
             accVi += cs.RawVi;
 
-            int newTotal = Math.Min(accVo, STAT_CAP) + Math.Min(accDa, STAT_CAP) + Math.Min(accVi, STAT_CAP);
+            int newTotal = Math.Min(accVo, statCap) + Math.Min(accDa, statCap) + Math.Min(accVi, statCap);
 
             cs.TotalValue = newTotal - prevTotal;
         }
