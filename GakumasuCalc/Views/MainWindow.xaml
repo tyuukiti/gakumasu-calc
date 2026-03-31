@@ -6,7 +6,8 @@
         Title="学マス 育成ステータス理論値計算ツール"
         Width="780" MinWidth="700" Height="950"
         Background="{StaticResource BgBrush}"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Icon="/favicon.ico">
 
     <Window.DataContext>
         <vm:MainViewModel/>

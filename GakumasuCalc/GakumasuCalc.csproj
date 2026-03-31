@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <AssemblyName>学マス育成計算ツール</AssemblyName>
+    <ApplicationIcon>..\favicon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

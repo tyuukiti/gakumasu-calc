@@ -4,7 +4,8 @@
         xmlns:vm="clr-namespace:SupportCardEditor.ViewModels"
         Title="サポートカードエディタ"
         Width="1000" Height="900" MinWidth="900" MinHeight="700"
-        WindowStartupLocation="CenterScreen" Background="#F5F5F5">
+        WindowStartupLocation="CenterScreen" Background="#F5F5F5"
+        Icon="/favicon_blue.ico">
 
     <Window.DataContext>
         <vm:CardEditorViewModel/>
