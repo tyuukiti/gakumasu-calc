@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text;
 using GakumasuCalc.Models;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -28,7 +29,7 @@ public class InventoryService
         if (!File.Exists(_inventoryPath))
             return new List<CardInventoryEntry>();
 
-        var yaml = File.ReadAllText(_inventoryPath);
+        var yaml = File.ReadAllText(_inventoryPath, Encoding.UTF8);
         var file = _deserializer.Deserialize<CardInventoryFile>(yaml);
         return file?.Inventory ?? new List<CardInventoryEntry>();
     }
@@ -40,7 +41,7 @@ public class InventoryService
         var dir = Path.GetDirectoryName(_inventoryPath);
         if (!string.IsNullOrEmpty(dir))
             Directory.CreateDirectory(dir);
-        File.WriteAllText(_inventoryPath, yaml);
+        File.WriteAllText(_inventoryPath, yaml, Encoding.UTF8);
     }
 
     /// <summary>
