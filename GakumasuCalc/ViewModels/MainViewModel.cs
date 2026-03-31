@@ -348,6 +348,7 @@ public class MainViewModel : ViewModelBase
                 {
                     CardName = displayName,
                     CardType = cs.Card.Type,
+                    CardRarity = cs.Card.Rarity,
                     CardPlan = cs.Card.Plan,
                     StatValue = cs.TotalValue,
                     RawVo = cs.RawVo,
@@ -818,6 +819,7 @@ public class DeckCardViewModel : ViewModelBase
 {
     public string CardName { get; set; } = string.Empty;
     public string CardType { get; set; } = string.Empty;
+    public string CardRarity { get; set; } = string.Empty;
     public string CardPlan { get; set; } = string.Empty;
     public int StatValue { get; set; }
     public int RawVo { get; set; }

@@ -209,24 +209,93 @@ public class CardScoringService
             foreach (var c in rentalPool)
                 rentalUncap[c.Id] = 4;
 
-            var rentalContributions = rentalPool
-                .Where(c => !usedIds.Contains(c.Id))
+            // レンタル候補: 所持で選ばれたカードも含めて全カードから計算
+            var allRentalContributions = rentalPool
                 .Where(c => string.IsNullOrEmpty(planType)
                             || string.IsNullOrEmpty(c.Plan)
                             || c.Plan == planType
                             || c.Plan == "free")
                 .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, rentalUncap))
-                .ToList();
+                .ToDictionary(cs => cs.Card.Id);
 
-            var bestRental = SelectBestCard(rentalContributions, usedIds, accVo, accDa, accVi, statCap);
-            if (bestRental != null)
+            // パターンA: 従来通り、未使用カードからレンタルを選択
+            var unusedRentalCandidates = allRentalContributions.Values
+                .Where(cs => !usedIds.Contains(cs.Card.Id))
+                .ToList();
+            var defaultRental = SelectBestCard(unusedRentalCandidates, usedIds, accVo, accDa, accVi, statCap);
+            int defaultTotal = CalculateCappedTotal(baseStats, selected, defaultRental, statCap);
+
+            // パターンB: 所持カードXをレンタルX(4凸)に昇格し、空いた所持枠に代替カードを入れる
+            // 全候補を評価して最も改善が大きい1つだけを採用する
+            CardScore? bestSwapRental = null;
+            CardScore? bestSwapReplacement = null;
+            CardScore? bestSwapTarget = null;
+            int bestSwapTotal = defaultTotal;
+
+            foreach (var ownedCard in selected)
             {
-                bestRental.IsRental = true;
-                selected.Add(bestRental);
-                usedIds.Add(bestRental.Card.Id);
-                accVo += bestRental.RawVo;
-                accDa += bestRental.RawDa;
-                accVi += bestRental.RawVi;
+                if (!allRentalContributions.TryGetValue(ownedCard.Card.Id, out var rentalVersion))
+                    continue;
+
+                // レンタル(4凸)と所持凸の差分がなければスキップ
+                int rentalGain = rentalVersion.RawVo + rentalVersion.RawDa + rentalVersion.RawVi;
+                int ownedGain = ownedCard.RawVo + ownedCard.RawDa + ownedCard.RawVi;
+                if (rentalGain <= ownedGain) continue;
+
+                // Xを除外した状態での累積ステータス
+                int swapAccVo = accVo - ownedCard.RawVo;
+                int swapAccDa = accDa - ownedCard.RawDa;
+                int swapAccVi = accVi - ownedCard.RawVi;
+
+                // 空いた所持枠に入れる最良の代替カードを探す（X自身は除外 — レンタルに回すため）
+                var swapUsedIds = new HashSet<string>(usedIds);
+                // ownedCard.Card.Id は除外しない（レンタルに回すのでこの枠では使えない）
+                var replacementCandidates = cardContributions
+                    .Where(cs => !swapUsedIds.Contains(cs.Card.Id))
+                    .ToList();
+                var replacement = SelectBestCard(replacementCandidates, swapUsedIds, swapAccVo, swapAccDa, swapAccVi, statCap);
+
+                if (replacement == null) continue;
+
+                // スワップ後の合計をキャップ込みで計算
+                var swapSelected = selected.Where(s => s.Card.Id != ownedCard.Card.Id).Append(replacement).ToList();
+                int swapTotal = CalculateCappedTotal(baseStats, swapSelected, rentalVersion, statCap);
+
+                if (swapTotal > bestSwapTotal)
+                {
+                    bestSwapTotal = swapTotal;
+                    bestSwapRental = rentalVersion;
+                    bestSwapReplacement = replacement;
+                    bestSwapTarget = ownedCard;
+                }
+            }
+
+            // 最良のスワップがあれば適用、なければ従来のレンタル選択を使用
+            CardScore? finalRental;
+            if (bestSwapTarget != null && bestSwapRental != null && bestSwapReplacement != null)
+            {
+                selected.Remove(bestSwapTarget);
+                selected.Add(bestSwapReplacement);
+                // bestSwapTarget.Card.Id は usedIds に残す（レンタルとして使用するため）
+                usedIds.Add(bestSwapReplacement.Card.Id);
+                accVo += bestSwapReplacement.RawVo - bestSwapTarget.RawVo;
+                accDa += bestSwapReplacement.RawDa - bestSwapTarget.RawDa;
+                accVi += bestSwapReplacement.RawVi - bestSwapTarget.RawVi;
+                finalRental = bestSwapRental;
+            }
+            else
+            {
+                finalRental = defaultRental;
+            }
+
+            if (finalRental != null)
+            {
+                finalRental.IsRental = true;
+                selected.Add(finalRental);
+                usedIds.Add(finalRental.Card.Id);
+                accVo += finalRental.RawVo;
+                accDa += finalRental.RawDa;
+                accVi += finalRental.RawVi;
             }
         }
 
@@ -298,6 +367,28 @@ public class CardScoringService
         }
 
         return best;
+    }
+
+    /// <summary>
+    /// カードリスト＋レンタル1枚のキャップ適用後の合計ステータスを算出する。
+    /// スワップ検証用。
+    /// </summary>
+    private int CalculateCappedTotal(StatusValues baseStats, List<CardScore> owned, CardScore? rental, int statCap)
+    {
+        int vo = baseStats.Vo, da = baseStats.Da, vi = baseStats.Vi;
+        foreach (var cs in owned)
+        {
+            vo += cs.RawVo;
+            da += cs.RawDa;
+            vi += cs.RawVi;
+        }
+        if (rental != null)
+        {
+            vo += rental.RawVo;
+            da += rental.RawDa;
+            vi += rental.RawVi;
+        }
+        return Math.Min(vo, statCap) + Math.Min(da, statCap) + Math.Min(vi, statCap);
     }
 
     /// <summary>

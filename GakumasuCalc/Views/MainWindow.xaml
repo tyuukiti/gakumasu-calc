@@ -404,6 +404,7 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="40"/>
                                                         <ColumnDefinition Width="30"/>
+                                                        <ColumnDefinition Width="30"/>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="80"/>
                                                     </Grid.ColumnDefinitions>
@@ -417,10 +418,14 @@
                                                                FontSize="10" Foreground="#999"
                                                                VerticalAlignment="Center"
                                                                HorizontalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding CardName}"
+                                                    <TextBlock Grid.Column="2" Text="{Binding CardRarity}"
+                                                               FontSize="10" Foreground="#888"
+                                                               VerticalAlignment="Center"
+                                                               HorizontalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding CardName}"
                                                                FontSize="12" VerticalAlignment="Center"
                                                                Margin="4,0,0,0"/>
-                                                    <TextBlock Grid.Column="3" Text="{Binding StatValue, StringFormat=N0}"
+                                                    <TextBlock Grid.Column="4" Text="{Binding StatValue, StringFormat=N0}"
                                                                FontSize="13" FontWeight="SemiBold"
                                                                HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                                 </Grid>
