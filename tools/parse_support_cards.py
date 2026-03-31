@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Parse サポカ.txt and generate YAML files for support cards."""
 
 import re
