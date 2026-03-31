@@ -36,15 +36,12 @@ jobs:
         working-directory: web
         run: npm ci
 
-      - name: Copy Data to public
-        run: cp -r Data web/public/Data
+      - name: Copy Data to public for build
+        run: mkdir -p web/public && cp -r Data web/public/Data
 
       - name: Build
         working-directory: web
         run: npm run build
-
-      - name: Copy Data to dist
-        run: cp -r Data web/dist/Data
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
