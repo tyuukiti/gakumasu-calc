@@ -7,7 +7,7 @@
         Width="780" MinWidth="700" Height="950"
         Background="{StaticResource BgBrush}"
         WindowStartupLocation="CenterScreen"
-        Icon="/favicon.ico">
+        Icon="pack://application:,,,/favicon.ico">
 
     <Window.DataContext>
         <vm:MainViewModel/>
