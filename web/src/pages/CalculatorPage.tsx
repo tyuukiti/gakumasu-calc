@@ -23,10 +23,8 @@ export default function CalculatorPage() {
 
       {/* 設定セクション */}
       <div className="bg-white rounded-lg p-4 shadow-sm mb-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <PlanSelector />
-          <PlanTypeSelector />
-        </div>
+        <PlanSelector />
+        <PlanTypeSelector />
 
         <StatRoleConfig />
         <EventCountConfig />
