@@ -18,6 +18,8 @@ export type RoleType = 'メイン1' | 'メイン2' | 'サブ';
 
 export type PlanType = 'sense' | 'logic' | 'anomaly';
 
+export type CardTag = 'skill' | 'produce_item' | 'exam_item' | 'none';
+
 export const ACTION_TYPE_DISPLAY: Record<ActionType, string> = {
   vo_lesson: 'Voレッスン',
   da_lesson: 'Daレッスン',

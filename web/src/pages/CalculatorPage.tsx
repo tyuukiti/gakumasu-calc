@@ -4,6 +4,7 @@ import PlanTypeSelector from '../components/calculator/PlanTypeSelector';
 import StatRoleConfig from '../components/calculator/StatRoleConfig';
 import EventCountConfig from '../components/calculator/EventCountConfig';
 import OwnedOnlyToggle from '../components/calculator/OwnedOnlyToggle';
+import ContestModeToggle from '../components/calculator/ContestModeToggle';
 import ResultDisplay from '../components/calculator/ResultDisplay';
 import PatternResultList from '../components/calculator/PatternResultList';
 import DeckCardList from '../components/calculator/DeckCardList';
@@ -31,6 +32,7 @@ export default function CalculatorPage() {
 
         <div className="flex items-center gap-4">
           <OwnedOnlyToggle />
+          <ContestModeToggle />
           <button
             onClick={executeCalculate}
             className="px-6 py-2 bg-[var(--color-accent)] text-white rounded font-bold hover:opacity-90 cursor-pointer"

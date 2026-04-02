@@ -25,6 +25,7 @@ interface CalcState {
   viSpCount: number;
   additionalCounts: AdditionalCounts;
   ownedOnly: boolean;
+  contestMode: boolean;
   deckResults: DeckResult[];
   selectedPatternIndex: number;
   calculationResult: CalculationResult | null;
@@ -41,6 +42,7 @@ interface CalcState {
   setAdditionalCount: (key: string, value: number) => void;
   applyTemplate: (template: EventCountTemplate) => void;
   setOwnedOnly: (v: boolean) => void;
+  setContestMode: (v: boolean) => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
 }
@@ -49,10 +51,17 @@ function getCandidateCards(
   allCards: SupportCard[],
   inventory: CardInventoryEntry[],
   ownedOnly: boolean,
+  contestMode: boolean,
 ): SupportCard[] {
-  if (!ownedOnly) return allCards;
-  const ownedIds = new Set(inventory.filter((e) => e.owned).map((e) => e.card_id));
-  return allCards.filter((c) => ownedIds.has(c.id));
+  let cards = allCards;
+  if (ownedOnly) {
+    const ownedIds = new Set(inventory.filter((e) => e.owned).map((e) => e.card_id));
+    cards = cards.filter((c) => ownedIds.has(c.id));
+  }
+  if (contestMode) {
+    cards = cards.filter((c) => c.tag !== 'skill' && c.tag !== 'exam_item');
+  }
+  return cards;
 }
 
 function buildUncapLevels(
@@ -234,6 +243,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   viSpCount: 0,
   additionalCounts: emptyAdditionalCounts(),
   ownedOnly: false,
+  contestMode: false,
   deckResults: [],
   selectedPatternIndex: 0,
   calculationResult: null,
@@ -302,6 +312,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   },
 
   setOwnedOnly: (v) => set({ ownedOnly: v }),
+  setContestMode: (v) => set({ contestMode: v }),
 
   executeCalculate: () => {
     try {
@@ -339,11 +350,16 @@ export const useCalcStore = create<CalcState>((set, get) => ({
       if (state.viSpCount > 0) spCounts['vi'] = state.viSpCount;
 
       // Candidate cards
-      const candidateCards = getCandidateCards(allCards, inventory, state.ownedOnly);
+      const candidateCards = getCandidateCards(allCards, inventory, state.ownedOnly, state.contestMode);
       const uncapLevels = buildUncapLevels(allCards, inventory, state.ownedOnly);
 
-      // Rental pool: if ownedOnly, all cards are rental candidates
-      const rentalPool = state.ownedOnly ? allCards : undefined;
+      // Rental pool: if ownedOnly, all cards are rental candidates (contest mode filter applied)
+      let rentalPool: SupportCard[] | undefined;
+      if (state.ownedOnly) {
+        rentalPool = state.contestMode
+          ? allCards.filter((c) => c.tag !== 'skill' && c.tag !== 'exam_item')
+          : allCards;
+      }
 
       console.log(`計算開始: plan=${plan.id}, mainStats=${mainStats}, subStat=${subStat}, cards=${candidateCards.length}枚`);
 

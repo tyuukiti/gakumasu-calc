@@ -25,6 +25,9 @@ public class SupportCard
     [YamlMember(Alias = "plan")]
     public string Plan { get; set; } = string.Empty;
 
+    [YamlMember(Alias = "tag")]
+    public string Tag { get; set; } = string.Empty;
+
     [YamlMember(Alias = "effects")]
     public List<CardEffect> Effects { get; set; } = new();
 
