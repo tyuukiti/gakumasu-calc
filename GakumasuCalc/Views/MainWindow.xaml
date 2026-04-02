@@ -51,6 +51,9 @@
                                   FontSize="14" Padding="8,6" MinWidth="200"/>
                         <CheckBox Content="所持カードのみで計算" IsChecked="{Binding OwnedOnly}"
                                   FontSize="13" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                        <CheckBox Content="コンテストモード" IsChecked="{Binding ContestMode}"
+                                  ToolTip="スキルカード・コンテストアイテムのサポカを除外"
+                                  FontSize="13" VerticalAlignment="Center" Margin="20,0,0,0"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

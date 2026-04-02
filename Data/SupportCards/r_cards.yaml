@@ -4,6 +4,7 @@
   rarity: R
   type: da
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: da
@@ -27,6 +28,7 @@
   rarity: R
   type: vi
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: vi
@@ -49,6 +51,7 @@
   rarity: R
   type: vo
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: vo
@@ -71,6 +74,7 @@
   rarity: R
   type: da
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: da
@@ -93,6 +97,7 @@
   rarity: R
   type: vo
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: vo
@@ -115,6 +120,7 @@
   rarity: R
   type: vi
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: vi
@@ -137,6 +143,7 @@
   rarity: R
   type: da
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: da
@@ -159,6 +166,7 @@
   rarity: R
   type: da
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: da
@@ -177,6 +185,7 @@
   rarity: R
   type: vo
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: vo
@@ -195,6 +204,7 @@
   rarity: R
   type: vi
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: vi
@@ -213,6 +223,7 @@
   rarity: R
   type: vo
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: vo
@@ -231,6 +242,7 @@
   rarity: R
   type: da
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: da
@@ -249,6 +261,7 @@
   rarity: R
   type: vi
   plan: free
+  tag: none
   effects:
   - trigger: equip
     stat: vi

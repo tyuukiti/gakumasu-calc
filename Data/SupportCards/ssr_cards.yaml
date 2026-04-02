@@ -4,6 +4,7 @@
   rarity: SSR
   type: vi
   plan: anomaly
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -30,6 +31,7 @@
   rarity: SSR
   type: da
   plan: sense
+  tag: produce_item
   effects:
   - trigger: equip
     stat: da
@@ -52,6 +54,7 @@
   rarity: SSR
   type: vi
   plan: logic
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -80,6 +83,7 @@
   rarity: SSR
   type: vo
   plan: logic
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -107,6 +111,7 @@
   rarity: SSR
   type: vo
   plan: anomaly
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -133,6 +138,7 @@
   rarity: SSR
   type: vo
   plan: logic
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -159,6 +165,7 @@
   rarity: SSR
   type: da
   plan: sense
+  tag: produce_item
   effects:
   - trigger: equip
     stat: da
@@ -187,6 +194,7 @@
   rarity: SSR
   type: da
   plan: anomaly
+  tag: produce_item
   effects:
   - trigger: equip
     stat: da
@@ -213,6 +221,7 @@
   rarity: SSR
   type: da
   plan: anomaly
+  tag: skill
   effects:
   - trigger: equip
     stat: da
@@ -239,6 +248,7 @@
   rarity: SSR
   type: da
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -265,6 +275,7 @@
   rarity: SSR
   type: vo
   plan: sense
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -292,6 +303,7 @@
   rarity: SSR
   type: vi
   plan: sense
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -318,6 +330,7 @@
   rarity: SSR
   type: vo
   plan: logic
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -344,6 +357,7 @@
   rarity: SSR
   type: vo
   plan: sense
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vo
@@ -371,6 +385,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -395,6 +410,7 @@
   rarity: SSR
   type: vi
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -424,6 +440,7 @@
   rarity: SSR
   type: vo
   plan: anomaly
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -450,6 +467,7 @@
   rarity: SSR
   type: vo
   plan: logic
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vo
@@ -476,6 +494,7 @@
   rarity: SSR
   type: da
   plan: sense
+  tag: produce_item
   effects:
   - trigger: equip
     stat: da
@@ -502,6 +521,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: da
@@ -528,6 +548,7 @@
   rarity: SSR
   type: vo
   plan: anomaly
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vo
@@ -554,6 +575,7 @@
   rarity: SSR
   type: vo
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -580,6 +602,7 @@
   rarity: SSR
   type: vi
   plan: sense
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -606,6 +629,7 @@
   rarity: SSR
   type: vi
   plan: logic
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vi
@@ -633,6 +657,7 @@
   rarity: SSR
   type: da
   plan: anomaly
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -659,6 +684,7 @@
   rarity: SSR
   type: vi
   plan: anomaly
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vi
@@ -687,6 +713,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: produce_item
   effects:
   - trigger: equip
     stat: da
@@ -715,6 +742,7 @@
   rarity: SSR
   type: vo
   plan: logic
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vo
@@ -741,6 +769,7 @@
   rarity: SSR
   type: vi
   plan: anomaly
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -768,6 +797,7 @@
   rarity: SSR
   type: da
   plan: sense
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -794,6 +824,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -820,6 +851,7 @@
   rarity: SSR
   type: vi
   plan: anomaly
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vi
@@ -846,6 +878,7 @@
   rarity: SSR
   type: da
   plan: logic
+  tag: produce_item
   effects:
   - trigger: equip
     stat: da
@@ -872,6 +905,7 @@
   rarity: SSR
   type: vo
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -898,6 +932,7 @@
   rarity: SSR
   type: vi
   plan: anomaly
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -924,6 +959,7 @@
   rarity: SSR
   type: vo
   plan: anomaly
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vo
@@ -946,6 +982,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: produce_item
   effects:
   - trigger: equip
     stat: da
@@ -968,6 +1005,7 @@
   rarity: SSR
   type: vo
   plan: sense
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -994,6 +1032,7 @@
   rarity: SSR
   type: da
   plan: anomaly
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -1020,6 +1059,7 @@
   rarity: SSR
   type: vi
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -1046,6 +1086,7 @@
   rarity: SSR
   type: da
   plan: sense
+  tag: skill
   effects:
   - trigger: equip
     stat: da
@@ -1073,6 +1114,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -1099,6 +1141,7 @@
   rarity: SSR
   type: da
   plan: logic
+  tag: skill
   effects:
   - trigger: equip
     stat: da
@@ -1125,6 +1168,7 @@
   rarity: SSR
   type: as
   plan: free
+  tag: produce_item
   effects:
   - trigger: equip
     stat: all
@@ -1135,6 +1179,7 @@
   rarity: SSR
   type: vi
   plan: logic
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vi
@@ -1157,6 +1202,7 @@
   rarity: SSR
   type: vo
   plan: sense
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vo
@@ -1183,6 +1229,7 @@
   rarity: SSR
   type: da
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -1205,6 +1252,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -1231,6 +1279,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vi
@@ -1257,6 +1306,7 @@
   rarity: SSR
   type: vi
   plan: logic
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -1279,6 +1329,7 @@
   rarity: SSR
   type: da
   plan: sense
+  tag: produce_item
   effects:
   - trigger: equip
     stat: da
@@ -1305,6 +1356,7 @@
   rarity: SSR
   type: da
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -1331,6 +1383,7 @@
   rarity: SSR
   type: vi
   plan: sense
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -1357,6 +1410,7 @@
   rarity: SSR
   type: vo
   plan: sense
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -1379,6 +1433,7 @@
   rarity: SSR
   type: vo
   plan: sense
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -1401,6 +1456,7 @@
   rarity: SSR
   type: da
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -1428,6 +1484,7 @@
   rarity: SSR
   type: vi
   plan: logic
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -1454,6 +1511,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -1476,6 +1534,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -1498,6 +1557,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -1524,6 +1584,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -1546,6 +1607,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -1568,6 +1630,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -1590,6 +1653,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -1612,6 +1676,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -1634,6 +1699,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -1660,6 +1726,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: da
@@ -1686,6 +1753,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -1712,6 +1780,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -1734,6 +1803,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -1756,6 +1826,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -1778,6 +1849,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: da
@@ -1800,6 +1872,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -1822,6 +1895,7 @@
   rarity: SSR
   type: as
   plan: free
+  tag: produce_item
   effects:
   - trigger: equip
     stat: all
@@ -1832,6 +1906,7 @@
   rarity: SSR
   type: vo
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -1854,6 +1929,7 @@
   rarity: SSR
   type: vi
   plan: sense
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -1877,6 +1953,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -1900,6 +1977,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -1922,6 +2000,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: produce_item
   effects:
   - trigger: equip
     stat: da
@@ -1948,6 +2027,7 @@
   rarity: SSR
   type: da
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -1970,6 +2050,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: produce_item
   effects:
   - trigger: equip
     stat: vi
@@ -1992,6 +2073,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -2014,6 +2096,7 @@
   rarity: SSR
   type: da
   plan: anomaly
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -2037,6 +2120,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -2059,6 +2143,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -2086,6 +2171,7 @@
   rarity: SSR
   type: da
   plan: sense
+  tag: exam_item
   effects:
   - trigger: equip
     stat: da
@@ -2113,6 +2199,7 @@
   rarity: SSR
   type: vi
   plan: logic
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vi
@@ -2139,6 +2226,7 @@
   rarity: SSR
   type: vo
   plan: anomaly
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -2165,6 +2253,7 @@
   rarity: SSR
   type: vi
   plan: anomaly
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -2187,6 +2276,7 @@
   rarity: SSR
   type: vo
   plan: sense
+  tag: skill
   effects:
   - trigger: equip
     stat: vo
@@ -2209,6 +2299,7 @@
   rarity: SSR
   type: da
   plan: logic
+  tag: skill
   effects:
   - trigger: equip
     stat: da
@@ -2231,6 +2322,7 @@
   rarity: SSR
   type: vo
   plan: free
+  tag: exam_item
   effects:
   - trigger: equip
     stat: vo
@@ -2253,6 +2345,7 @@
   rarity: SSR
   type: vi
   plan: free
+  tag: skill
   effects:
   - trigger: equip
     stat: vi
@@ -2275,6 +2368,7 @@
   rarity: SSR
   type: vi
   plan: logic
+  tag: exam_item
   effects:
   - trigger: sp_end
     stat: vi

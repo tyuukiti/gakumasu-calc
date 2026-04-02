@@ -20,6 +20,7 @@ export interface SupportCard {
   rarity: string;
   type: string;
   plan: string;
+  tag?: string;
   effects: CardEffect[];
 }
 

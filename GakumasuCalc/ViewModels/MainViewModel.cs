@@ -22,6 +22,7 @@ public class MainViewModel : ViewModelBase
 
     // 所持カードフィルタ
     private bool _ownedOnly;
+    private bool _contestMode;
 
     // 育成タイプ
     private string _selectedPlanType = "sense";
@@ -91,6 +92,12 @@ public class MainViewModel : ViewModelBase
     {
         get => _ownedOnly;
         set => SetProperty(ref _ownedOnly, value);
+    }
+
+    public bool ContestMode
+    {
+        get => _contestMode;
+        set => SetProperty(ref _contestMode, value);
     }
 
     public string SelectedPlanType
@@ -312,8 +319,14 @@ public class MainViewModel : ViewModelBase
         var candidateCards = GetCandidateCards();
         var uncapLevels = BuildUncapLevels();
 
-        // 所持モード時: 全カードをレンタルプールとして渡す
-        List<SupportCard>? rentalPool = OwnedOnly ? _allCards : null;
+        // 所持モード時: 全カードをレンタルプールとして渡す（コンテストモード時はフィルタ適用）
+        List<SupportCard>? rentalPool = null;
+        if (OwnedOnly)
+        {
+            rentalPool = ContestMode
+                ? _allCards.Where(c => c.Tag is not ("skill" or "exam_item")).ToList()
+                : _allCards;
+        }
 
         // SP率カード枚数
         var spCounts = new Dictionary<string, int>();
@@ -742,19 +755,27 @@ public class MainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 所持フィルタを適用したカードリストを返す
+    /// 所持フィルタ・コンテストモードフィルタを適用したカードリストを返す
     /// </summary>
     private List<SupportCard> GetCandidateCards()
     {
-        if (!OwnedOnly)
-            return _allCards;
+        IEnumerable<SupportCard> cards = _allCards;
 
-        var ownedIds = _inventory
-            .Where(e => e.Owned)
-            .Select(e => e.CardId)
-            .ToHashSet();
+        if (OwnedOnly)
+        {
+            var ownedIds = _inventory
+                .Where(e => e.Owned)
+                .Select(e => e.CardId)
+                .ToHashSet();
+            cards = cards.Where(c => ownedIds.Contains(c.Id));
+        }
 
-        return _allCards.Where(c => ownedIds.Contains(c.Id)).ToList();
+        if (ContestMode)
+        {
+            cards = cards.Where(c => c.Tag is not ("skill" or "exam_item"));
+        }
+
+        return cards.ToList();
     }
 
     /// <summary>
