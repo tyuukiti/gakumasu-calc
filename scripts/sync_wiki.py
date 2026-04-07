@@ -26,10 +26,18 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 WIKI_BASE = "https://seesaawiki.jp/gakumasu"
 LIST_URL = f"{WIKI_BASE}/d/%A5%B5%A5%DD%A1%BC%A5%C8%A5%AB%A1%BC%A5%C9%B0%EC%CD%F7"
+TAG_PAGE_URL = f"{WIKI_BASE}/d/%A5%B5%A5%DD%A1%BC%A5%C8%A5%AB%A1%BC%A5%C9%C7%BD%CE%CF%C1%E1%B8%AB%C9%BD"
 DATA_DIR = Path(__file__).parent.parent / "Data" / "SupportCards"
 IMAGE_DIR = Path(__file__).parent.parent / "Data" / "Images"
 MAPPING_FILE = IMAGE_DIR / "_mapping.tsv"
 DEFAULT_DELAY = 30
+
+# カテゴリキーワード → tag値 のマッピング
+SECTION_TAG_MAP = [
+    ("スキルカード", "skill"),
+    ("コンテストアイテム", "exam_item"),
+    ("プロデュースアイテム", "produce_item"),
+]
 
 
 # ======== 文字列正規化 ========
@@ -57,6 +65,61 @@ def download_file(url: str, filepath: Path):
     filepath.parent.mkdir(parents=True, exist_ok=True)
     with open(filepath, "wb") as f:
         f.write(resp.read())
+
+
+# ======== タグページ解析 ========
+
+def fetch_card_tags() -> dict[str, str]:
+    """
+    能力早見表ページを行単位でパースし カード名→タグ のマッピングを取得。
+    各行: [カード名リンク] ... [カテゴリセル(スキルカード / コンテスト<br>アイテム 等)]
+    失敗時は空dictを返す。
+    """
+    try:
+        html = fetch_page(TAG_PAGE_URL)
+    except Exception as e:
+        print(f"  ⚠ タグページ取得失敗: {e}")
+        return {}
+
+    result: dict[str, str] = {}
+
+    # カテゴリ判定パターン (rawセルHTML に対して検索)
+    category_patterns = [
+        (r'スキルカード', "skill"),
+        (r'コンテスト.{0,10}アイテム', "exam_item"),
+        (r'プロデュース.{0,10}アイテム', "produce_item"),
+    ]
+
+    rows = re.findall(r'<tr[^>]*>(.*?)</tr>', html, re.DOTALL)
+    for row in rows:
+        cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
+
+        card_name = None
+        card_tag = None
+
+        for cell in cells:
+            # カード名セル: 詳細ページへのリンクを含む
+            if card_name is None:
+                m = re.search(r'href="https://seesaawiki\.jp/gakumasu/d/([^"#]+)"', cell)
+                if m:
+                    try:
+                        card_name = normalize_name(
+                            urllib.parse.unquote(m.group(1), encoding="euc-jp").strip()
+                        )
+                    except Exception:
+                        pass
+
+            # カテゴリセル: 白色ソートキーspanを持つセルのみ対象
+            if card_tag is None and re.search(r'color:\s*#ffffff', cell):
+                for pattern, tag in category_patterns:
+                    if re.search(pattern, cell):
+                        card_tag = tag
+                        break
+
+        if card_name and card_tag:
+            result[card_name] = card_tag
+
+    return result
 
 
 # ======== Wiki 一覧ページ解析 ========
@@ -410,6 +473,7 @@ def build_new_card(
     entry: WikiCardEntry,
     detail: dict,
     abilities: list[dict],
+    tag: str | None = None,
 ) -> dict:
     """Wikiデータから新規カードYAMLエントリを構築"""
     card_type = detail.get("type") or guess_type_from_lesson(entry.lesson_support)
@@ -530,7 +594,7 @@ def build_new_card(
 
         effects.append(eff)
 
-    return {
+    card: dict = {
         "id": card_id,
         "name": entry.name,
         "rarity": entry.rarity,
@@ -538,6 +602,9 @@ def build_new_card(
         "plan": plan,
         "effects": effects,
     }
+    if tag:
+        card["tag"] = tag
+    return card
 
 
 # ======== 更新済み記録 ========
@@ -576,6 +643,8 @@ def write_yaml_with_flow_values(filepath: str, cards: list[dict]):
         lines.append(f"  rarity: {card['rarity']}")
         lines.append(f"  type: {card['type']}")
         lines.append(f"  plan: {card['plan']}")
+        if card.get("tag"):
+            lines.append(f"  tag: {card['tag']}")
         lines.append("  effects:")
         for eff in card.get("effects", []):
             lines.append(f"  - trigger: {eff['trigger']}")
@@ -615,13 +684,13 @@ def append_mapping(wiki_id: str, card_name: str, filename: str):
 
 
 def next_card_id(existing_cards: list[dict], rarity: str) -> str:
-    prefix = rarity.lower()
+    prefix = f"SP_{rarity.upper()}_"
     max_num = 0
     for card in existing_cards:
-        m = re.match(rf"{prefix}_(\d+)", card["id"])
+        m = re.match(rf"SP_{rarity.upper()}_(\d+)", card["id"])
         if m:
             max_num = max(max_num, int(m.group(1)))
-    return f"{prefix}_{max_num + 1:03d}"
+    return f"{prefix}{max_num + 1:04d}"
 
 
 # ======== メイン ========
@@ -642,7 +711,14 @@ def main():
         print("  [FORCE: 全件更新]")
     print()
 
-    # 1. Wiki 一覧ページ取得
+    # 1. タグ情報取得
+    print("タグ情報を取得中...")
+    card_tag_map = fetch_card_tags()
+    print(f"  タグ情報: {len(card_tag_map)} 件 (skill/exam_item)")
+    if card_tag_map:
+        time.sleep(args.delay)
+
+    # 2. Wiki 一覧ページ取得
     print("一覧ページを取得中...")
     wiki_entries = parse_list_page()
     print(f"  Wikiカード: {len(wiki_entries)} 枚")
@@ -743,11 +819,13 @@ def main():
                 filepath = yaml_files[rarity]
                 card_id = next_card_id(all_by_file[filepath], rarity)
 
-                card = build_new_card(card_id, entry, detail, detail.get("abilities", []))
+                card_tag = card_tag_map.get(normalize_name(entry.name), "none")
+                card = build_new_card(card_id, entry, detail, detail.get("abilities", []), tag=card_tag)
                 if not card["effects"]:
                     print(f"  ⚠ effects が空です (アビリティ取得失敗)")
                 else:
-                    print(f"  id={card_id}, type={card['type']}, plan={card['plan']}, effects={len(card['effects'])}")
+                    tag_info = f", tag={card_tag}" if card_tag else ""
+                    print(f"  id={card_id}, type={card['type']}, plan={card['plan']}, effects={len(card['effects'])}{tag_info}")
                     if not args.dry_run:
                         all_by_file[filepath].append(card)
                         modified_files.add(filepath)

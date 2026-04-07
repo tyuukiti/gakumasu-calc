@@ -1,4 +1,4 @@
-﻿support_cards:
+support_cards:
 - id: SP_SSR_0093
   name: あたしの勝ち、ですね～！
   rarity: SSR
@@ -2387,3 +2387,47 @@
     stat: vi
     values: [6.5, 6.5, 6.5, 8, 8.5]
     value_type: para_bonus
+- id: SP_SSR_0095
+  name: パーティー楽しみだねっ！
+  rarity: SSR
+  type: da
+  plan: anomaly
+  tag: exam_item
+  effects:
+  - trigger: equip
+    stat: da
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: sp_end
+    stat: da
+    values: [4, 4, 5, 5, 5]
+    value_type: flat
+  - trigger: active_enhance
+    stat: da
+    values: [5, 5, 5, 5, 7]
+    value_type: flat
+- id: SP_SSR_0096
+  name: 長旅おつかれさま！
+  rarity: SSR
+  type: vi
+  plan: sense
+  tag: exam_item
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [52, 55, 55, 62, 65]
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [21, 21, 21, 28, 28]
+    value_type: sp_rate
+  - trigger: good_condition_acquire
+    stat: vi
+    values: [3, 3, 3, 4, 4]
+    value_type: flat
+  - trigger: sp_end
+    stat: vi
+    values: [15, 15, 15, 15, 21]
+    value_type: flat
+    max_count: 4
+    condition: deck>=20

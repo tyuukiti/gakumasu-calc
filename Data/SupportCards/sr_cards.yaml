@@ -1,4 +1,4 @@
-﻿support_cards:
+support_cards:
 - id: SP_SR_0069
   name: お近づきの印☆
   rarity: SR
@@ -1712,3 +1712,27 @@
     value_type: flat
     max_count: 4
     condition: deck>=20
+- id: SP_SR_0071
+  name: ひっぱり じゅーなん
+  rarity: SR
+  type: vo
+  plan: anomaly
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [37, 40, 43, 46, 49]
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    values: [6, 11, 11, 11, 11]
+    value_type: flat
+  - trigger: conserve_acquire
+    stat: vo
+    values: [2, 2, 2, 2, 3]
+    value_type: flat
+  - trigger: p_item_acquire
+    stat: vo
+    values: [6, 6, 6, 11, 11]
+    value_type: flat
+    max_count: 6
