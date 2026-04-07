@@ -3,6 +3,7 @@ import type { SupportCard, TrainingPlan, EventCountTemplate } from '../types/mod
 import type { CardInventoryEntry } from '../types/inventory'
 import { loadSupportCards, loadTrainingPlans, loadEventCountTemplates } from '../services/yamlLoader'
 import { loadInventory } from '../services/inventory'
+import { trackEvent } from '../utils/analytics'
 
 interface AppState {
   cards: SupportCard[]
@@ -24,6 +25,7 @@ export const useAppStore = create<AppState>((set) => ({
   error: null,
 
   initialize: async () => {
+    const startTime = Date.now()
     try {
       const [cards, plans, templates] = await Promise.all([
         loadSupportCards(),
@@ -33,8 +35,15 @@ export const useAppStore = create<AppState>((set) => ({
       const inventory = loadInventory()
       set({ cards, plans, templates, inventory, isLoading: false })
       console.log(`読み込み完了: カード${cards.length}枚, プラン${plans.length}件, テンプレート${templates.length}件`)
+      trackEvent('data_load_completed', {
+        load_time_ms: Date.now() - startTime,
+        cards_count: cards.length,
+        plans_count: plans.length,
+        templates_count: templates.length,
+      })
     } catch (e) {
       set({ error: (e as Error).message, isLoading: false })
+      trackEvent('data_load_error', { error_message: (e as Error).message })
     }
   },
 

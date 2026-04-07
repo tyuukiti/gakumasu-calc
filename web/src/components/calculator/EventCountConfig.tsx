@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../../stores/appStore';
 import { useCalcStore } from '../../stores/calcStore';
+import { trackEvent } from '../../utils/analytics';
 
 const COUNT_LABELS: { key: string; label: string }[] = [
   { key: 'p_drink_acquire', label: 'Pドリンク獲得' },
@@ -45,7 +46,10 @@ export default function EventCountConfig() {
           defaultValue=""
           onChange={(e) => {
             const tmpl = filteredTemplates.find((t) => t.name === e.target.value);
-            if (tmpl) applyTemplate(tmpl);
+            if (tmpl) {
+              trackEvent('template_applied', { template_name: tmpl.name });
+              applyTemplate(tmpl);
+            }
           }}
         >
           <option value="">-- テンプレートを選択 --</option>
@@ -60,7 +64,11 @@ export default function EventCountConfig() {
       <button
         type="button"
         className="text-sm text-[var(--color-accent)] hover:underline flex items-center gap-1"
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          const next = !expanded;
+          trackEvent('event_count_expanded', { expanded: next });
+          setExpanded(next);
+        }}
       >
         <span className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}>
           &#9654;

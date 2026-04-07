@@ -13,6 +13,7 @@ import type { CardInventoryEntry } from '../types/inventory';
 import { useAppStore } from './appStore';
 import { selectMultiplePatterns } from '../services/cardScoring';
 import { calculate } from '../services/statusCalculation';
+import { trackEvent } from '../utils/analytics';
 
 interface CalcState {
   selectedPlanId: string;
@@ -322,6 +323,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
       const plan = plans.find((p) => p.id === state.selectedPlanId);
       if (!plan) {
         set({ errorMessage: '育成プランを選択してください' });
+        trackEvent('calculation_error', { error_message: '育成プランを選択してください' });
         return;
       }
 
@@ -338,6 +340,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
       const subStat = ['vo', 'da', 'vi'].find((s) => !mainStats.includes(s));
       if (!subStat || mainStats.length !== 2) {
         set({ errorMessage: 'メイン1とメイン2に異なる属性を1つずつ設定してください' });
+        trackEvent('calculation_error', { error_message: 'メイン1とメイン2に異なる属性を1つずつ設定してください' });
         return;
       }
 
@@ -397,6 +400,15 @@ export const useCalcStore = create<CalcState>((set, get) => ({
 
       // Apply best pattern
       if (patterns.length > 0) {
+        trackEvent('calculation_executed', {
+          plan_id: state.selectedPlanId,
+          plan_type: state.selectedPlanType,
+          main_stats: mainStats.join(','),
+          sub_stat: subStat,
+          owned_only: state.ownedOnly,
+          contest_mode: state.contestMode,
+          patterns_count: patterns.length,
+        });
         const updates = applySelectedPatternImpl(
           { ...get(), deckResults: patterns, _lastMainStats: mainStats, _lastLessonWeekCount: lessonWeekCount },
           bestIndex,
@@ -404,15 +416,25 @@ export const useCalcStore = create<CalcState>((set, get) => ({
         set(updates as Partial<CalcState>);
       } else {
         set({ errorMessage: '有効な編成パターンが見つかりませんでした' });
+        trackEvent('calculation_error', { error_message: '有効な編成パターンが見つかりませんでした' });
       }
     } catch (e) {
       console.error('計算エラー:', e);
       set({ errorMessage: `計算エラー: ${(e as Error).message}` });
+      trackEvent('calculation_error', { error_message: (e as Error).message });
     }
   },
 
   selectPattern: (index) => {
     const state = get();
+    const pattern = state.deckResults[index];
+    if (pattern) {
+      trackEvent('pattern_selected', {
+        pattern_index: index,
+        pattern_label: pattern.label,
+        pattern_total_value: pattern.total_value,
+      });
+    }
     const updates = applySelectedPatternImpl(state, index);
     set(updates as Partial<CalcState>);
   },

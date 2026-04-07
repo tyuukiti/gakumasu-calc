@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCalcStore } from '../../stores/calcStore';
+import { trackEvent } from '../../utils/analytics';
 
 export default function WeekBreakdownTable() {
   const [expanded, setExpanded] = useState(false);
@@ -12,7 +13,11 @@ export default function WeekBreakdownTable() {
       <button
         type="button"
         className="text-sm text-[var(--color-accent)] hover:underline flex items-center gap-1"
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          const next = !expanded;
+          trackEvent('week_breakdown_expanded', { expanded: next });
+          setExpanded(next);
+        }}
       >
         <span className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}>
           &#9654;

@@ -1,4 +1,5 @@
 import { useCalcStore } from '../../stores/calcStore';
+import { trackEvent } from '../../utils/analytics';
 
 export default function OwnedOnlyToggle() {
   const ownedOnly = useCalcStore((s) => s.ownedOnly);
@@ -9,7 +10,10 @@ export default function OwnedOnlyToggle() {
       <input
         type="checkbox"
         checked={ownedOnly}
-        onChange={(e) => setOwnedOnly(e.target.checked)}
+        onChange={(e) => {
+          trackEvent('owned_only_toggled', { enabled: e.target.checked });
+          setOwnedOnly(e.target.checked);
+        }}
         className="w-4 h-4 accent-[var(--color-accent)] rounded"
       />
       <span className="text-sm text-gray-700">所持カードのみで計算</span>
