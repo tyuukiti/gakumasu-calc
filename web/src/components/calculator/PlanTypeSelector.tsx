@@ -1,5 +1,6 @@
 import { useCalcStore } from '../../stores/calcStore';
 import type { PlanType } from '../../types/enums';
+import { trackEvent } from '../../utils/analytics';
 
 const PLAN_TYPES: { value: PlanType; label: string }[] = [
   { value: 'sense', label: 'センス' },
@@ -22,7 +23,10 @@ export default function PlanTypeSelector() {
               name="planType"
               value={value}
               checked={selectedPlanType === value}
-              onChange={() => setSelectedPlanType(value)}
+              onChange={() => {
+                trackEvent('plan_type_selected', { plan_type: value });
+                setSelectedPlanType(value);
+              }}
               className="accent-[var(--color-accent)]"
             />
             <span className="text-sm">{label}</span>

@@ -1,8 +1,17 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAppStore } from './stores/appStore'
 import CalculatorPage from './pages/CalculatorPage'
 import InventoryPage from './pages/InventoryPage'
+import { trackEvent } from './utils/analytics'
+
+function PageViewTracker() {
+  const location = useLocation()
+  useEffect(() => {
+    trackEvent('page_view', { page_path: location.pathname })
+  }, [location.pathname])
+  return null
+}
 
 function Header() {
   return (
@@ -45,6 +54,7 @@ export default function App() {
 
   return (
     <BrowserRouter basename="/gakumasu-calc/">
+      <PageViewTracker />
       <Header />
       <main className="max-w-5xl mx-auto px-4 py-6">
         <Routes>

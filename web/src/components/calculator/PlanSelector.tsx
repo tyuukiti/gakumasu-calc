@@ -1,5 +1,6 @@
 import { useAppStore } from '../../stores/appStore';
 import { useCalcStore } from '../../stores/calcStore';
+import { trackEvent } from '../../utils/analytics';
 
 export default function PlanSelector() {
   const plans = useAppStore((s) => s.plans);
@@ -12,7 +13,10 @@ export default function PlanSelector() {
       <select
         className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
         value={selectedPlanId}
-        onChange={(e) => setSelectedPlanId(e.target.value)}
+        onChange={(e) => {
+          trackEvent('plan_selected', { plan_id: e.target.value });
+          setSelectedPlanId(e.target.value);
+        }}
       >
         <option value="">-- 選択してください --</option>
         {plans.map((plan) => (

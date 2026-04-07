@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAppStore } from '../stores/appStore';
 import { saveInventory, initializeFromCards, exportInventoryJson, importInventoryJson } from '../services/inventory';
+import { trackEvent } from '../utils/analytics';
 import type { CardInventoryEntry } from '../types/inventory';
 import InventoryFilters from '../components/inventory/InventoryFilters';
 import CardTile from '../components/inventory/CardTile';
@@ -69,6 +70,7 @@ export default function InventoryPage() {
     a.click();
     URL.revokeObjectURL(url);
     setStatusMessage('エクスポートしました');
+    trackEvent('inventory_exported', { owned_count: entries.filter(e => e.owned).length });
   };
 
   const handleImport = (json: string) => {
@@ -77,9 +79,12 @@ export default function InventoryPage() {
       const merged = initializeFromCards(cards, imported);
       setInventory(merged);
       saveInventory(merged);
-      setStatusMessage(`インポートしました (${imported.filter(e => e.owned).length}枚所持)`);
+      const ownedCount = imported.filter(e => e.owned).length;
+      setStatusMessage(`インポートしました (${ownedCount}枚所持)`);
+      trackEvent('inventory_imported', { owned_count: ownedCount });
     } catch {
       setStatusMessage('インポートエラー: 不正なJSONファイルです');
+      trackEvent('inventory_import_error');
     }
   };
 
@@ -90,6 +95,7 @@ export default function InventoryPage() {
     );
     setInventory(newEntries);
     saveInventory(newEntries);
+    trackEvent('select_all_visible', { count: filtered.length });
   };
 
   const handleDeselectAll = () => {
@@ -99,6 +105,7 @@ export default function InventoryPage() {
     );
     setInventory(newEntries);
     saveInventory(newEntries);
+    trackEvent('deselect_all_visible', { count: filtered.length });
   };
 
   return (
@@ -135,8 +142,15 @@ export default function InventoryPage() {
                 key={card.id}
                 card={card}
                 entry={entry}
-                onToggleOwned={() => updateEntry(card.id, e => ({ ...e, owned: !e.owned }))}
-                onSetUncap={(uncap) => updateEntry(card.id, e => ({ ...e, uncap }))}
+                onToggleOwned={() => {
+                  const current = entryMap.get(card.id);
+                  trackEvent('card_ownership_toggled', { card_id: card.id, owned_after: !current?.owned });
+                  updateEntry(card.id, e => ({ ...e, owned: !e.owned }));
+                }}
+                onSetUncap={(uncap) => {
+                  trackEvent('card_uncap_changed', { card_id: card.id, uncap_level: uncap });
+                  updateEntry(card.id, e => ({ ...e, uncap }));
+                }}
               />
             );
           })}
