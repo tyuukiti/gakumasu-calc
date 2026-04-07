@@ -315,6 +315,8 @@ def write_yaml_with_flow_values(filepath: str, cards: list[dict]):
         lines.append(f"  rarity: {card['rarity']}")
         lines.append(f"  type: {card['type']}")
         lines.append(f"  plan: {card['plan']}")
+        if card.get("tag"):
+            lines.append(f"  tag: {card['tag']}")
         lines.append("  effects:")
         for eff in card.get("effects", []):
             lines.append(f"  - trigger: {eff['trigger']}")
