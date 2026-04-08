@@ -385,6 +385,7 @@ export function calculateCardContribution(
     total_value: iVo + iDa + iVi,
     breakdowns,
     is_rental: false,
+    is_required: false,
   };
 }
 
@@ -518,6 +519,7 @@ export function selectOptimalDeck(
   uncapLevels?: Record<string, number>,
   rentalPool?: SupportCard[],
   freeSlots: number = 0,
+  requiredCardIds?: string[],
 ): DeckResult {
   const statCap = plan.status_limit;
   const triggerCounts = countTriggers(plan, lessonAllocation, mainStats);
@@ -580,6 +582,90 @@ export function selectOptimalDeck(
   // 属性枠・フリー枠の残数を管理するローカルコピー
   const remainingSlots: Record<string, number> = { ...cardTypeSlots };
   let remainingFree = freeSlots;
+
+  // ステップ0: 必須カードを強制挿入
+  let requiredRentalCard: CardScore | undefined = undefined;
+  const protectedIds = new Set<string>();
+
+  if (requiredCardIds != null && requiredCardIds.length > 0) {
+    // spCounts のローカルコピー（必須カードでSP率を消費するため）
+    const spCountsCopy: Record<string, number> = spCounts != null ? { ...spCounts } : {};
+
+    for (const cardId of requiredCardIds) {
+      // allCards から探す、見つからなければ rentalPool からも探す
+      const card = allCards.find((c) => c.id === cardId)
+        ?? rentalPool?.find((c) => c.id === cardId);
+      if (card == null || usedIds.has(cardId)) continue;
+
+      // 所持判定: rentalPool が null なら全カード所持扱い、そうでなければ eligible に含まれるか
+      const isOwned = rentalPool == null || eligible.some((c) => c.id === cardId);
+
+      // 凸数: 所持なら uncapLevels、未所持なら4凸
+      const reqUncap: Record<string, number> = { ...(uncapLevels ?? {}) };
+      if (!isOwned) {
+        reqUncap[cardId] = 4;
+      } else if (!(cardId in reqUncap)) {
+        reqUncap[cardId] = 4;
+      }
+
+      const contribution = calculateCardContribution(
+        card,
+        triggerCounts,
+        lessonAllocation,
+        lessonStatTotals,
+        reqUncap,
+      );
+      contribution.is_required = true;
+
+      if (!isOwned && rentalPool != null) {
+        // 未所持 → レンタル枠として保留（selected に入れない）
+        contribution.is_rental = true;
+        requiredRentalCard = contribution;
+        usedIds.add(cardId);
+        protectedIds.add(cardId);
+      } else {
+        // 所持 → 所持枠として追加
+        selected.push(contribution);
+        usedIds.add(cardId);
+        protectedIds.add(cardId);
+        accVo += contribution.raw_vo;
+        accDa += contribution.raw_da;
+        accVi += contribution.raw_vi;
+
+        // スロット消費
+        if (card.type !== 'all' && card.type in remainingSlots && remainingSlots[card.type] > 0) {
+          remainingSlots[card.type]--;
+        } else if (card.type === 'all') {
+          // "all" タイプ: 最大残数の属性枠を消費
+          const maxSlotKey = Object.entries(remainingSlots)
+            .sort((a, b) => b[1] - a[1])[0];
+          if (maxSlotKey && maxSlotKey[1] > 0) {
+            remainingSlots[maxSlotKey[0]]--;
+          } else {
+            remainingFree = Math.max(0, remainingFree - 1);
+          }
+        } else {
+          remainingFree = Math.max(0, remainingFree - 1);
+        }
+
+        // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCounts を減算
+        const spEffect = card.effects.find(
+          (e) => e.trigger === 'equip' && e.value_type === 'sp_rate',
+        );
+        if (spEffect != null) {
+          for (const key of Object.keys(spCountsCopy)) {
+            if ((card.type === key || card.type === 'all') && spCountsCopy[key] > 0) {
+              spCountsCopy[key]--;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // spCounts のローカル参照を更新（元のオブジェクトは変更しない）
+    spCounts = spCountsCopy;
+  }
 
   // ステップ1: SP率カードをユーザ指定枚数分、先に確保
   if (spCounts != null) {
@@ -708,6 +794,14 @@ export function selectOptimalDeck(
 
   // レンタル1枠: 全カードプールから4凸で最良の1枚を選択
   if (rentalPool != null && selected.length < 6) {
+    if (requiredRentalCard != null) {
+      // 必須カードがレンタル枠を使用 → Pattern A/B をスキップ
+      selected.push(requiredRentalCard);
+      usedIds.add(requiredRentalCard.card.id);
+      accVo += requiredRentalCard.raw_vo;
+      accDa += requiredRentalCard.raw_da;
+      accVi += requiredRentalCard.raw_vi;
+    } else {
     const rentalUncap: Record<string, number> = {};
     for (const c of rentalPool) {
       rentalUncap[c.id] = 4;
@@ -764,6 +858,9 @@ export function selectOptimalDeck(
     let bestSwapTotal = defaultTotal;
 
     for (const ownedCard of selected) {
+      // 必須カードはスワップ対象外
+      if (protectedIds.has(ownedCard.card.id)) continue;
+
       const rentalVersion = allRentalContributions.get(ownedCard.card.id);
       if (rentalVersion == null) continue;
 
@@ -844,6 +941,7 @@ export function selectOptimalDeck(
       accDa += finalRental.raw_da;
       accVi += finalRental.raw_vi;
     }
+    } // end else (requiredRentalCard == null)
   }
 
   // レンタルなしで6枠未満なら全カードから補充
@@ -898,6 +996,7 @@ export function selectMultiplePatterns(
   additionalCounts?: AdditionalCounts,
   uncapLevels?: Record<string, number>,
   rentalPool?: SupportCard[],
+  requiredCardIds?: string[],
 ): DeckResult[] {
   const results: DeckResult[] = [];
 
@@ -961,6 +1060,7 @@ export function selectMultiplePatterns(
       uncapLevels,
       rentalPool,
       freeSlots,
+      requiredCardIds,
     );
     results.push(result);
   }

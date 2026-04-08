@@ -3,6 +3,7 @@ import PlanSelector from '../components/calculator/PlanSelector';
 import PlanTypeSelector from '../components/calculator/PlanTypeSelector';
 import StatRoleConfig from '../components/calculator/StatRoleConfig';
 import EventCountConfig from '../components/calculator/EventCountConfig';
+import RequiredCardSelector from '../components/calculator/RequiredCardSelector';
 import OwnedOnlyToggle from '../components/calculator/OwnedOnlyToggle';
 import ContestModeToggle from '../components/calculator/ContestModeToggle';
 import ResultDisplay from '../components/calculator/ResultDisplay';
@@ -29,6 +30,7 @@ export default function CalculatorPage() {
 
         <StatRoleConfig />
         <EventCountConfig />
+        <RequiredCardSelector />
 
         <div className="flex items-center gap-4">
           <OwnedOnlyToggle />

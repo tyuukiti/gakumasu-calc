@@ -37,9 +37,8 @@ export default function DeckCardList() {
       <div className="space-y-1">
         {pattern.selected_cards.map((cs, index) => {
           const typeStyle = TYPE_COLORS[cs.card.type] ?? TYPE_COLORS['all'];
-          const displayName = cs.is_rental
-            ? `${cs.card.name} (レンタル)`
-            : cs.card.name;
+          const suffix = cs.is_rental ? ' (レンタル)' : cs.is_required ? ' (必須)' : '';
+          const displayName = cs.card.name + suffix;
           const breakdownText = [
             `Vo:${cs.raw_vo} Da:${cs.raw_da} Vi:${cs.raw_vi}`,
             ...cs.breakdowns.map((b) => `  ${b.reason} -> ${b.value > 0 ? '+' : ''}${b.value}`),
@@ -70,7 +69,7 @@ export default function DeckCardList() {
               )}
 
               {/* Card name */}
-              <span className={`flex-1 text-sm truncate ${cs.is_rental ? 'text-orange-600' : 'text-gray-800'}`}>
+              <span className={`flex-1 text-sm truncate ${cs.is_rental ? 'text-orange-600' : cs.is_required ? 'text-purple-600' : 'text-gray-800'}`}>
                 {displayName}
               </span>
 

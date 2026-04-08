@@ -58,6 +58,48 @@
                 </StackPanel>
             </Border>
 
+            <!-- 必須カード選択 -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeader}">
+                        <Run Text="必須カード"/>
+                        <Run Text="（" Foreground="#999"/><Run Text="{Binding RequiredCards.Count, Mode=OneWay}" Foreground="#999"/><Run Text="/4）" Foreground="#999"/>
+                    </TextBlock>
+                    <!-- カード追加行 -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <ComboBox IsEditable="True" IsTextSearchEnabled="True"
+                                  ItemsSource="{Binding AvailableCardsForRequired}"
+                                  SelectedItem="{Binding SelectedRequiredCard}"
+                                  DisplayMemberPath="Name"
+                                  MinWidth="300" FontSize="14" Padding="8,6"/>
+                        <Button Content="追加" Command="{Binding AddRequiredCardCommand}"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Margin="8,0,0,0" Padding="12,6" FontSize="13"/>
+                    </StackPanel>
+                    <!-- 選択済みカード一覧 -->
+                    <ItemsControl ItemsSource="{Binding RequiredCards}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="{Binding Type}" FontWeight="Bold" FontSize="12" Width="30"
+                                               VerticalAlignment="Center" Foreground="#666"/>
+                                    <TextBlock Text="{Binding Rarity}" FontSize="12" Width="30"
+                                               VerticalAlignment="Center" Foreground="#999"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
+                                               MinWidth="200"/>
+                                    <Button Content="✕" FontSize="10" Padding="4,2"
+                                            Command="{Binding DataContext.RemoveRequiredCardCommand,
+                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource MaterialDesignFlatButton}"
+                                            Foreground="#999" MinWidth="0" MinHeight="0"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- 属性設定 -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>

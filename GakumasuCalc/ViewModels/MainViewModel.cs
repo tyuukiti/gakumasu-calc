@@ -24,6 +24,9 @@ public class MainViewModel : ViewModelBase
     private bool _ownedOnly;
     private bool _contestMode;
 
+    // 必須カード
+    private SupportCard? _selectedRequiredCard;
+
     // 育成タイプ
     private string _selectedPlanType = "sense";
 
@@ -99,6 +102,21 @@ public class MainViewModel : ViewModelBase
         get => _contestMode;
         set => SetProperty(ref _contestMode, value);
     }
+
+    // 必須カード
+    public ObservableCollection<SupportCard> RequiredCards { get; } = new();
+    public List<SupportCard> AvailableCardsForRequired => _allCards;
+
+    public SupportCard? SelectedRequiredCard
+    {
+        get => _selectedRequiredCard;
+        set => SetProperty(ref _selectedRequiredCard, value);
+    }
+
+    public bool CanAddRequiredCard => RequiredCards.Count < 4;
+
+    public ICommand AddRequiredCardCommand { get; private set; } = null!;
+    public ICommand RemoveRequiredCardCommand { get; private set; } = null!;
 
     public string SelectedPlanType
     {
@@ -234,6 +252,8 @@ public class MainViewModel : ViewModelBase
 
         CalculateCommand = new RelayCommand(ExecuteCalculate);
         ResetCommand = new RelayCommand(ExecuteReset);
+        AddRequiredCardCommand = new RelayCommand(ExecuteAddRequiredCard);
+        RemoveRequiredCardCommand = new RelayCommand(ExecuteRemoveRequiredCard);
         SelectPatternCommand = new RelayCommand(o =>
         {
             if (o is PatternResultViewModel pattern)
@@ -328,17 +348,73 @@ public class MainViewModel : ViewModelBase
                 : _allCards;
         }
 
+        // 必須カード
+        var requiredCardIds = RequiredCards.Select(c => c.Id).ToList();
+
+        // 必須カードはコンテストモード等のフィルタを回避して候補に含める
+        if (requiredCardIds.Count > 0)
+        {
+            var requiredIdSet = requiredCardIds.ToHashSet();
+            var candidateIdSet = candidateCards.Select(c => c.Id).ToHashSet();
+
+            if (OwnedOnly)
+            {
+                // 所持済み必須カードを candidateCards に追加
+                var ownedIdSet = _inventory.Where(e => e.Owned).Select(e => e.CardId).ToHashSet();
+                foreach (var card in _allCards.Where(c => requiredIdSet.Contains(c.Id) && ownedIdSet.Contains(c.Id)))
+                {
+                    if (!candidateIdSet.Contains(card.Id))
+                        candidateCards.Add(card);
+                }
+
+                // 全必須カードを rentalPool に追加（未所持必須カードの検索用）
+                if (rentalPool != null)
+                {
+                    var rentalIdSet = rentalPool.Select(c => c.Id).ToHashSet();
+                    foreach (var card in _allCards.Where(c => requiredIdSet.Contains(c.Id)))
+                    {
+                        if (!rentalIdSet.Contains(card.Id))
+                            rentalPool.Add(card);
+                    }
+                }
+            }
+            else
+            {
+                // 全カード4凸モード: 必須カードを candidateCards に追加
+                foreach (var card in _allCards.Where(c => requiredIdSet.Contains(c.Id)))
+                {
+                    if (!candidateIdSet.Contains(card.Id))
+                        candidateCards.Add(card);
+                }
+            }
+        }
+
         // SP率カード枚数
         var spCounts = new Dictionary<string, int>();
         if (VoSpCount > 0) spCounts["vo"] = VoSpCount;
         if (DaSpCount > 0) spCounts["da"] = DaSpCount;
         if (ViSpCount > 0) spCounts["vi"] = ViSpCount;
 
+        // バリデーション: OwnedOnly時、未所持必須カードが2枚以上ならエラー
+        if (OwnedOnly && requiredCardIds.Count > 0)
+        {
+            var ownedIds = _inventory.Where(e => e.Owned).Select(e => e.CardId).ToHashSet();
+            int notOwnedCount = requiredCardIds.Count(id => !ownedIds.Contains(id));
+            if (notOwnedCount > 1)
+            {
+                System.Windows.MessageBox.Show(
+                    "未所持の必須カードは最大1枚です（レンタル枠使用）。",
+                    "必須カード設定エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+        }
+
         // 複数パターン一括計算
         var patterns = _scoringService.SelectMultiplePatterns(
             _selectedPlan, candidateCards, mainStats, subStat, lessonWeekCount,
             spCounts: spCounts, planType: SelectedPlanType, additionalCounts: additional,
-            uncapLevels: uncapLevels, rentalPool: rentalPool);
+            uncapLevels: uncapLevels, rentalPool: rentalPool,
+            requiredCardIds: requiredCardIds.Count > 0 ? requiredCardIds : null);
 
         _deckResults = patterns;
         _lastMainStats = mainStats;
@@ -354,7 +430,8 @@ public class MainViewModel : ViewModelBase
             var vm = new PatternResultViewModel { Label = pattern.Label, Index = i };
             foreach (var cs in pattern.SelectedCards)
             {
-                var displayName = cs.IsRental ? $"{cs.Card.Name}（レンタル）" : cs.Card.Name;
+                var suffix = cs.IsRental ? "（レンタル）" : cs.IsRequired ? "（必須）" : "";
+                var displayName = cs.Card.Name + suffix;
                 var breakdown = string.Join("\n", cs.Breakdowns
                     .Select(b => $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
                 vm.Cards.Add(new DeckCardViewModel
@@ -790,6 +867,24 @@ public class MainViewModel : ViewModelBase
         return _allCards.ToDictionary(c => c.Id, _ => 4);
     }
 
+    private void ExecuteAddRequiredCard()
+    {
+        if (SelectedRequiredCard == null || RequiredCards.Count >= 4) return;
+        if (RequiredCards.Any(c => c.Id == SelectedRequiredCard.Id)) return;
+        RequiredCards.Add(SelectedRequiredCard);
+        SelectedRequiredCard = null;
+        OnPropertyChanged(nameof(CanAddRequiredCard));
+    }
+
+    private void ExecuteRemoveRequiredCard(object? parameter)
+    {
+        if (parameter is SupportCard card)
+        {
+            RequiredCards.Remove(card);
+            OnPropertyChanged(nameof(CanAddRequiredCard));
+        }
+    }
+
     private void ExecuteReset()
     {
         VoRole = "サブ"; DaRole = "サブ"; ViRole = "サブ";
@@ -801,6 +896,8 @@ public class MainViewModel : ViewModelBase
         GenkiAcquire = 0; GoodConditionAcquire = 0;
         GoodImpressionAcquire = 0; ConserveAcquire = 0; ConsultationDrink = 0;
         DeckCards.Clear();
+        RequiredCards.Clear();
+        OnPropertyChanged(nameof(CanAddRequiredCard));
         OnPlanChanged();
     }
 
