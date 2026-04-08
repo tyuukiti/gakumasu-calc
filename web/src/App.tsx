@@ -29,6 +29,31 @@ function Header() {
   )
 }
 
+function Footer() {
+  return (
+    <footer className="text-center text-sm text-gray-400 py-4 mt-8 border-t border-gray-200">
+      <div className="flex items-center justify-center gap-4">
+        <a
+          href="https://github.com/tyuukiti/gakumasu-calc"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-gray-600 transition-colors"
+        >
+          GitHub
+        </a>
+        <a
+          href="https://x.com/nakayoshi_2nd"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-gray-600 transition-colors"
+        >
+          X @中吉
+        </a>
+      </div>
+    </footer>
+  )
+}
+
 export default function App() {
   const { isLoading, error, initialize } = useAppStore()
 
@@ -62,6 +87,7 @@ export default function App() {
           <Route path="/inventory" element={<InventoryPage />} />
         </Routes>
       </main>
+      <Footer />
     </BrowserRouter>
   )
 }
