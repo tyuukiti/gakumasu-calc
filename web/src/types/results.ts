@@ -22,6 +22,7 @@ export interface CardScore {
   raw_vi: number;
   breakdowns: EffectBreakdown[];
   is_rental: boolean;
+  is_required: boolean;
 }
 
 export interface EffectBreakdown {

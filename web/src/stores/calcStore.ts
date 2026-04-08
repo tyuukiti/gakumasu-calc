@@ -27,6 +27,7 @@ interface CalcState {
   additionalCounts: AdditionalCounts;
   ownedOnly: boolean;
   contestMode: boolean;
+  requiredCardIds: string[];
   deckResults: DeckResult[];
   selectedPatternIndex: number;
   calculationResult: CalculationResult | null;
@@ -44,6 +45,8 @@ interface CalcState {
   applyTemplate: (template: EventCountTemplate) => void;
   setOwnedOnly: (v: boolean) => void;
   setContestMode: (v: boolean) => void;
+  addRequiredCard: (cardId: string) => void;
+  removeRequiredCard: (cardId: string) => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
 }
@@ -245,6 +248,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   additionalCounts: emptyAdditionalCounts(),
   ownedOnly: false,
   contestMode: false,
+  requiredCardIds: [],
   deckResults: [],
   selectedPatternIndex: 0,
   calculationResult: null,
@@ -315,6 +319,18 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   setOwnedOnly: (v) => set({ ownedOnly: v }),
   setContestMode: (v) => set({ contestMode: v }),
 
+  addRequiredCard: (cardId) => {
+    const state = get();
+    if (state.requiredCardIds.length >= 4) return;
+    if (state.requiredCardIds.includes(cardId)) return;
+    set({ requiredCardIds: [...state.requiredCardIds, cardId] });
+  },
+
+  removeRequiredCard: (cardId) => {
+    const state = get();
+    set({ requiredCardIds: state.requiredCardIds.filter((id) => id !== cardId) });
+  },
+
   executeCalculate: () => {
     try {
       const state = get();
@@ -364,6 +380,51 @@ export const useCalcStore = create<CalcState>((set, get) => ({
           : allCards;
       }
 
+      // 必須カードはコンテストモード等のフィルタを回避して候補に含める
+      const requiredCardIds = state.requiredCardIds.length > 0 ? state.requiredCardIds : undefined;
+      if (requiredCardIds != null) {
+        const requiredIdSet = new Set(requiredCardIds);
+        const candidateIdSet = new Set(candidateCards.map((c) => c.id));
+
+        if (state.ownedOnly) {
+          // 所持済み必須カードを candidateCards に追加
+          const ownedIdSet = new Set(inventory.filter((e) => e.owned).map((e) => e.card_id));
+          for (const card of allCards) {
+            if (requiredIdSet.has(card.id) && ownedIdSet.has(card.id) && !candidateIdSet.has(card.id)) {
+              candidateCards.push(card);
+            }
+          }
+
+          // 全必須カードを rentalPool に追加（未所持必須カードの検索用）
+          if (rentalPool != null) {
+            const rentalIdSet = new Set(rentalPool.map((c) => c.id));
+            for (const card of allCards) {
+              if (requiredIdSet.has(card.id) && !rentalIdSet.has(card.id)) {
+                rentalPool.push(card);
+              }
+            }
+          }
+        } else {
+          // 全カード4凸モード: 必須カードを candidateCards に追加
+          for (const card of allCards) {
+            if (requiredIdSet.has(card.id) && !candidateIdSet.has(card.id)) {
+              candidateCards.push(card);
+            }
+          }
+        }
+      }
+
+      // 必須カードバリデーション
+      if (requiredCardIds != null && state.ownedOnly) {
+        const ownedIds = new Set(inventory.filter((e) => e.owned).map((e) => e.card_id));
+        const notOwnedCount = requiredCardIds.filter((id) => !ownedIds.has(id)).length;
+        if (notOwnedCount > 1) {
+          set({ errorMessage: '未所持の必須カードは最大1枚です（レンタル枠使用）' });
+          trackEvent('calculation_error', { error_message: '未所持の必須カードは最大1枚です' });
+          return;
+        }
+      }
+
       console.log(`計算開始: plan=${plan.id}, mainStats=${mainStats}, subStat=${subStat}, cards=${candidateCards.length}枚`);
 
       const patterns = selectMultiplePatterns(
@@ -377,6 +438,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
         state.additionalCounts,
         uncapLevels,
         rentalPool,
+        requiredCardIds,
       );
 
       console.log(`パターン数: ${patterns.length}, 合計: ${patterns.map(p => p.total_value)}`);

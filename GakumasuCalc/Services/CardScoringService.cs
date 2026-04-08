@@ -18,6 +18,8 @@ public class CardScoringService
         public List<EffectBreakdown> Breakdowns { get; set; } = new();
         /// <summary>レンタルカードかどうか</summary>
         public bool IsRental { get; set; }
+        /// <summary>必須カードかどうか</summary>
+        public bool IsRequired { get; set; }
     }
 
     public class EffectBreakdown
@@ -49,7 +51,8 @@ public class CardScoringService
         AdditionalCounts? additionalCounts = null,
         Dictionary<string, int>? uncapLevels = null,
         List<SupportCard>? rentalPool = null,
-        int freeSlots = 0)
+        int freeSlots = 0,
+        List<string>? requiredCardIds = null)
     {
         var statCap = plan.StatusLimit;
         var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats);
@@ -100,6 +103,93 @@ public class CardScoringService
         // 属性枠・フリー枠の残数を管理するローカルコピー
         var remainingSlots = new Dictionary<string, int>(cardTypeSlots);
         int remainingFree = freeSlots;
+
+        // ステップ0: 必須カードを強制挿入
+        CardScore? requiredRentalCard = null;
+        var protectedIds = new HashSet<string>();
+
+        if (requiredCardIds != null && requiredCardIds.Count > 0)
+        {
+            // spCounts のローカルコピー（必須カードでSP率を消費するため）
+            var spCountsCopy = spCounts != null ? new Dictionary<string, int>(spCounts) : null;
+
+            foreach (var cardId in requiredCardIds)
+            {
+                // allCards から探す、見つからなければ rentalPool からも探す
+                var card = allCards.FirstOrDefault(c => c.Id == cardId)
+                    ?? rentalPool?.FirstOrDefault(c => c.Id == cardId);
+                if (card == null || usedIds.Contains(cardId)) continue;
+
+                // 所持判定: rentalPool が null なら全カード所持扱い、そうでなければ eligible に含まれるか
+                bool isOwned = rentalPool == null || eligible.Any(c => c.Id == cardId);
+
+                // 凸数: 所持なら uncapLevels、未所持なら4凸
+                var reqUncap = new Dictionary<string, int>(uncapLevels ?? new Dictionary<string, int>());
+                if (!isOwned)
+                    reqUncap[cardId] = 4;
+                else if (!reqUncap.ContainsKey(cardId))
+                    reqUncap[cardId] = 4;
+
+                var contribution = CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, reqUncap);
+                contribution.IsRequired = true;
+
+                if (!isOwned && rentalPool != null)
+                {
+                    // 未所持 → レンタル枠として保留（selected に入れない）
+                    contribution.IsRental = true;
+                    requiredRentalCard = contribution;
+                    usedIds.Add(cardId);
+                    protectedIds.Add(cardId);
+                }
+                else
+                {
+                    // 所持 → 所持枠として追加
+                    selected.Add(contribution);
+                    usedIds.Add(cardId);
+                    protectedIds.Add(cardId);
+                    accVo += contribution.RawVo;
+                    accDa += contribution.RawDa;
+                    accVi += contribution.RawVi;
+
+                    // スロット消費
+                    if (card.Type != "all" && remainingSlots.ContainsKey(card.Type) && remainingSlots[card.Type] > 0)
+                        remainingSlots[card.Type]--;
+                    else if (card.Type == "all")
+                    {
+                        // "all" タイプ: 最大残数の属性枠を消費
+                        var maxSlot = remainingSlots.OrderByDescending(s => s.Value).FirstOrDefault();
+                        if (maxSlot.Value > 0)
+                            remainingSlots[maxSlot.Key]--;
+                        else
+                            remainingFree = Math.Max(0, remainingFree - 1);
+                    }
+                    else
+                        remainingFree = Math.Max(0, remainingFree - 1);
+
+                    // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCounts を減算
+                    if (spCountsCopy != null)
+                    {
+                        var spEffect = card.Effects.FirstOrDefault(e => e.Trigger == "equip" && e.ValueType == "sp_rate");
+                        if (spEffect != null)
+                        {
+                            var spStat = card.Type == "all" ? card.Type : card.Type;
+                            foreach (var key in spCountsCopy.Keys.ToList())
+                            {
+                                if ((card.Type == key || card.Type == "all") && spCountsCopy[key] > 0)
+                                {
+                                    spCountsCopy[key]--;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // spCounts を更新（必須カードで消費した分を反映）
+            if (spCountsCopy != null)
+                spCounts = spCountsCopy;
+        }
 
         // ステップ1: SP率カードをユーザ指定枚数分、先に確保
         if (spCounts != null)
@@ -205,6 +295,17 @@ public class CardScoringService
         // レンタル1枠: 全カードプールから4凸で最良の1枚を選択
         if (rentalPool != null && selected.Count < 6)
         {
+            if (requiredRentalCard != null)
+            {
+                // 必須カードがレンタル枠を使用 → Pattern A/B をスキップ
+                selected.Add(requiredRentalCard);
+                usedIds.Add(requiredRentalCard.Card.Id);
+                accVo += requiredRentalCard.RawVo;
+                accDa += requiredRentalCard.RawDa;
+                accVi += requiredRentalCard.RawVi;
+            }
+            else
+            {
             var rentalUncap = new Dictionary<string, int>();
             foreach (var c in rentalPool)
                 rentalUncap[c.Id] = 4;
@@ -234,6 +335,9 @@ public class CardScoringService
 
             foreach (var ownedCard in selected)
             {
+                // 必須カードはスワップ対象外
+                if (protectedIds.Contains(ownedCard.Card.Id)) continue;
+
                 if (!allRentalContributions.TryGetValue(ownedCard.Card.Id, out var rentalVersion))
                     continue;
 
@@ -297,6 +401,7 @@ public class CardScoringService
                 accDa += finalRental.RawDa;
                 accVi += finalRental.RawVi;
             }
+            } // end else (requiredRentalCard == null)
         }
 
         // レンタルなしで6枠未満なら全カードから補充
@@ -482,7 +587,8 @@ public class CardScoringService
         string? planType = null,
         AdditionalCounts? additionalCounts = null,
         Dictionary<string, int>? uncapLevels = null,
-        List<SupportCard>? rentalPool = null)
+        List<SupportCard>? rentalPool = null,
+        List<string>? requiredCardIds = null)
     {
         var results = new List<DeckResult>();
 
@@ -538,7 +644,7 @@ public class CardScoringService
 
             var result = SelectOptimalDeck(
                 plan, allCards, lessonAllocation, cardTypeSlots,
-                mainStats, spCounts, planType, additionalCounts, uncapLevels, rentalPool, freeSlots);
+                mainStats, spCounts, planType, additionalCounts, uncapLevels, rentalPool, freeSlots, requiredCardIds);
             results.Add(result);
         }
 
