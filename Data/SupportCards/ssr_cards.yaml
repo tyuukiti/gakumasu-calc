@@ -549,6 +549,7 @@ support_cards:
     values: [20, 20, 20, 20, 20]
     value_type: flat
     max_count: 3
+    condition: da>=700
     source: item
 - id: SP_SSR_0069
   name: いつまでも続けばいいのに

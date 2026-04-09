@@ -69,17 +69,19 @@ def download_file(url: str, filepath: Path):
 
 # ======== タグページ解析 ========
 
-def fetch_card_tags() -> dict[str, str]:
+def fetch_card_tags(html: str | None = None) -> tuple[dict[str, str], str]:
     """
     能力早見表ページを行単位でパースし カード名→タグ のマッピングを取得。
     各行: [カード名リンク] ... [カテゴリセル(スキルカード / コンテスト<br>アイテム 等)]
-    失敗時は空dictを返す。
+    Returns: (tag_map, html) — html は fetch_item_effects() で再利用可能。
+    失敗時は (空dict, "") を返す。
     """
-    try:
-        html = fetch_page(TAG_PAGE_URL)
-    except Exception as e:
-        print(f"  ⚠ タグページ取得失敗: {e}")
-        return {}
+    if html is None:
+        try:
+            html = fetch_page(TAG_PAGE_URL)
+        except Exception as e:
+            print(f"  ⚠ タグページ取得失敗: {e}")
+            return {}, ""
 
     result: dict[str, str] = {}
 
@@ -119,7 +121,191 @@ def fetch_card_tags() -> dict[str, str]:
         if card_name and card_tag:
             result[card_name] = card_tag
 
+    return result, html
+
+
+def fetch_item_effects(html: str) -> dict[str, dict]:
+    """
+    能力早見表ページから produce_item カードのアイテム効果を抽出。
+    Returns: {card_name: {trigger, stat, value, condition?, max_count?, source: "item"}}
+    ステータス上昇のある効果のみ返す。
+    """
+    result: dict[str, dict] = {}
+
+    category_patterns = [
+        (r'プロデュース.{0,10}アイテム', "produce_item"),
+    ]
+
+    # アイテム効果のトリガーマッピング
+    item_trigger_map = [
+        ("集中効果", "concentrate_acquire"),
+        ("やる気効果", "motivation_acquire"),
+        ("全力効果", "fullpower_acquire"),
+        ("強気効果", "aggressive_acquire"),
+        ("好調効果", "good_condition_acquire"),
+        ("好印象効果", "good_impression_acquire"),
+        ("温存効果", "conserve_acquire"),
+        ("元気効果", "genki_acquire"),
+        ("特別指導", "special_training"),
+        ("Voレッスン終了", "vo_lesson_end"),
+        ("Daレッスン終了", "da_lesson_end"),
+        ("Viレッスン終了", "vi_lesson_end"),
+        ("VoSP終了", "vo_sp_end"),
+        ("DaSP終了", "da_sp_end"),
+        ("ViSP終了", "vi_sp_end"),
+        ("試験・オーディション終了", "exam_end"),
+        ("お出かけ終了", "outing_end"),
+        ("授業・営業終了", "lesson_end"),
+        ("レッスン終了", "lesson_end"),
+        ("活動支給・差し入れ", "activity_supply"),
+        ("相談選択", "consultation"),
+    ]
+
+    rows = re.findall(r'<tr[^>]*>(.*?)</tr>', html, re.DOTALL)
+    for row in rows:
+        cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
+
+        card_name = None
+        is_produce_item = False
+
+        for cell in cells:
+            if card_name is None:
+                m = re.search(r'href="https://seesaawiki\.jp/gakumasu/d/([^"#]+)"', cell)
+                if m:
+                    try:
+                        card_name = normalize_name(
+                            urllib.parse.unquote(m.group(1), encoding="euc-jp").strip()
+                        )
+                    except Exception:
+                        pass
+
+            if re.search(r'color:\s*#ffffff', cell):
+                for pattern, tag in category_patterns:
+                    if re.search(pattern, cell):
+                        is_produce_item = True
+                        break
+
+        if not (card_name and is_produce_item):
+            continue
+        if len(cells) < 6:
+            continue
+
+        # cell[5] がアイテム効果テキスト
+        effect_html = cells[5]
+        effect_text = re.sub(r'<[^>]+>', '\n', effect_html).strip()
+        effect_text = '\n'.join(l.strip() for l in effect_text.split('\n') if l.strip())
+
+        parsed = _parse_item_effect_text(effect_text)
+        if parsed:
+            result[card_name] = parsed
+
     return result
+
+
+def _parse_item_effect_text(text: str) -> dict | None:
+    """
+    アイテム効果テキストからステータス上昇効果を抽出。
+    ステータス上昇がない場合は None を返す。
+    """
+    # 改行を除去して一行にする (HTMLの<br>由来の改行を結合)
+    flat = text.replace('\n', '')
+
+    # ステータス上昇パターン (Vo+35, Da+20 形式)
+    stat_match = re.search(r'(Vo|Da|Vi)\+(\d+)', flat)
+    # ステータス上昇パターン (ボーカル上昇+30 形式)
+    stat_match_jp = re.search(r'(ボーカル|ダンス|ビジュアル)上昇\+(\d+)', flat)
+
+    stat = None
+    value = None
+
+    if stat_match:
+        stat_map = {"Vo": "vo", "Da": "da", "Vi": "vi"}
+        stat = stat_map[stat_match.group(1)]
+        value = int(stat_match.group(2))
+    elif stat_match_jp:
+        stat_map_jp = {"ボーカル": "vo", "ダンス": "da", "ビジュアル": "vi"}
+        stat = stat_map_jp[stat_match_jp.group(1)]
+        value = int(stat_match_jp.group(2))
+
+    if stat is None or value is None:
+        return None
+
+    # トリガー判定
+    item_trigger_map = [
+        ("集中効果", "concentrate_acquire"),
+        ("やる気効果", "motivation_acquire"),
+        ("全力効果", "fullpower_acquire"),
+        ("強気効果", "aggressive_acquire"),
+        ("好調効果", "good_condition_acquire"),
+        ("好印象効果", "good_impression_acquire"),
+        ("温存効果", "conserve_acquire"),
+        ("元気効果", "genki_acquire"),
+        ("特別指導", "special_training"),
+        ("Voレッスン終了", "vo_lesson_end"),
+        ("Daレッスン終了", "da_lesson_end"),
+        ("Viレッスン終了", "vi_lesson_end"),
+        ("VoSP終了", "vo_sp_end"),
+        ("DaSP終了", "da_sp_end"),
+        ("ViSP終了", "vi_sp_end"),
+        ("試験・オーディション終了", "exam_end"),
+        ("お出かけ終了", "outing_end"),
+        ("授業・営業終了", "lesson_end"),
+        ("レッスン終了", "lesson_end"),
+        ("活動支給・差し入れ", "activity_supply"),
+        ("相談選択", "consultation"),
+    ]
+
+    trigger = None
+    for keyword, trig in item_trigger_map:
+        if keyword in flat:
+            trigger = trig
+            break
+
+    if trigger is None:
+        return None
+
+    # condition 抽出
+    condition = None
+    # パターン: Da700以上, Vo400以上 (英字表記)
+    cond_match = re.search(r'(Vo|Da|Vi)(\d+)以上', flat)
+    if cond_match:
+        stat_map = {"Vo": "vo", "Da": "da", "Vi": "vi"}
+        cond_stat = stat_map[cond_match.group(1)]
+        cond_val = cond_match.group(2)
+        condition = f"{cond_stat}>={cond_val}"
+    else:
+        # パターン: ボーカルが700以上, ダンスが700以上 (日本語表記)
+        cond_match_jp = re.search(r'(ボーカル|ダンス|ビジュアル)が(\d+)\w*以上', flat)
+        if cond_match_jp:
+            stat_map_jp = {"ボーカル": "vo", "ダンス": "da", "ビジュアル": "vi"}
+            cond_stat = stat_map_jp[cond_match_jp.group(1)]
+            cond_val = cond_match_jp.group(2)
+            condition = f"{cond_stat}>={cond_val}"
+        else:
+            # パターン: 体力50％以上
+            cond_match_hp = re.search(r'体力(\d+)[％%]以上', flat)
+            if cond_match_hp:
+                condition = f"hp>={cond_match_hp.group(1)}%"
+
+    # max_count 抽出
+    max_count = None
+    mc_match = re.search(r'[（(]プロデュース中(\d+)回[）)]', flat)
+    if mc_match:
+        max_count = int(mc_match.group(1))
+
+    eff: dict = {
+        "trigger": trigger,
+        "stat": stat,
+        "values": [float(value)] * 5,
+        "value_type": "flat",
+        "source": "item",
+    }
+    if max_count:
+        eff["max_count"] = max_count
+    if condition:
+        eff["condition"] = condition
+
+    return eff
 
 
 # ======== Wiki 一覧ページ解析 ========
@@ -411,8 +597,10 @@ def classify_and_match(effects: list[dict], wiki_abilities: list[dict]) -> tuple
                 ("好印象効果", "good_impression_acquire"),
                 ("好印象カード獲得", "good_impression_acquire"),
                 ("温存効果", "conserve_acquire"), ("温存カード獲得", "conserve_acquire"),
-                ("集中効果", "good_condition_acquire"),
-                ("やる気効果", "good_impression_acquire"),
+                ("集中効果", "concentrate_acquire"),
+                ("やる気効果", "motivation_acquire"),
+                ("全力効果", "fullpower_acquire"),
+                ("強気効果", "aggressive_acquire"),
                 ("根気効果", "conserve_acquire"),
                 ("メンタルスキルカード獲得", "mental_acquire"),
                 ("メンタル獲得", "mental_acquire"), ("メンタル強化", "mental_enhance"),
@@ -548,11 +736,13 @@ def build_new_card(
                 ("元気獲得", "genki_acquire"),
                 ("好調効果", "good_condition_acquire"),
                 ("好調カード獲得", "good_condition_acquire"),
-                ("集中効果", "good_condition_acquire"),
+                ("集中効果", "concentrate_acquire"),
                 ("好印象効果", "good_impression_acquire"),
                 ("好印象カード獲得", "good_impression_acquire"),
-                ("やる気効果", "good_impression_acquire"),
+                ("やる気効果", "motivation_acquire"),
                 ("温存効果", "conserve_acquire"), ("温存カード獲得", "conserve_acquire"),
+                ("全力効果", "fullpower_acquire"),
+                ("強気効果", "aggressive_acquire"),
                 ("根気効果", "conserve_acquire"),
                 ("メンタルスキルカード獲得", "mental_acquire"),
                 ("メンタル獲得", "mental_acquire"), ("メンタル強化", "mental_enhance"),
@@ -659,6 +849,8 @@ def write_yaml_with_flow_values(filepath: str, cards: list[dict]):
                 lines.append(f"    condition: {eff['condition']}")
             if eff.get("description"):
                 lines.append(f"    description: {eff['description']}")
+            if eff.get("source"):
+                lines.append(f"    source: {eff['source']}")
     with open(filepath, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
@@ -711,10 +903,14 @@ def main():
         print("  [FORCE: 全件更新]")
     print()
 
-    # 1. タグ情報取得
+    # 1. タグ情報 + アイテム効果取得
     print("タグ情報を取得中...")
-    card_tag_map = fetch_card_tags()
-    print(f"  タグ情報: {len(card_tag_map)} 件 (skill/exam_item)")
+    card_tag_map, tag_page_html = fetch_card_tags()
+    item_effects_map: dict[str, dict] = {}
+    if tag_page_html:
+        item_effects_map = fetch_item_effects(tag_page_html)
+        print(f"  アイテム効果: {len(item_effects_map)} 件")
+    print(f"  タグ情報: {len(card_tag_map)} 件 (skill/exam_item/produce_item)")
     if card_tag_map:
         time.sleep(args.delay)
 
@@ -821,6 +1017,13 @@ def main():
 
                 card_tag = card_tag_map.get(normalize_name(entry.name), "none")
                 card = build_new_card(card_id, entry, detail, detail.get("abilities", []), tag=card_tag)
+
+                # アイテム効果をマージ
+                item_eff = item_effects_map.get(normalize_name(entry.name))
+                if item_eff:
+                    card["effects"].append(item_eff)
+                    print(f"  + アイテム効果: {item_eff['trigger']} {item_eff['stat']}+{int(item_eff['values'][0])}")
+
                 if not card["effects"]:
                     print(f"  ⚠ effects が空です (アビリティ取得失敗)")
                 else:
@@ -849,11 +1052,12 @@ def main():
                 # 既存カード値更新
                 info = existing_cards[entry.name]
                 abilities = detail.get("abilities", [])
+                value_updated = False
                 if abilities:
-                    was_updated, logs = classify_and_match(info["card"]["effects"], abilities)
+                    value_updated, logs = classify_and_match(info["card"]["effects"], abilities)
                     for log in logs:
                         print(log)
-                    if was_updated:
+                    if value_updated:
                         update_count += 1
                         modified_files.add(info["file"])
                         print("  → 更新あり")
@@ -861,6 +1065,20 @@ def main():
                         print("  → 変更なし")
                 else:
                     print("  - テーブルなし")
+
+                # アイテム効果をマージ (source: item が未登録なら追加)
+                item_eff = item_effects_map.get(normalize_name(entry.name))
+                if item_eff:
+                    existing_item_effs = [
+                        e for e in info["card"]["effects"]
+                        if e.get("source") == "item"
+                    ]
+                    if not existing_item_effs:
+                        info["card"]["effects"].append(item_eff)
+                        modified_files.add(info["file"])
+                        print(f"  + アイテム効果: {item_eff['trigger']} {item_eff['stat']}+{int(item_eff['values'][0])}")
+                        if not value_updated:
+                            update_count += 1
 
                 # 画像が未取得なら取得
                 if detail.get("image_url") and normalize_name(entry.name) not in norm_image_mapping:
