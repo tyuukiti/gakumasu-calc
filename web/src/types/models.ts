@@ -32,6 +32,7 @@ export interface CardEffect {
   max_count?: number;
   condition?: string;
   description?: string;
+  source?: string;
 }
 
 export interface LessonBonusPercent {
@@ -114,6 +115,10 @@ export interface AdditionalCounts extends Record<string, number> {
   good_condition_acquire: number;
   good_impression_acquire: number;
   conserve_acquire: number;
+  concentrate_acquire: number;
+  motivation_acquire: number;
+  fullpower_acquire: number;
+  aggressive_acquire: number;
   consultation_drink: number;
 }
 
@@ -126,6 +131,8 @@ export function emptyAdditionalCounts(): AdditionalCounts {
     mental_acquire: 0, mental_enhance: 0, active_acquire: 0,
     genki_acquire: 0, good_condition_acquire: 0,
     good_impression_acquire: 0, conserve_acquire: 0,
+    concentrate_acquire: 0, motivation_acquire: 0,
+    fullpower_acquire: 0, aggressive_acquire: 0,
     consultation_drink: 0,
   };
 }

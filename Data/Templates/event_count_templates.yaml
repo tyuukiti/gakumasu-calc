@@ -10,6 +10,7 @@
     skill_custom: 3
     skill_change: 2
     good_condition_acquire: 5
+    concentrate_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     consultation_drink: 6
@@ -24,6 +25,7 @@
     skill_delete: 2
     skill_custom: 3
     good_impression_acquire: 5
+    motivation_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     consultation_drink: 6
@@ -38,6 +40,7 @@
     skill_delete: 2
     skill_custom: 3
     genki_acquire: 5
+    motivation_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     consultation_drink: 6
@@ -53,6 +56,7 @@
     skill_custom: 3
     active_enhance: 3
     active_delete: 2
+    aggressive_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     mental_enhance: 1
@@ -69,6 +73,7 @@
     skill_custom: 3
     active_enhance: 3
     active_delete: 2
+    fullpower_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     mental_enhance: 1
@@ -86,6 +91,7 @@
     skill_custom: 3
     skill_change: 2
     good_condition_acquire: 5
+    concentrate_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     consultation_drink: 6
@@ -100,6 +106,7 @@
     skill_delete: 2
     skill_custom: 3
     good_impression_acquire: 5
+    motivation_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     consultation_drink: 6
@@ -114,6 +121,7 @@
     skill_delete: 2
     skill_custom: 3
     genki_acquire: 5
+    motivation_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     consultation_drink: 6
@@ -129,6 +137,7 @@
     skill_custom: 3
     active_enhance: 3
     active_delete: 2
+    aggressive_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     mental_enhance: 1
@@ -145,6 +154,7 @@
     skill_custom: 3
     active_enhance: 3
     active_delete: 2
+    fullpower_acquire: 5
     active_acquire: 11
     mental_acquire: 11
     mental_enhance: 1

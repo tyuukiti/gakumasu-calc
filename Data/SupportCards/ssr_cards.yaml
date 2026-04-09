@@ -49,6 +49,13 @@ support_cards:
     stat: da
     values: [5, 5, 5, 6, 6]
     value_type: flat
+  - trigger: concentrate_acquire
+    stat: da
+    values: [35, 35, 35, 35, 35]
+    value_type: flat
+    max_count: 2
+    condition: da>=700
+    source: item
 - id: SP_SSR_0091
   name: かかってらっしゃい！
   rarity: SSR
@@ -216,6 +223,13 @@ support_cards:
     stat: da
     values: [17, 17, 17, 17, 17]
     value_type: flat
+  - trigger: fullpower_acquire
+    stat: da
+    values: [30, 30, 30, 30, 30]
+    value_type: flat
+    max_count: 2
+    condition: da>=700
+    source: item
 - id: SP_SSR_0082
   name: メリクリ、おねーちゃん♪
   rarity: SSR
@@ -380,6 +394,13 @@ support_cards:
     values: [11, 11, 11, 11, 11]
     value_type: flat
     max_count: 6
+  - trigger: special_training
+    stat: vo
+    values: [30, 30, 30, 30, 30]
+    value_type: flat
+    max_count: 1
+    condition: vo>=400
+    source: item
 - id: SP_SSR_0075
   name: 大運動会、開催っ！
   rarity: SSR
@@ -489,6 +510,13 @@ support_cards:
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
+  - trigger: motivation_acquire
+    stat: vo
+    values: [30, 30, 30, 30, 30]
+    value_type: flat
+    max_count: 2
+    condition: vo>=400
+    source: item
 - id: SP_SSR_0071
   name: おい、来てやったぞ！
   rarity: SSR
@@ -516,6 +544,13 @@ support_cards:
     stat: da
     values: [4, 4, 4, 4, 5]
     value_type: flat
+  - trigger: concentrate_acquire
+    stat: da
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 3
+    condition: da>=700
+    source: item
 - id: SP_SSR_0069
   name: いつまでも続けばいいのに
   rarity: SSR
@@ -737,6 +772,13 @@ support_cards:
     stat: da
     values: [7, 7, 7, 7, 7]
     value_type: flat
+  - trigger: lesson_end
+    stat: da
+    values: [10, 10, 10, 10, 10]
+    value_type: flat
+    max_count: 2
+    condition: da>=400
+    source: item
 - id: SP_SSR_0055
   name: 相変わらず不器用ね
   rarity: SSR
