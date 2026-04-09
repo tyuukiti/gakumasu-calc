@@ -49,6 +49,10 @@ function triggerDisplayName(trigger: string): string {
     good_condition_acquire: '好調獲得',
     good_impression_acquire: '好印象獲得',
     conserve_acquire: '温存獲得',
+    concentrate_acquire: '集中獲得',
+    motivation_acquire: 'やる気獲得',
+    fullpower_acquire: '全力獲得',
+    aggressive_acquire: '強気獲得',
     p_item_acquire: 'Pアイテム獲得',
     p_drink_acquire: 'Pドリンク獲得',
     consultation_drink: '相談ドリンク交換',
@@ -70,6 +74,7 @@ function buildReasonText(
   triggerCounts: Record<string, number>,
   uncapLevel: number,
 ): string {
+  const prefix = effect.source === 'item' ? '[アイテム] ' : '';
   const triggerName = triggerDisplayName(effect.trigger);
   const stat = effect.stat.toUpperCase();
   const val = getEffectValue(effect, uncapLevel);
@@ -77,11 +82,11 @@ function buildReasonText(
   if (effect.trigger === 'equip') {
     switch (effect.value_type) {
       case 'sp_rate':
-        return `${stat} SP率+${val}%`;
+        return `${prefix}${stat} SP率+${val}%`;
       case 'para_bonus':
-        return `パラボ+${val}%`;
+        return `${prefix}パラボ+${val}%`;
       default:
-        return `${stat} 初期値+${Math.floor(val)}`;
+        return `${prefix}${stat} 初期値+${Math.floor(val)}`;
     }
   }
 
@@ -97,9 +102,9 @@ function buildReasonText(
 
   switch (effect.value_type) {
     case 'flat':
-      return `${triggerName} ${stat}+${Math.floor(val)} ${countInfo}`;
+      return `${prefix}${triggerName} ${stat}+${Math.floor(val)} ${countInfo}`;
     default:
-      return `${triggerName} ${stat}+${val}% ${countInfo}`;
+      return `${prefix}${triggerName} ${stat}+${val}% ${countInfo}`;
   }
 }
 

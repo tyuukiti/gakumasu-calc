@@ -23,6 +23,10 @@ public class AdditionalCounts
     public int GoodConditionAcquire { get; set; }
     public int GoodImpressionAcquire { get; set; }
     public int ConserveAcquire { get; set; }
+    public int ConcentrateAcquire { get; set; }
+    public int MotivationAcquire { get; set; }
+    public int FullpowerAcquire { get; set; }
+    public int AggressiveAcquire { get; set; }
 
     // カード操作
     public int MentalEnhance { get; set; }
@@ -51,6 +55,10 @@ public class AdditionalCounts
             ["good_condition_acquire"] = GoodConditionAcquire,
             ["good_impression_acquire"] = GoodImpressionAcquire,
             ["conserve_acquire"] = ConserveAcquire,
+            ["concentrate_acquire"] = ConcentrateAcquire,
+            ["motivation_acquire"] = MotivationAcquire,
+            ["fullpower_acquire"] = FullpowerAcquire,
+            ["aggressive_acquire"] = AggressiveAcquire,
             ["consultation_drink"] = ConsultationDrink,
         };
     }

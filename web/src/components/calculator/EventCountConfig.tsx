@@ -16,10 +16,14 @@ const COUNT_LABELS: { key: string; label: string }[] = [
   { key: 'mental_acquire', label: 'メンタル獲得' },
   { key: 'mental_enhance', label: 'メンタル強化' },
   { key: 'active_acquire', label: 'アクティブ獲得' },
-  { key: 'genki_acquire', label: '元気カード獲得' },
   { key: 'good_condition_acquire', label: '好調カード獲得' },
+  { key: 'concentrate_acquire', label: '集中カード獲得' },
+  { key: 'genki_acquire', label: '元気カード獲得' },
   { key: 'good_impression_acquire', label: '好印象カード獲得' },
+  { key: 'motivation_acquire', label: 'やる気カード獲得' },
   { key: 'conserve_acquire', label: '温存カード獲得' },
+  { key: 'fullpower_acquire', label: '全力カード獲得' },
+  { key: 'aggressive_acquire', label: '強気カード獲得' },
   { key: 'consultation_drink', label: '相談Pドリンク交換' },
 ];
 

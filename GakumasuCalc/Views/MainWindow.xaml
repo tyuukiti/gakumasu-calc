@@ -349,8 +349,8 @@
                                     <ColumnDefinition Width="130"/>
                                     <ColumnDefinition Width="55"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="元気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
-                                <TextBox Grid.Column="1" Text="{Binding GenkiAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                <TextBlock Text="好調カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding GoodConditionAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
                                          Style="{StaticResource NumericTextBox}"
                                          FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
                             </Grid>
@@ -359,8 +359,18 @@
                                     <ColumnDefinition Width="130"/>
                                     <ColumnDefinition Width="55"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="好調カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
-                                <TextBox Grid.Column="1" Text="{Binding GoodConditionAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                <TextBlock Text="集中カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ConcentrateAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="元気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding GenkiAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
                                          Style="{StaticResource NumericTextBox}"
                                          FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
                             </Grid>
@@ -379,8 +389,38 @@
                                     <ColumnDefinition Width="130"/>
                                     <ColumnDefinition Width="55"/>
                                 </Grid.ColumnDefinitions>
+                                <TextBlock Text="やる気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MotivationAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
                                 <TextBlock Text="温存カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1" Text="{Binding ConserveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="全力カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding FullpowerAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="強気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding AggressiveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
                                          Style="{StaticResource NumericTextBox}"
                                          FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
                             </Grid>

@@ -109,6 +109,10 @@ public class CardEffect
     /// "good_condition_acquire" = 好調カード獲得時,
     /// "good_impression_acquire" = 好印象カード獲得時,
     /// "conserve_acquire" = 温存カード獲得時,
+    /// "concentrate_acquire" = 集中カード獲得時,
+    /// "motivation_acquire" = やる気カード獲得時,
+    /// "fullpower_acquire" = 全力カード獲得時,
+    /// "aggressive_acquire" = 強気カード獲得時,
     /// "p_item_acquire" = Pアイテム獲得時, "p_drink_acquire" = Pドリンク獲得時,
     /// "consultation_drink" = 相談Pドリンク交換後
     /// </summary>
@@ -146,6 +150,10 @@ public class CardEffect
     /// <summary>説明テキスト</summary>
     [YamlMember(Alias = "description")]
     public string? Description { get; set; }
+
+    /// <summary>効果の出典 (例: "item" = プロデュースアイテム効果)</summary>
+    [YamlMember(Alias = "source")]
+    public string? Source { get; set; }
 }
 
 public class LessonBonusPercent

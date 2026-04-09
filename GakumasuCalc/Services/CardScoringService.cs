@@ -777,6 +777,10 @@ public class CardScoringService
         "good_condition_acquire" => "好調獲得",
         "good_impression_acquire" => "好印象獲得",
         "conserve_acquire" => "温存獲得",
+        "concentrate_acquire" => "集中獲得",
+        "motivation_acquire" => "やる気獲得",
+        "fullpower_acquire" => "全力獲得",
+        "aggressive_acquire" => "強気獲得",
         "p_item_acquire" => "Pアイテム獲得",
         "p_drink_acquire" => "Pドリンク獲得",
         "consultation_drink" => "相談ドリンク交換",
@@ -792,6 +796,7 @@ public class CardScoringService
 
     private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel)
     {
+        var prefix = effect.Source == "item" ? "[アイテム] " : "";
         var triggerName = TriggerDisplayName(effect.Trigger);
         var stat = effect.Stat.ToUpper();
         var val = effect.GetValue(uncapLevel);
@@ -800,9 +805,9 @@ public class CardScoringService
         {
             return effect.ValueType switch
             {
-                "sp_rate" => $"{stat} SP率+{val}%",
-                "para_bonus" => $"パラボ+{val}%",
-                _ => $"{stat} 初期値+{(int)val}"
+                "sp_rate" => $"{prefix}{stat} SP率+{val}%",
+                "para_bonus" => $"{prefix}パラボ+{val}%",
+                _ => $"{prefix}{stat} 初期値+{(int)val}"
             };
         }
 
@@ -816,8 +821,8 @@ public class CardScoringService
 
         return effect.ValueType switch
         {
-            "flat" => $"{triggerName} {stat}+{(int)val} {countInfo}",
-            _ => $"{triggerName} {stat}+{val}% {countInfo}"
+            "flat" => $"{prefix}{triggerName} {stat}+{(int)val} {countInfo}",
+            _ => $"{prefix}{triggerName} {stat}+{val}% {countInfo}"
         };
     }
 

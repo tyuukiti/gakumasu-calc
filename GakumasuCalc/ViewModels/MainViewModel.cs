@@ -55,6 +55,10 @@ public class MainViewModel : ViewModelBase
     private int _goodConditionAcquire;
     private int _goodImpressionAcquire;
     private int _conserveAcquire;
+    private int _concentrateAcquire;
+    private int _motivationAcquire;
+    private int _fullpowerAcquire;
+    private int _aggressiveAcquire;
     private int _consultationDrink;
 
     // パターン計算の元データ保持
@@ -161,6 +165,10 @@ public class MainViewModel : ViewModelBase
     public int GoodConditionAcquire { get => _goodConditionAcquire; set => SetProperty(ref _goodConditionAcquire, value); }
     public int GoodImpressionAcquire { get => _goodImpressionAcquire; set => SetProperty(ref _goodImpressionAcquire, value); }
     public int ConserveAcquire { get => _conserveAcquire; set => SetProperty(ref _conserveAcquire, value); }
+    public int ConcentrateAcquire { get => _concentrateAcquire; set => SetProperty(ref _concentrateAcquire, value); }
+    public int MotivationAcquire { get => _motivationAcquire; set => SetProperty(ref _motivationAcquire, value); }
+    public int FullpowerAcquire { get => _fullpowerAcquire; set => SetProperty(ref _fullpowerAcquire, value); }
+    public int AggressiveAcquire { get => _aggressiveAcquire; set => SetProperty(ref _aggressiveAcquire, value); }
     public int ConsultationDrink { get => _consultationDrink; set => SetProperty(ref _consultationDrink, value); }
 
     // イベント回数テンプレート
@@ -754,6 +762,10 @@ public class MainViewModel : ViewModelBase
             GoodConditionAcquire = GoodConditionAcquire,
             GoodImpressionAcquire = GoodImpressionAcquire,
             ConserveAcquire = ConserveAcquire,
+            ConcentrateAcquire = ConcentrateAcquire,
+            MotivationAcquire = MotivationAcquire,
+            FullpowerAcquire = FullpowerAcquire,
+            AggressiveAcquire = AggressiveAcquire,
             ConsultationDrink = ConsultationDrink,
         };
     }
@@ -777,6 +789,10 @@ public class MainViewModel : ViewModelBase
         GoodConditionAcquire = c.GoodConditionAcquire;
         GoodImpressionAcquire = c.GoodImpressionAcquire;
         ConserveAcquire = c.ConserveAcquire;
+        ConcentrateAcquire = c.ConcentrateAcquire;
+        MotivationAcquire = c.MotivationAcquire;
+        FullpowerAcquire = c.FullpowerAcquire;
+        AggressiveAcquire = c.AggressiveAcquire;
         ConsultationDrink = c.ConsultationDrink;
     }
 
@@ -894,7 +910,9 @@ public class MainViewModel : ViewModelBase
         ActiveEnhance = 0; ActiveDelete = 0;
         MentalAcquire = 0; MentalEnhance = 0; ActiveAcquire = 0;
         GenkiAcquire = 0; GoodConditionAcquire = 0;
-        GoodImpressionAcquire = 0; ConserveAcquire = 0; ConsultationDrink = 0;
+        GoodImpressionAcquire = 0; ConserveAcquire = 0;
+        ConcentrateAcquire = 0; MotivationAcquire = 0;
+        FullpowerAcquire = 0; AggressiveAcquire = 0; ConsultationDrink = 0;
         DeckCards.Clear();
         RequiredCards.Clear();
         OnPropertyChanged(nameof(CanAddRequiredCard));
