@@ -26,6 +26,13 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 14, 14]
     value_type: flat
+  - trigger: conserve_acquire
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 1
+    condition: vo>=700
+    source: item
 - id: SP_SR_0068
   name: 洗濯物のバランスタワー
   rarity: SR
@@ -79,6 +86,13 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
+  - trigger: vo_sp_end
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 2
+    condition: vo>=700
+    source: item
 - id: SP_SR_0066
   name: 仲良しの証
   rarity: SR
@@ -138,6 +152,13 @@ support_cards:
     values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
+  - trigger: conserve_acquire
+    stat: da
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 2
+    condition: da>=700
+    source: item
 - id: SP_SR_0064
   name: ぐつぐつ、いいにおい♪
   rarity: SR
@@ -366,6 +387,13 @@ support_cards:
     stat: da
     values: [8, 8, 8, 8, 8]
     value_type: flat
+  - trigger: good_condition_acquire
+    stat: da
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 2
+    condition: da>=700
+    source: item
 - id: SP_SR_0056
   name: 腹筋で背筋で体幹キープ！
   rarity: SR
@@ -422,6 +450,13 @@ support_cards:
     stat: vo
     values: [8, 8, 8, 8, 8]
     value_type: flat
+  - trigger: conserve_acquire
+    stat: vo
+    values: [30, 30, 30, 30, 30]
+    value_type: flat
+    max_count: 1
+    condition: vo>=700
+    source: item
 - id: SP_SR_0054
   name: 師弟の修行
   rarity: SR
@@ -594,6 +629,11 @@ support_cards:
     stat: da
     values: [3, 3, 3, 3, 3]
     value_type: flat
+  - trigger: aggressive_acquire
+    stat: da
+    values: [6, 6, 6, 6, 6]
+    value_type: flat
+    source: item
 - id: SP_SR_0047
   name: 主菓子、甘い、薄茶、渋み
   rarity: SR
@@ -649,6 +689,11 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 5]
     value_type: flat
+  - trigger: genki_acquire
+    stat: vo
+    values: [6, 6, 6, 6, 6]
+    value_type: flat
+    source: item
 - id: SP_SR_0045
   name: 屈辱の2位
   rarity: SR
@@ -948,6 +993,11 @@ support_cards:
     values: [17, 17, 17, 17, 17]
     value_type: flat
     max_count: 2
+  - trigger: motivation_acquire
+    stat: da
+    values: [6, 6, 6, 6, 6]
+    value_type: flat
+    source: item
 - id: SP_SR_0033
   name: ディカプルエックスエル！
   rarity: SR
@@ -1256,6 +1306,11 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 14, 14]
     value_type: flat
+  - trigger: concentrate_acquire
+    stat: vo
+    values: [6, 6, 6, 6, 6]
+    value_type: flat
+    source: item
 - id: SP_SR_0020
   name: 海、楽しまなきゃ！
   rarity: SR
@@ -1275,6 +1330,11 @@ support_cards:
     stat: vo
     values: [17, 17, 17, 17, 17]
     value_type: flat
+  - trigger: motivation_acquire
+    stat: vo
+    values: [6, 6, 6, 6, 6]
+    value_type: flat
+    source: item
 - id: SP_SR_0019
   name: かちこちストレッチ
   rarity: SR
@@ -1321,6 +1381,11 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
+  - trigger: good_condition_acquire
+    stat: da
+    values: [6, 6, 6, 6, 6]
+    value_type: flat
+    source: item
 - id: SP_SR_0017
   name: パシャっとキメポ
   rarity: SR
@@ -1457,6 +1522,12 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 5]
     value_type: flat
+  - trigger: exam_end
+    stat: vo
+    values: [26, 26, 26, 26, 26]
+    value_type: flat
+    condition: vo>=400
+    source: item
 - id: SP_SR_0011
   name: てとりあしとり
   rarity: SR
@@ -1565,6 +1636,12 @@ support_cards:
     stat: da
     values: [5, 5, 5, 5, 5]
     value_type: flat
+  - trigger: exam_end
+    stat: da
+    values: [26, 26, 26, 26, 26]
+    value_type: flat
+    condition: da>=400
+    source: item
 - id: SP_SR_0006
   name: 実食！例のSSD
   rarity: SR
@@ -1588,6 +1665,12 @@ support_cards:
     stat: da
     values: [7, 7, 7, 14, 14]
     value_type: flat
+  - trigger: da_lesson_end
+    stat: da
+    values: [13, 13, 13, 13, 13]
+    value_type: flat
+    condition: hp>=50%
+    source: item
 - id: SP_SR_0005
   name: マイペース、マイライフ
   rarity: SR
@@ -1611,6 +1694,12 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 14, 14]
     value_type: flat
+  - trigger: vo_lesson_end
+    stat: vo
+    values: [13, 13, 13, 13, 13]
+    value_type: flat
+    condition: hp>=50%
+    source: item
 - id: SP_SR_0004
   name: 思惑とガクガク
   rarity: SR
