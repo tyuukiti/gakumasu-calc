@@ -814,7 +814,7 @@ export function selectOptimalDeck(
 
   // 属性枠ごとに選択 (上限考慮)
   let selected: CardScore[] = [];
-  const usedIds = new Set<string>();
+  let usedIds = new Set<string>();
 
   // 現在の累積ステータス (ベース + 選択済みカード)
   let accVo = baseStats.vo,
