@@ -609,6 +609,7 @@
                             <ColumnDefinition Width="40"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Vo" FontSize="16" FontWeight="Bold"
                                    Foreground="{StaticResource VoBrush}" VerticalAlignment="Center"/>
@@ -620,7 +621,20 @@
                         </Border>
                         <TextBlock Grid.Column="2" Text="{Binding ResultVo, StringFormat=N0}"
                                    FontSize="16" FontWeight="Bold"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                   HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsVoAtCap}" Value="True">
+                                            <Setter Property="Foreground" Value="#EF4444"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Grid.Column="3" Text="MAX" FontSize="11" FontWeight="Bold"
+                                   Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
+                                   Visibility="{Binding IsVoAtCap, Converter={StaticResource BoolToVis}}"/>
                     </Grid>
 
                     <!-- Da -->
@@ -629,6 +643,7 @@
                             <ColumnDefinition Width="40"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Da" FontSize="16" FontWeight="Bold"
                                    Foreground="{StaticResource DaBrush}" VerticalAlignment="Center"/>
@@ -640,7 +655,20 @@
                         </Border>
                         <TextBlock Grid.Column="2" Text="{Binding ResultDa, StringFormat=N0}"
                                    FontSize="16" FontWeight="Bold"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                   HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDaAtCap}" Value="True">
+                                            <Setter Property="Foreground" Value="#EF4444"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Grid.Column="3" Text="MAX" FontSize="11" FontWeight="Bold"
+                                   Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
+                                   Visibility="{Binding IsDaAtCap, Converter={StaticResource BoolToVis}}"/>
                     </Grid>
 
                     <!-- Vi -->
@@ -649,6 +677,7 @@
                             <ColumnDefinition Width="40"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Vi" FontSize="16" FontWeight="Bold"
                                    Foreground="{StaticResource ViBrush}" VerticalAlignment="Center"/>
@@ -660,7 +689,20 @@
                         </Border>
                         <TextBlock Grid.Column="2" Text="{Binding ResultVi, StringFormat=N0}"
                                    FontSize="16" FontWeight="Bold"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                   HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsViAtCap}" Value="True">
+                                            <Setter Property="Foreground" Value="#EF4444"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Grid.Column="3" Text="MAX" FontSize="11" FontWeight="Bold"
+                                   Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
+                                   Visibility="{Binding IsViAtCap, Converter={StaticResource BoolToVis}}"/>
                     </Grid>
 
                     <!-- 合計 -->

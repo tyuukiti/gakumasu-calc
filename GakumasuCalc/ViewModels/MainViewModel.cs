@@ -201,6 +201,9 @@ public class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(VoBarWidth));
             OnPropertyChanged(nameof(DaBarWidth));
             OnPropertyChanged(nameof(ViBarWidth));
+            OnPropertyChanged(nameof(IsVoAtCap));
+            OnPropertyChanged(nameof(IsDaAtCap));
+            OnPropertyChanged(nameof(IsViAtCap));
         }
     }
 
@@ -209,6 +212,11 @@ public class MainViewModel : ViewModelBase
     public int ResultDa => Result?.FinalStatus.Da ?? 0;
     public int ResultVi => Result?.FinalStatus.Vi ?? 0;
     public int ResultTotal => Result?.FinalStatus.Total ?? 0;
+
+    private int StatCap => _selectedPlan?.StatusLimit ?? 2800;
+    public bool IsVoAtCap => ResultVo >= StatCap;
+    public bool IsDaAtCap => ResultDa >= StatCap;
+    public bool IsViAtCap => ResultVi >= StatCap;
 
     public int ResultMaxValue
     {
