@@ -11,6 +11,7 @@ Seesaa Wiki とYAMLデータの差分同期スクリプト。
   python scripts/sync_wiki.py --update-only    # 既存カードの値更新のみ
   python scripts/sync_wiki.py --new-only       # 新規カード追加のみ
   python scripts/sync_wiki.py --delay 10       # リクエスト間隔を変更
+  python scripts/sync_wiki.py --debug          # 詳細デバッグ出力
 """
 import urllib.request
 import urllib.parse
@@ -37,6 +38,55 @@ SECTION_TAG_MAP = [
     ("スキルカード", "skill"),
     ("コンテストアイテム", "exam_item"),
     ("プロデュースアイテム", "produce_item"),
+]
+
+# アビリティ名 → trigger のマッピング (具体的なキーワードを汎用より先に配置)
+TRIGGER_MAP = [
+    ("活動支給", "activity_supply"), ("差し入れ", "activity_supply"),
+    ("スキルカード（SSR）獲得", "skill_ssr_acquire"),
+    ("スキルカード(SSR)獲得", "skill_ssr_acquire"),
+    ("スキル強化", "skill_enhance"), ("スキル削除", "skill_delete"),
+    ("スキルカスタム", "skill_custom"), ("スキルチェンジ", "skill_change"),
+    ("アクティブスキルカード強化", "active_enhance"),
+    ("アクティブ強化", "active_enhance"),
+    ("アクティブスキルカード削除", "active_delete"),
+    ("アクティブ削除", "active_delete"),
+    ("アクティブスキルカード獲得", "active_acquire"),
+    ("アクティブ獲得", "active_acquire"),
+    # SPレッスン系 (具体→汎用の順)
+    ("ボーカルSPレッスン終了", "vo_sp_end"),
+    ("ダンスSPレッスン終了", "da_sp_end"),
+    ("ビジュアルSPレッスン終了", "vi_sp_end"),
+    ("SPレッスン終了", "sp_end"),
+    # レッスン系 (具体→汎用の順)
+    ("ボーカルレッスン終了", "vo_lesson_end"),
+    ("ダンスレッスン終了", "da_lesson_end"),
+    ("ビジュアルレッスン終了", "vi_lesson_end"),
+    ("ボーカル通常レッスン終了", "vo_normal_end"),
+    ("ダンス通常レッスン終了", "da_normal_end"),
+    ("ビジュアル通常レッスン終了", "vi_normal_end"),
+    ("レッスン終了", "lesson_end"),
+    # その他
+    ("授業終了", "class_end"), ("お出かけ終了", "outing_end"),
+    ("相談Pドリンク", "consultation_drink"), ("相談選択", "consultation"),
+    ("試験終了", "exam_end"), ("試験・オーディション終了", "exam_end"),
+    ("特別指導", "special_training"),
+    ("Pアイテム獲得", "p_item_acquire"), ("Pドリンク獲得", "p_drink_acquire"),
+    ("休憩選択", "rest"), ("休憩", "rest"),
+    ("元気効果", "genki_acquire"), ("元気カード獲得", "genki_acquire"),
+    ("元気獲得", "genki_acquire"),
+    ("好調効果", "good_condition_acquire"),
+    ("好調カード獲得", "good_condition_acquire"),
+    ("好印象効果", "good_impression_acquire"),
+    ("好印象カード獲得", "good_impression_acquire"),
+    ("温存効果", "conserve_acquire"), ("温存カード獲得", "conserve_acquire"),
+    ("集中効果", "concentrate_acquire"),
+    ("やる気効果", "motivation_acquire"),
+    ("全力効果", "fullpower_acquire"),
+    ("強気効果", "aggressive_acquire"),
+    ("根気効果", "conserve_acquire"),
+    ("メンタルスキルカード獲得", "mental_acquire"),
+    ("メンタル獲得", "mental_acquire"), ("メンタル強化", "mental_enhance"),
 ]
 
 
@@ -415,7 +465,7 @@ def guess_plan_from_lesson(lesson_support: str) -> str:
 
 # ======== Wiki 詳細ページ解析 ========
 
-def parse_detail_page(url: str) -> dict | None:
+def parse_detail_page(url: str, debug: bool = False) -> dict | None:
     """
     詳細ページからメタデータ + アビリティ凸別値 + 画像URL を取得。
 
@@ -466,23 +516,43 @@ def parse_detail_page(url: str) -> dict | None:
     tables = re.findall(r"<table[^>]*>(.*?)</table>", html, re.DOTALL)
     result["abilities"] = []
 
-    for table in tables:
+    if debug:
+        print(f"  [DEBUG] テーブル数: {len(tables)}")
+
+    for ti, table in enumerate(tables):
         rows = re.findall(r"<tr[^>]*>(.*?)</tr>", table, re.DOTALL)
+        if debug:
+            print(f"  [DEBUG] Table {ti}: rows={len(rows)}")
         if len(rows) < 4:
+            if debug:
+                print(f"  [DEBUG]   -> スキップ (rows < 4)")
             continue
 
         row0_text = " ".join(extract_cells(rows[0]))
         row1_text = " ".join(extract_cells(rows[1]))
 
+        if debug:
+            print(f"  [DEBUG]   Row0: {row0_text[:100]}")
+            print(f"  [DEBUG]   Row1: {row1_text[:100]}")
+
         # サマリーテーブル: Row 0 に「解放条件」、Row 1 に「上限解放」がある
         # レベル別詳細テーブル（Table 3〜8）は Row 0 に「解放条件」がない
         if "解放条件" not in row0_text:
+            if debug:
+                print(f"  [DEBUG]   -> スキップ (解放条件なし)")
             continue
         if "上限解放" not in row1_text:
+            if debug:
+                print(f"  [DEBUG]   -> スキップ (上限解放なし)")
             continue
 
-        for row in rows[3:]:
+        if debug:
+            print(f"  [DEBUG]   -> ★選択 (データ行数: {len(rows) - 3})")
+
+        for ri, row in enumerate(rows[3:]):
             cells = extract_cells(row)
+            if debug:
+                print(f"  [DEBUG]   Row[{ri+3}]: cells={len(cells)} | {cells}")
             if len(cells) < 7:
                 continue
             # 末尾5列が凸別値 (9列:cells[4:9], 8列:cells[3:8])
@@ -562,50 +632,7 @@ def classify_and_match(effects: list[dict], wiki_abilities: list[dict]) -> tuple
             target_trigger = "equip"
             target_vtype = "para_bonus"
         else:
-            trigger_map = [
-                ("活動支給", "activity_supply"), ("差し入れ", "activity_supply"),
-                ("スキルカード（SSR）獲得", "skill_ssr_acquire"),
-                ("スキルカード(SSR)獲得", "skill_ssr_acquire"),
-                ("スキル強化", "skill_enhance"), ("スキル削除", "skill_delete"),
-                ("スキルカスタム", "skill_custom"), ("スキルチェンジ", "skill_change"),
-                ("アクティブスキルカード強化", "active_enhance"),
-                ("アクティブ強化", "active_enhance"),
-                ("アクティブスキルカード削除", "active_delete"),
-                ("アクティブ削除", "active_delete"),
-                ("アクティブスキルカード獲得", "active_acquire"),
-                ("アクティブ獲得", "active_acquire"),
-                ("SPレッスン終了", "sp_end"),
-                ("ボーカルSPレッスン終了", "vo_sp_end"),
-                ("ダンスSPレッスン終了", "da_sp_end"),
-                ("ビジュアルSPレッスン終了", "vi_sp_end"),
-                ("ボーカルレッスン終了", "vo_lesson_end"),
-                ("ダンスレッスン終了", "da_lesson_end"),
-                ("ビジュアルレッスン終了", "vi_lesson_end"),
-                ("レッスン終了", "lesson_end"),
-                ("ボーカル通常レッスン終了", "vo_normal_end"),
-                ("ダンス通常レッスン終了", "da_normal_end"),
-                ("ビジュアル通常レッスン終了", "vi_normal_end"),
-                ("授業終了", "class_end"), ("お出かけ終了", "outing_end"),
-                ("相談Pドリンク", "consultation_drink"), ("相談選択", "consultation"),
-                ("試験終了", "exam_end"), ("特別指導", "special_training"),
-                ("Pアイテム獲得", "p_item_acquire"), ("Pドリンク獲得", "p_drink_acquire"),
-                ("休憩選択", "rest"), ("休憩", "rest"),
-                ("元気効果", "genki_acquire"), ("元気カード獲得", "genki_acquire"),
-                ("元気獲得", "genki_acquire"),
-                ("好調効果", "good_condition_acquire"),
-                ("好調カード獲得", "good_condition_acquire"),
-                ("好印象効果", "good_impression_acquire"),
-                ("好印象カード獲得", "good_impression_acquire"),
-                ("温存効果", "conserve_acquire"), ("温存カード獲得", "conserve_acquire"),
-                ("集中効果", "concentrate_acquire"),
-                ("やる気効果", "motivation_acquire"),
-                ("全力効果", "fullpower_acquire"),
-                ("強気効果", "aggressive_acquire"),
-                ("根気効果", "conserve_acquire"),
-                ("メンタルスキルカード獲得", "mental_acquire"),
-                ("メンタル獲得", "mental_acquire"), ("メンタル強化", "mental_enhance"),
-            ]
-            for keyword, trig in trigger_map:
+            for keyword, trig in TRIGGER_MAP:
                 if keyword in name:
                     target_trigger = trig
                     break
@@ -662,6 +689,7 @@ def build_new_card(
     detail: dict,
     abilities: list[dict],
     tag: str | None = None,
+    debug: bool = False,
 ) -> dict:
     """Wikiデータから新規カードYAMLエントリを構築"""
     card_type = detail.get("type") or guess_type_from_lesson(entry.lesson_support)
@@ -704,56 +732,18 @@ def build_new_card(
             trigger = "equip"
             value_type = "para_bonus"
         else:
-            trigger_map = [
-                ("活動支給", "activity_supply"), ("差し入れ", "activity_supply"),
-                ("スキルカード（SSR）獲得", "skill_ssr_acquire"),
-                ("スキルカード(SSR)獲得", "skill_ssr_acquire"),
-                ("スキル強化", "skill_enhance"), ("スキル削除", "skill_delete"),
-                ("スキルカスタム", "skill_custom"), ("スキルチェンジ", "skill_change"),
-                ("アクティブスキルカード強化", "active_enhance"),
-                ("アクティブ強化", "active_enhance"),
-                ("アクティブスキルカード削除", "active_delete"),
-                ("アクティブ削除", "active_delete"),
-                ("アクティブスキルカード獲得", "active_acquire"),
-                ("アクティブ獲得", "active_acquire"),
-                ("SPレッスン終了", "sp_end"),
-                ("ボーカルSPレッスン終了", "vo_sp_end"),
-                ("ダンスSPレッスン終了", "da_sp_end"),
-                ("ビジュアルSPレッスン終了", "vi_sp_end"),
-                ("ボーカルレッスン終了", "vo_lesson_end"),
-                ("ダンスレッスン終了", "da_lesson_end"),
-                ("ビジュアルレッスン終了", "vi_lesson_end"),
-                ("レッスン終了", "lesson_end"),
-                ("ボーカル通常レッスン終了", "vo_normal_end"),
-                ("ダンス通常レッスン終了", "da_normal_end"),
-                ("ビジュアル通常レッスン終了", "vi_normal_end"),
-                ("授業終了", "class_end"), ("お出かけ終了", "outing_end"),
-                ("相談Pドリンク", "consultation_drink"), ("相談選択", "consultation"),
-                ("試験終了", "exam_end"), ("特別指導", "special_training"),
-                ("Pアイテム獲得", "p_item_acquire"), ("Pドリンク獲得", "p_drink_acquire"),
-                ("休憩選択", "rest"), ("休憩", "rest"),
-                ("元気効果", "genki_acquire"), ("元気カード獲得", "genki_acquire"),
-                ("元気獲得", "genki_acquire"),
-                ("好調効果", "good_condition_acquire"),
-                ("好調カード獲得", "good_condition_acquire"),
-                ("集中効果", "concentrate_acquire"),
-                ("好印象効果", "good_impression_acquire"),
-                ("好印象カード獲得", "good_impression_acquire"),
-                ("やる気効果", "motivation_acquire"),
-                ("温存効果", "conserve_acquire"), ("温存カード獲得", "conserve_acquire"),
-                ("全力効果", "fullpower_acquire"),
-                ("強気効果", "aggressive_acquire"),
-                ("根気効果", "conserve_acquire"),
-                ("メンタルスキルカード獲得", "mental_acquire"),
-                ("メンタル獲得", "mental_acquire"), ("メンタル強化", "mental_enhance"),
-            ]
-            for keyword, trig in trigger_map:
+            for keyword, trig in TRIGGER_MAP:
                 if keyword in name:
                     trigger = trig
                     break
 
         if trigger is None:
+            if debug:
+                print(f"  [DEBUG] ⚠ 未分類スキップ: '{name}' values={values}")
             continue
+
+        if debug:
+            print(f"  [DEBUG] 分類: '{name}' -> trigger={trigger}, vtype={value_type}, stat={abi_stat}, values={values}")
 
         # max_count 抽出
         max_count = None
@@ -894,6 +884,7 @@ def main():
     parser.add_argument("--new-only", action="store_true", help="新規カード追加のみ")
     parser.add_argument("--force", action="store_true", help="更新済み記録を無視して全件更新")
     parser.add_argument("--delay", type=int, default=DEFAULT_DELAY, help="リクエスト間隔(秒)")
+    parser.add_argument("--debug", action="store_true", help="詳細デバッグ出力")
     args = parser.parse_args()
 
     print("=== Wiki 差分同期 ===")
@@ -1004,7 +995,7 @@ def main():
         print(f"[{i+1}/{len(to_process)}] [{label}] {entry.name}")
 
         try:
-            detail = parse_detail_page(entry.detail_url)
+            detail = parse_detail_page(entry.detail_url, debug=args.debug)
             if detail is None:
                 print("  ⚠ 詳細ページ解析失敗")
                 continue
@@ -1013,10 +1004,15 @@ def main():
                 # 新規カード追加
                 rarity = entry.rarity
                 filepath = yaml_files[rarity]
-                card_id = next_card_id(all_by_file[filepath], rarity)
+                # Wiki一覧ページのIDを優先使用、なければ連番採番
+                card_id = entry.wiki_id if entry.wiki_id else next_card_id(all_by_file[filepath], rarity)
+                existing_ids = {c["id"] for c in all_by_file[filepath]}
+                if card_id in existing_ids:
+                    print(f"  ⚠ ID重複: {card_id}, 新ID採番")
+                    card_id = next_card_id(all_by_file[filepath], rarity)
 
                 card_tag = card_tag_map.get(normalize_name(entry.name), "none")
-                card = build_new_card(card_id, entry, detail, detail.get("abilities", []), tag=card_tag)
+                card = build_new_card(card_id, entry, detail, detail.get("abilities", []), tag=card_tag, debug=args.debug)
 
                 # アイテム効果をマージ
                 item_eff = item_effects_map.get(normalize_name(entry.name))
