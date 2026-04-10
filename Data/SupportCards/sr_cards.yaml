@@ -20,7 +20,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 13, 13]
     value_type: flat
   - trigger: consultation
     stat: vo
@@ -79,11 +79,11 @@ support_cards:
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 13, 13]
     value_type: flat
   - trigger: exam_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [9, 9, 9, 17, 17]
     value_type: flat
     max_count: 2
   - trigger: vo_sp_end
@@ -122,6 +122,13 @@ support_cards:
     values: [9, 9, 9, 18, 18]
     value_type: flat
     max_count: 3
+  - trigger: concentrate_acquire
+    stat: vi
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    max_count: 2
+    condition: vi>=400
+    source: item
 - id: SP_SR_0065
   name: おひさま笑顔、満開ふたつ
   rarity: SR
@@ -144,7 +151,7 @@ support_cards:
     max_count: 3
   - trigger: exam_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [9, 9, 9, 9, 17]
     value_type: flat
     max_count: 2
   - trigger: p_item_acquire
@@ -219,6 +226,13 @@ support_cards:
     values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
+  - trigger: fullpower_acquire
+    stat: vi
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    max_count: 1
+    condition: vi>=400
+    source: item
 - id: SP_SR_0062
   name: ピコピコでポーン
   rarity: SR
@@ -240,7 +254,7 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: activity_supply
     stat: da
@@ -267,7 +281,7 @@ support_cards:
     value_type: flat
   - trigger: vo_sp_end
     stat: vo
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 13, 13]
     value_type: flat
   - trigger: p_item_acquire
     stat: vo
@@ -381,7 +395,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: skill_delete
     stat: da
@@ -415,13 +429,20 @@ support_cards:
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: p_item_acquire
     stat: vi
     values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
+  - trigger: good_impression_acquire
+    stat: vi
+    values: [30, 30, 30, 30, 30]
+    value_type: flat
+    max_count: 1
+    condition: vi>=700
+    source: item
 - id: SP_SR_0055
   name: トゲトゲ注意報
   rarity: SR
@@ -479,8 +500,15 @@ support_cards:
     max_count: 6
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
+  - trigger: special_training
+    stat: vi
+    values: [30, 30, 30, 30, 30]
+    value_type: flat
+    max_count: 2
+    condition: vi>=400
+    source: item
 - id: SP_SR_0053
   name: ちべたなひととき
   rarity: SR
@@ -498,12 +526,19 @@ support_cards:
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: skill_delete
     stat: vi
     values: [8, 8, 8, 8, 8]
     value_type: flat
+  - trigger: concentrate_acquire
+    stat: vi
+    values: [30, 30, 30, 30, 30]
+    value_type: flat
+    max_count: 1
+    condition: vi>=700
+    source: item
 - id: SP_SR_0052
   name: 今日は見学なんです
   rarity: SR
@@ -526,7 +561,7 @@ support_cards:
     max_count: 3
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: activity_supply
     stat: da
@@ -549,7 +584,7 @@ support_cards:
     value_type: para_bonus
   - trigger: vo_sp_end
     stat: vo
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: conserve_acquire
     stat: vo
@@ -572,7 +607,7 @@ support_cards:
     value_type: para_bonus
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [3, 5, 5, 5, 5]
     value_type: flat
 - id: SP_SR_0049
   name: ばたんきゅー
@@ -595,7 +630,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: active_delete
     stat: vi
@@ -623,7 +658,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: skill_enhance
     stat: da
@@ -655,11 +690,11 @@ support_cards:
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: exam_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [9, 9, 9, 17, 17]
     value_type: flat
     max_count: 2
 - id: SP_SR_0046
@@ -715,7 +750,7 @@ support_cards:
     value_type: flat
   - trigger: exam_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [9, 9, 9, 9, 17]
     value_type: flat
     max_count: 2
   - trigger: skill_delete
@@ -747,9 +782,14 @@ support_cards:
     value_type: flat
   - trigger: exam_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [9, 9, 9, 17, 17]
     value_type: flat
     max_count: 2
+  - trigger: fullpower_acquire
+    stat: vi
+    values: [6, 6, 6, 6, 6]
+    value_type: flat
+    source: item
 - id: SP_SR_0043
   name: ガールズ♡トーク
   rarity: SR
@@ -867,7 +907,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: outing_end
     stat: vi
@@ -959,7 +999,7 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: activity_supply
     stat: da
@@ -986,11 +1026,11 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: exam_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [9, 9, 9, 17, 17]
     value_type: flat
     max_count: 2
   - trigger: motivation_acquire
@@ -1011,7 +1051,7 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: consultation
     stat: da
@@ -1030,7 +1070,7 @@ support_cards:
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: skill_enhance
     stat: vi
@@ -1080,11 +1120,11 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: exam_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [9, 9, 9, 17, 17]
     value_type: flat
     max_count: 2
 - id: SP_SR_0029
@@ -1108,7 +1148,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: activity_supply
     stat: vi
@@ -1135,7 +1175,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: class_end
     stat: vo
@@ -1158,7 +1198,7 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: activity_supply
     stat: da
@@ -1208,7 +1248,7 @@ support_cards:
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: activity_supply
     stat: vi
@@ -1258,7 +1298,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: outing_end
     stat: da
@@ -1348,12 +1388,17 @@ support_cards:
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: consultation
     stat: vi
     values: [7, 7, 7, 14, 14]
     value_type: flat
+  - trigger: good_impression_acquire
+    stat: vi
+    values: [6, 6, 6, 6, 6]
+    value_type: flat
+    source: item
 - id: SP_SR_0018
   name: どりゃぎゃ
   rarity: SR
@@ -1449,11 +1494,11 @@ support_cards:
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: exam_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [9, 9, 9, 17, 17]
     value_type: flat
     max_count: 2
 - id: SP_SR_0014
@@ -1473,11 +1518,11 @@ support_cards:
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: exam_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [9, 9, 9, 17, 17]
     value_type: flat
     max_count: 2
 - id: SP_SR_0013
@@ -1516,7 +1561,7 @@ support_cards:
     value_type: flat
   - trigger: vo_normal_end
     stat: vo
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: class_end
     stat: vo
@@ -1564,12 +1609,18 @@ support_cards:
     value_type: flat
   - trigger: vi_normal_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: class_end
     stat: vi
     values: [5, 5, 5, 5, 5]
     value_type: flat
+  - trigger: exam_end
+    stat: vi
+    values: [26, 26, 26, 26, 26]
+    value_type: flat
+    condition: vi>=400
+    source: item
 - id: SP_SR_0009
   name: 魅惑の大腿四頭筋
   rarity: SR
@@ -1606,7 +1657,7 @@ support_cards:
     value_type: flat
   - trigger: da_normal_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: class_end
     stat: da
@@ -1699,6 +1750,12 @@ support_cards:
     stat: vi
     values: [7, 7, 7, 14, 14]
     value_type: flat
+  - trigger: vi_lesson_end
+    stat: vi
+    values: [13, 13, 13, 13, 13]
+    value_type: flat
+    condition: hp>=50%
+    source: item
 - id: SP_SR_0003
   name: ほっとけないクラスメイト
   rarity: SR

@@ -1,4 +1,4 @@
-﻿support_cards:
+support_cards:
 - id: SP_R_0013
   name: 謹厳実直
   rarity: R
@@ -109,7 +109,7 @@
     value_type: flat
   - trigger: vo_normal_end
     stat: vo
-    values: [9, 9, 9, 9, 9]
+    values: [5, 5, 5, 5, 9]
     value_type: flat
   - trigger: outing_end
     stat: vo
@@ -132,7 +132,7 @@
     value_type: flat
   - trigger: vi_normal_end
     stat: vi
-    values: [9, 9, 9, 9, 9]
+    values: [5, 5, 5, 5, 9]
     value_type: flat
   - trigger: activity_supply
     stat: vi
@@ -155,7 +155,7 @@
     value_type: flat
   - trigger: da_normal_end
     stat: da
-    values: [9, 9, 9, 9, 9]
+    values: [5, 5, 5, 5, 9]
     value_type: flat
   - trigger: activity_supply
     stat: da
@@ -193,7 +193,7 @@
     value_type: flat
   - trigger: vo_lesson_end
     stat: vo
-    values: [3, 3, 3, 3, 3]
+    values: [1, 1, 1, 1, 3]
     value_type: flat
   - trigger: class_end
     stat: vo
@@ -231,7 +231,7 @@
     value_type: flat
   - trigger: vo_normal_end
     stat: vo
-    values: [9, 9, 9, 9, 9]
+    values: [5, 5, 5, 5, 9]
     value_type: flat
   - trigger: activity_supply
     stat: vo
@@ -250,7 +250,7 @@
     value_type: flat
   - trigger: da_normal_end
     stat: da
-    values: [9, 9, 9, 9, 9]
+    values: [5, 5, 5, 5, 9]
     value_type: flat
   - trigger: class_end
     stat: da
@@ -269,7 +269,7 @@
     value_type: flat
   - trigger: vi_normal_end
     stat: vi
-    values: [9, 9, 9, 9, 9]
+    values: [5, 5, 5, 5, 9]
     value_type: flat
   - trigger: outing_end
     stat: vi

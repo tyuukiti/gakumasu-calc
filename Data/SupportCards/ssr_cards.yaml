@@ -51,7 +51,7 @@ support_cards:
     value_type: flat
   - trigger: concentrate_acquire
     stat: da
-    values: [35, 35, 35, 35, 35]
+    values: [3, 3, 3, 3, 4]
     value_type: flat
     max_count: 2
     condition: da>=700
@@ -106,7 +106,7 @@ support_cards:
     value_type: flat
   - trigger: exam_end
     stat: vo
-    values: [22, 22, 22, 22, 22]
+    values: [17, 17, 17, 22, 22]
     value_type: flat
     max_count: 2
   - trigger: mental_acquire
@@ -134,7 +134,7 @@ support_cards:
     value_type: flat
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: skill_ssr_acquire
     stat: vo
@@ -188,11 +188,11 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: sp_end
     stat: da
-    values: [13, 13, 13, 17, 17]
+    values: [15, 15, 15, 15, 21]
     value_type: flat
     max_count: 4
     condition: deck>=20
@@ -221,7 +221,7 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 13, 17]
     value_type: flat
   - trigger: fullpower_acquire
     stat: da
@@ -251,7 +251,7 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: skill_enhance
     stat: da
@@ -278,7 +278,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: skill_delete
     stat: da
@@ -360,7 +360,7 @@ support_cards:
     value_type: flat
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: skill_delete
     stat: vo
@@ -504,7 +504,7 @@ support_cards:
     value_type: flat
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: activity_supply
     stat: vo
@@ -538,7 +538,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: p_drink_acquire
     stat: da
@@ -572,7 +572,7 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: skill_ssr_acquire
     stat: da
@@ -653,7 +653,7 @@ support_cards:
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: p_drink_acquire
     stat: vi
@@ -708,7 +708,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: p_drink_acquire
     stat: da
@@ -736,7 +736,7 @@ support_cards:
     max_count: 3
   - trigger: vi_sp_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: active_delete
     stat: vi
@@ -760,7 +760,7 @@ support_cards:
     value_type: flat
   - trigger: exam_end
     stat: da
-    values: [22, 22, 22, 22, 22]
+    values: [17, 17, 22, 22, 22]
     value_type: flat
     max_count: 2
   - trigger: skill_change
@@ -800,7 +800,7 @@ support_cards:
     value_type: flat
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: outing_end
     stat: vo
@@ -827,7 +827,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: active_delete
     stat: vi
@@ -855,7 +855,7 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: class_end
     stat: da
@@ -882,7 +882,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: mental_acquire
     stat: da
@@ -915,6 +915,12 @@ support_cards:
     stat: vi
     values: [3, 3, 3, 3, 4]
     value_type: flat
+  - trigger: outing_end
+    stat: vi
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    condition: vi>=400
+    source: item
 - id: SP_SSR_0049
   name: あなたたちのことが好き
   rarity: SSR
@@ -936,7 +942,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: mental_enhance
     stat: da
@@ -1036,7 +1042,7 @@ support_cards:
     value_type: para_bonus
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [5, 5, 7, 7, 7]
     value_type: flat
   - trigger: class_end
     stat: da
@@ -1063,7 +1069,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: class_end
     stat: vo
@@ -1090,7 +1096,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: active_acquire
     stat: da
@@ -1144,11 +1150,11 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: exam_end
     stat: da
-    values: [22, 22, 22, 22, 22]
+    values: [17, 17, 17, 17, 22]
     value_type: flat
     max_count: 2
 - id: SP_SSR_0038
@@ -1176,7 +1182,7 @@ support_cards:
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 13, 17]
     value_type: flat
 - id: SP_SSR_0037
   name: そろそろ焼けたかな？
@@ -1199,7 +1205,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: activity_supply
     stat: da
@@ -1283,7 +1289,7 @@ support_cards:
     value_type: para_bonus
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: outing_end
     stat: da
@@ -1314,7 +1320,7 @@ support_cards:
     value_type: flat
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 13, 17]
     value_type: flat
 - id: SP_SSR_0030
   name: 新たな挑戦の成功ですわ！
@@ -1343,6 +1349,11 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: lesson_end
+    stat: vi
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    source: item
 - id: SP_SSR_0029
   name: ゆっくりと過ごしましょう
   rarity: SSR
@@ -1360,7 +1371,7 @@ support_cards:
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [5, 5, 7, 7, 7]
     value_type: flat
   - trigger: consultation_drink
     stat: vi
@@ -1387,7 +1398,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: active_acquire
     stat: da
@@ -1414,7 +1425,7 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: class_end
     stat: da
@@ -1441,7 +1452,7 @@ support_cards:
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: consultation
     stat: vi
@@ -1464,7 +1475,7 @@ support_cards:
     value_type: para_bonus
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: consultation_drink
     stat: vo
@@ -1487,7 +1498,7 @@ support_cards:
     value_type: para_bonus
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: activity_supply
     stat: vo
@@ -1514,11 +1525,11 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: exam_end
     stat: da
-    values: [22, 22, 22, 22, 22]
+    values: [17, 17, 17, 17, 22]
     value_type: flat
     max_count: 2
 - id: SP_SSR_0022
@@ -1588,7 +1599,7 @@ support_cards:
     value_type: para_bonus
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: mental_enhance
     stat: vo
@@ -1661,7 +1672,7 @@ support_cards:
     value_type: para_bonus
   - trigger: vi_sp_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: skill_enhance
     stat: vi
@@ -1757,7 +1768,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vi_sp_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: mental_acquire
     stat: vi
@@ -1784,7 +1795,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: skill_enhance
     stat: da
@@ -1811,7 +1822,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    values: [17, 17, 17, 17, 17]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: active_acquire
     stat: vo
@@ -1987,7 +1998,7 @@ support_cards:
     value_type: flat
   - trigger: exam_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [11, 11, 11, 17, 17]
     value_type: flat
     max_count: 2
 - id: SP_SSR_0083
@@ -2058,7 +2069,7 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [9, 9, 9, 9, 13]
     value_type: flat
   - trigger: class_end
     stat: da
@@ -2081,7 +2092,7 @@ support_cards:
     value_type: para_bonus
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [4, 4, 5, 5, 5]
     value_type: flat
   - trigger: consultation
     stat: da
@@ -2104,7 +2115,7 @@ support_cards:
     value_type: para_bonus
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [4, 4, 5, 5, 5]
     value_type: flat
   - trigger: active_acquire
     stat: vi
@@ -2127,7 +2138,7 @@ support_cards:
     value_type: para_bonus
   - trigger: vo_sp_end
     stat: vo
-    values: [13, 13, 13, 13, 13]
+    values: [4, 4, 5, 5, 5]
     value_type: flat
   - trigger: mental_acquire
     stat: vo
@@ -2154,7 +2165,7 @@ support_cards:
     value_type: sp_rate
   - trigger: exam_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [11, 11, 11, 17, 17]
     value_type: flat
     max_count: 2
 - id: SP_SSR_0031
@@ -2205,7 +2216,7 @@ support_cards:
     value_type: flat
   - trigger: exam_end
     stat: vi
-    values: [17, 17, 17, 17, 17]
+    values: [11, 11, 11, 17, 17]
     value_type: flat
     max_count: 2
 - id: SP_SSR_0062
@@ -2229,11 +2240,11 @@ support_cards:
     value_type: sp_rate
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [9, 9, 9, 9, 13]
     value_type: flat
   - trigger: exam_end
     stat: da
-    values: [17, 17, 17, 17, 17]
+    values: [11, 11, 11, 17, 17]
     value_type: flat
     max_count: 2
 - id: SP_SSR_0061
@@ -2307,7 +2318,7 @@ support_cards:
     value_type: para_bonus
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 13, 13]
+    values: [9, 9, 9, 9, 13]
     value_type: flat
   - trigger: mental_enhance
     stat: vi
@@ -2330,7 +2341,7 @@ support_cards:
     value_type: para_bonus
   - trigger: vo_sp_end
     stat: vo
-    values: [13, 13, 13, 13, 13]
+    values: [9, 9, 9, 9, 13]
     value_type: flat
   - trigger: mental_enhance
     stat: vo
@@ -2353,7 +2364,7 @@ support_cards:
     value_type: para_bonus
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [9, 9, 9, 9, 13]
     value_type: flat
   - trigger: mental_enhance
     stat: da
@@ -2427,7 +2438,7 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: vi
-    values: [6.5, 6.5, 6.5, 8, 8.5]
+    values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
 - id: SP_SSR_0095
   name: パーティー楽しみだねっ！
