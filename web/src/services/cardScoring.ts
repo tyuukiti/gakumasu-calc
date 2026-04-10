@@ -507,13 +507,16 @@ function postOptimize(
     for (let si = 0; si < selected.length; si++) {
       const ownedCard = selected[si];
       if (ownedCard.is_rental) continue;
+      // 必須カードは無条件でスワップ不可
+      if (ownedCard.is_required) continue;
+
       const hasSpRate = (card: SupportCard) =>
         card.effects.some((e) => e.trigger === 'equip' && e.value_type === 'sp_rate');
       const ownedIsProtectedSp =
         protectedIds.has(ownedCard.card.id) && hasSpRate(ownedCard.card);
       const ownedIsProtectedNonSp =
         protectedIds.has(ownedCard.card.id) && !ownedIsProtectedSp;
-      // 必須カードなど非SPの保護カードはスキップ
+      // 非SPの保護カードはスキップ
       if (ownedIsProtectedNonSp) continue;
 
       for (const candidate of candidates) {
