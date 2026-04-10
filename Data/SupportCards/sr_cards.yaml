@@ -1589,30 +1589,6 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
-- id: SP_SR_0008
-  name: ふわふわでワクワク
-  rarity: SR
-  type: da
-  plan: free
-  tag: produce_item
-  effects:
-  - trigger: equip
-    stat: da
-    values: [15, 15, 15, 15, 15]
-    value_type: flat
-  - trigger: equip
-    stat: da
-    values: [10.5, 21, 21, 21, 21]
-    value_type: sp_rate
-  - trigger: da_sp_end
-    stat: da
-    values: [13, 13, 13, 13, 13]
-    value_type: flat
-  - trigger: exam_end
-    stat: da
-    values: [17, 17, 17, 17, 17]
-    value_type: flat
-    max_count: 2
 - id: SP_SR_0007
   name: 嬉し恥ずかし夢心地
   rarity: SR
@@ -1825,3 +1801,27 @@ support_cards:
     values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
+- id: SP_SR_0008
+  name: ふわふわでワクワク
+  rarity: SR
+  type: da
+  plan: free
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: da
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
+    value_type: para_bonus
+  - trigger: equip
+    stat: da
+    values: [10.5, 21, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: da_sp_end
+    stat: da
+    values: [7, 7, 7, 7, 13]
+    value_type: flat
+  - trigger: exam_end
+    stat: da
+    values: [9, 9, 9, 17, 17]
+    value_type: flat
+    max_count: 2
