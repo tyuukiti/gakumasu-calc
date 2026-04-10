@@ -438,119 +438,260 @@
                         Style="{StaticResource SecondaryButton}"/>
             </StackPanel>
 
-            <!-- 編成パターン比較 -->
-            <ItemsControl ItemsSource="{Binding PatternResults}"
-                          Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Style="{StaticResource SectionCard}">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <TextBlock Text="{Binding Label}" Style="{StaticResource SectionHeader}"
-                                               FontSize="15" VerticalAlignment="Center" Margin="0"/>
-                                    <Button Content="この編成で計算"
-                                            Command="{Binding DataContext.SelectPatternCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                            CommandParameter="{Binding}"
-                                            Margin="12,0,0,0" Padding="10,4" FontSize="11"
-                                            Cursor="Hand"/>
-                                    <TextBlock Text="&#x2713; 選択中" FontSize="12" Foreground="{StaticResource AccentBrush}"
-                                               FontWeight="Bold" VerticalAlignment="Center" Margin="8,0,0,0"
-                                               Visibility="{Binding IsSelected, Converter={StaticResource BoolToVis}}"/>
-                                </StackPanel>
-
-                                <!-- カード一覧ヘッダー -->
-                                <Grid Margin="0,4,0,4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="40"/>
-                                        <ColumnDefinition Width="30"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="80"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="属性" FontSize="11" Foreground="#999"/>
-                                    <TextBlock Grid.Column="1" Text="育成" FontSize="11" Foreground="#999"/>
-                                    <TextBlock Grid.Column="2" Text="サポートカード" FontSize="11" Foreground="#999"/>
-                                    <TextBlock Grid.Column="3" Text="ステータス値" FontSize="11" Foreground="#999"
-                                               HorizontalAlignment="Right"/>
-                                </Grid>
-
-                                <ItemsControl ItemsSource="{Binding Cards}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Padding="4,5" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0"
-                                                    Cursor="Help">
-                                                <Border.ToolTip>
-                                                    <ToolTip MaxWidth="500">
-                                                        <TextBlock Text="{Binding BreakdownText}"
-                                                                   FontFamily="Consolas" FontSize="11"
-                                                                   TextWrapping="Wrap"/>
-                                                    </ToolTip>
-                                                </Border.ToolTip>
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="40"/>
-                                                        <ColumnDefinition Width="30"/>
-                                                        <ColumnDefinition Width="30"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="80"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <Border Grid.Column="0" Background="#F0F0F0" CornerRadius="3"
-                                                            Padding="4,2" HorizontalAlignment="Left">
-                                                        <TextBlock Text="{Binding CardTypeDisplay}"
-                                                                   FontSize="11" FontWeight="SemiBold"
-                                                                   Foreground="#555"/>
-                                                    </Border>
-                                                    <TextBlock Grid.Column="1" Text="{Binding CardPlanDisplay}"
-                                                               FontSize="10" Foreground="#999"
-                                                               VerticalAlignment="Center"
-                                                               HorizontalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding CardRarity}"
-                                                               FontSize="10" Foreground="#888"
-                                                               VerticalAlignment="Center"
-                                                               HorizontalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="3" Text="{Binding CardName}"
-                                                               FontSize="12" VerticalAlignment="Center"
-                                                               Margin="4,0,0,0"/>
-                                                    <TextBlock Grid.Column="4" Text="{Binding StatValue, StringFormat=N0}"
-                                                               FontSize="13" FontWeight="SemiBold"
-                                                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-
-                                <!-- 合計 -->
-                                <Border Margin="0,6,0,0" Padding="8,5" Background="#F5F5F5" CornerRadius="4">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="80"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="合計" FontSize="13" FontWeight="SemiBold"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Total, StringFormat=N0}"
-                                                   FontSize="15" FontWeight="Bold"
-                                                   Foreground="{StaticResource AccentBrush}"
-                                                   HorizontalAlignment="Right"/>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <!-- ターン選択 -->
+            <!-- ===== 計算結果 (Web版と同じく最上部に配置) ===== -->
             <Border Style="{StaticResource SectionCard}"
                     Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <TextBlock Text="ターン選択" Style="{StaticResource SectionHeader}"
-                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <Button Content="レッスン再計算" Command="{Binding RecalcLessonCommand}"
-                                Style="{StaticResource SecondaryButton}" FontSize="11" Padding="12,4"/>
-                    </StackPanel>
-                    <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4">
-                        <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                    <TextBlock Text="計算結果" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- Vo -->
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="36"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Vocal" FontSize="14" FontWeight="Bold"
+                                   Foreground="{StaticResource VoBrush}" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Height="24" CornerRadius="12"
+                                Background="#F0F0F0">
+                            <Border Background="{StaticResource VoBrush}"
+                                    CornerRadius="12" HorizontalAlignment="Left"
+                                    Width="{Binding VoBarWidth}"/>
+                        </Border>
+                        <TextBlock Grid.Column="2" Text="{Binding ResultVo, StringFormat={}{0:#,0}}"
+                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsVoAtCap}" Value="True">
+                                            <Setter Property="Foreground" Value="#EF4444"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Grid.Column="3" Text="MAX" FontSize="10" FontWeight="Bold"
+                                   Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
+                                   Visibility="{Binding IsVoAtCap, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
+
+                    <!-- Da -->
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="36"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Dance" FontSize="14" FontWeight="Bold"
+                                   Foreground="{StaticResource DaBrush}" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Height="24" CornerRadius="12"
+                                Background="#F0F0F0">
+                            <Border Background="{StaticResource DaBrush}"
+                                    CornerRadius="12" HorizontalAlignment="Left"
+                                    Width="{Binding DaBarWidth}"/>
+                        </Border>
+                        <TextBlock Grid.Column="2" Text="{Binding ResultDa, StringFormat={}{0:#,0}}"
+                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDaAtCap}" Value="True">
+                                            <Setter Property="Foreground" Value="#EF4444"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Grid.Column="3" Text="MAX" FontSize="10" FontWeight="Bold"
+                                   Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
+                                   Visibility="{Binding IsDaAtCap, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
+
+                    <!-- Vi -->
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="36"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Visual" FontSize="14" FontWeight="Bold"
+                                   Foreground="{StaticResource ViBrush}" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Height="24" CornerRadius="12"
+                                Background="#F0F0F0">
+                            <Border Background="{StaticResource ViBrush}"
+                                    CornerRadius="12" HorizontalAlignment="Left"
+                                    Width="{Binding ViBarWidth}"/>
+                        </Border>
+                        <TextBlock Grid.Column="2" Text="{Binding ResultVi, StringFormat={}{0:#,0}}"
+                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsViAtCap}" Value="True">
+                                            <Setter Property="Foreground" Value="#EF4444"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Grid.Column="3" Text="MAX" FontSize="10" FontWeight="Bold"
+                                   Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
+                                   Visibility="{Binding IsViAtCap, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
+
+                    <!-- 合計 -->
+                    <Border Margin="0,8,0,0" Padding="10,6" Background="#F5F5F5" CornerRadius="6">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock Text="合計: " FontSize="16" Foreground="#666"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ResultTotal, StringFormat={}{0:#,0}}"
+                                           FontSize="22" FontWeight="Bold" FontFamily="Consolas"
+                                           Foreground="{StaticResource AccentBrush}"/>
+                            </StackPanel>
+                            <Button Content="コピー" Command="{Binding CopyResultCommand}"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    FontSize="11" Padding="8,4" Cursor="Hand"
+                                    Background="#5C6BC0" Foreground="White" BorderThickness="0"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== 編成パターン (Web版と同じボタン切替式) ===== -->
+            <Border Style="{StaticResource SectionCard}"
+                    Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="編成パターン" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- パターン切替ボタン -->
+                    <ItemsControl ItemsSource="{Binding PatternResults}" Margin="0,0,0,8">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Margin="0,0,6,6" Padding="10,6" Cursor="Hand"
+                                        Command="{Binding DataContext.SelectPatternCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Background" Value="White"/>
+                                            <Setter Property="Foreground" Value="#555"/>
+                                            <Setter Property="BorderBrush" Value="#CCC"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Label}" FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                        <TextBlock FontSize="10"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                   Opacity="0.7">
+                                            <Run Text="合計: "/><Run Text="{Binding Total, Mode=OneWay, StringFormat={}{0:#,0}}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 選択中デッキのカード一覧 -->
+                    <ItemsControl ItemsSource="{Binding DeckCards}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="4,5" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0"
+                                        Cursor="Help">
+                                    <Border.ToolTip>
+                                        <ToolTip MaxWidth="500">
+                                            <TextBlock Text="{Binding BreakdownText}"
+                                                       FontFamily="Consolas" FontSize="11"
+                                                       TextWrapping="Wrap"/>
+                                        </ToolTip>
+                                    </Border.ToolTip>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="40"/>
+                                            <ColumnDefinition Width="30"/>
+                                            <ColumnDefinition Width="30"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="70"/>
+                                        </Grid.ColumnDefinitions>
+                                        <!-- 属性バッジ (色付き) -->
+                                        <Border Grid.Column="0" Background="{Binding TypeBadgeBackground}" CornerRadius="3"
+                                                Padding="4,2" HorizontalAlignment="Left">
+                                            <TextBlock Text="{Binding CardTypeDisplay}"
+                                                       FontSize="11" FontWeight="Bold"
+                                                       Foreground="{Binding TypeBadgeForeground}"/>
+                                        </Border>
+                                        <TextBlock Grid.Column="1" Text="{Binding CardPlanDisplay}"
+                                                   FontSize="10" Foreground="#999"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding CardRarity}"
+                                                   FontSize="10" Foreground="#888"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Center"/>
+                                        <!-- カード名 (レンタル=オレンジ, 必須=紫) -->
+                                        <TextBlock Grid.Column="3" Text="{Binding CardName}"
+                                                   FontSize="12" VerticalAlignment="Center"
+                                                   Foreground="{Binding CardNameForeground}"
+                                                   Margin="4,0,0,0"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding StatValue, StringFormat={}+{0:#,0}}"
+                                                   FontSize="13" FontWeight="SemiBold" FontFamily="Consolas"
+                                                   Foreground="{StaticResource AccentBrush}"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== ターン選択 (折りたたみ式) ===== -->
+            <Border Style="{StaticResource SectionCard}"
+                    Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="週別内訳・ターン選択" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <Button Content="レッスン再計算" Command="{Binding RecalcLessonCommand}"
+                                    Style="{StaticResource SecondaryButton}" FontSize="11" Padding="10,3"
+                                    Margin="12,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0">
+                        <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding TurnChoices}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
@@ -584,9 +725,6 @@
                                                         </DataTemplate>
                                                     </ComboBox.ItemTemplate>
                                                 </ComboBox>
-
-
-
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -594,134 +732,7 @@
                             </ItemsControl>
                         </ScrollViewer>
                     </Border>
-                </StackPanel>
-            </Border>
-
-            <!-- 計算結果 -->
-            <Border Style="{StaticResource SectionCard}"
-                    Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
-                <StackPanel>
-                    <TextBlock Text="計算結果" Style="{StaticResource SectionHeader}"/>
-
-                    <!-- Vo -->
-                    <Grid Margin="0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="40"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="40"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Vo" FontSize="16" FontWeight="Bold"
-                                   Foreground="{StaticResource VoBrush}" VerticalAlignment="Center"/>
-                        <Border Grid.Column="1" Height="24" CornerRadius="4"
-                                Background="#F0F0F0" HorizontalAlignment="Left" Width="310">
-                            <Border Background="{StaticResource VoBrush}"
-                                    CornerRadius="4" HorizontalAlignment="Left"
-                                    Width="{Binding VoBarWidth}"/>
-                        </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding ResultVo, StringFormat=N0}"
-                                   FontSize="16" FontWeight="Bold"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsVoAtCap}" Value="True">
-                                            <Setter Property="Foreground" Value="#EF4444"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <TextBlock Grid.Column="3" Text="MAX" FontSize="11" FontWeight="Bold"
-                                   Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
-                                   Visibility="{Binding IsVoAtCap, Converter={StaticResource BoolToVis}}"/>
-                    </Grid>
-
-                    <!-- Da -->
-                    <Grid Margin="0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="40"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="40"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Da" FontSize="16" FontWeight="Bold"
-                                   Foreground="{StaticResource DaBrush}" VerticalAlignment="Center"/>
-                        <Border Grid.Column="1" Height="24" CornerRadius="4"
-                                Background="#F0F0F0" HorizontalAlignment="Left" Width="310">
-                            <Border Background="{StaticResource DaBrush}"
-                                    CornerRadius="4" HorizontalAlignment="Left"
-                                    Width="{Binding DaBarWidth}"/>
-                        </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding ResultDa, StringFormat=N0}"
-                                   FontSize="16" FontWeight="Bold"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsDaAtCap}" Value="True">
-                                            <Setter Property="Foreground" Value="#EF4444"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <TextBlock Grid.Column="3" Text="MAX" FontSize="11" FontWeight="Bold"
-                                   Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
-                                   Visibility="{Binding IsDaAtCap, Converter={StaticResource BoolToVis}}"/>
-                    </Grid>
-
-                    <!-- Vi -->
-                    <Grid Margin="0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="40"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="40"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Vi" FontSize="16" FontWeight="Bold"
-                                   Foreground="{StaticResource ViBrush}" VerticalAlignment="Center"/>
-                        <Border Grid.Column="1" Height="24" CornerRadius="4"
-                                Background="#F0F0F0" HorizontalAlignment="Left" Width="310">
-                            <Border Background="{StaticResource ViBrush}"
-                                    CornerRadius="4" HorizontalAlignment="Left"
-                                    Width="{Binding ViBarWidth}"/>
-                        </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding ResultVi, StringFormat=N0}"
-                                   FontSize="16" FontWeight="Bold"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsViAtCap}" Value="True">
-                                            <Setter Property="Foreground" Value="#EF4444"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <TextBlock Grid.Column="3" Text="MAX" FontSize="11" FontWeight="Bold"
-                                   Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
-                                   Visibility="{Binding IsViAtCap, Converter={StaticResource BoolToVis}}"/>
-                    </Grid>
-
-                    <!-- 合計 -->
-                    <Border Margin="0,12,0,0" Padding="12,8" Background="#F5F5F5" CornerRadius="6">
-                        <Grid>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <TextBlock Text="合計: " FontSize="18" Foreground="#666"
-                                           VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding ResultTotal, StringFormat=N0}"
-                                           FontSize="24" FontWeight="Bold"
-                                           Foreground="{StaticResource AccentBrush}"/>
-                            </StackPanel>
-                            <Button Content="📋 コピー" Command="{Binding CopyResultCommand}"
-                                    HorizontalAlignment="Right" VerticalAlignment="Center"
-                                    FontSize="11" Padding="8,4" Cursor="Hand"
-                                    Background="#5C6BC0" Foreground="White" BorderThickness="0"/>
-                        </Grid>
-                    </Border>
-                </StackPanel>
+                </Expander>
             </Border>
 
         </StackPanel>
