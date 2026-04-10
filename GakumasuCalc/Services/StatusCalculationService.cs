@@ -8,7 +8,8 @@ public class StatusCalculationService
         TrainingPlan plan,
         List<SupportCard> selectedCards,
         List<TurnChoice> turnChoices,
-        Dictionary<string, int>? uncapLevels = null)
+        Dictionary<string, int>? uncapLevels = null,
+        AdditionalCounts? additionalCounts = null)
     {
         // Step 1: 基礎ステータス
         var baseStatus = plan.BaseStatus.Clone();
@@ -34,6 +35,19 @@ public class StatusCalculationService
                 Week = week.Week,
                 ActionName = actionName,
                 Gain = weekGain
+            });
+        }
+
+        // Step 3.5: 追加イベントトリガー発火
+        var additionalGain = FireAdditionalTriggers(selectedCards, triggerCounters, uncapLevels, additionalCounts);
+        if (additionalGain.Vo != 0 || additionalGain.Da != 0 || additionalGain.Vi != 0)
+        {
+            accumulated = accumulated.Add(additionalGain);
+            weekDetails.Add(new WeekBreakdown
+            {
+                Week = 99,
+                ActionName = "追加イベント効果",
+                Gain = additionalGain
             });
         }
 
@@ -209,6 +223,30 @@ public class StatusCalculationService
         // 特別指導開始時トリガー
         var stGain = FireTrigger("special_training", cards, triggerCounters, uncapLevels);
         return baseGain.Add(stGain);
+    }
+
+    /// <summary>
+    /// 追加イベント回数テンプレートのトリガーを発火する。
+    /// 週次処理で既に消費された max_count を考慮する。
+    /// </summary>
+    private StatusValues FireAdditionalTriggers(
+        List<SupportCard> cards,
+        Dictionary<string, int> triggerCounters,
+        Dictionary<string, int>? uncapLevels,
+        AdditionalCounts? additionalCounts)
+    {
+        if (additionalCounts == null) return StatusValues.Zero;
+
+        var gain = StatusValues.Zero;
+        foreach (var kvp in additionalCounts.ToDictionary())
+        {
+            if (kvp.Value <= 0) continue;
+            for (int i = 0; i < kvp.Value; i++)
+            {
+                gain = gain.Add(FireTrigger(kvp.Key, cards, triggerCounters, uncapLevels));
+            }
+        }
+        return gain;
     }
 
     /// <summary>

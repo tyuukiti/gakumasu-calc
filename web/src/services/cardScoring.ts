@@ -1026,6 +1026,10 @@ export function selectMultiplePatterns(
   ];
 
   for (const [m1, m2, free] of patterns) {
+    // レンタルモード(所持5+レンタル1)では、フリー枠なし6枚パターンは
+    // 属性枠が所持枠(5)を超えるため [3,2,1] / [2,3,1] と重複する → スキップ
+    if (rentalPool != null && free === 0 && m1 + m2 > 5) continue;
+
     // SP枚数を満たせないパターンはスキップ (フリー枠でSP率カードを吸収できる場合はOK)
     const spShortage =
       Math.max(0, spMain1 - m1) + Math.max(0, spMain2 - m2);

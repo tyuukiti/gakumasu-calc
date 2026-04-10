@@ -227,7 +227,7 @@ function applySelectedPatternImpl(
   }
 
   const selectedCards = pattern.selected_cards.map((cs) => cs.card);
-  const result = calculate(plan, selectedCards, turnChoices, uncapLevels);
+  const result = calculate(plan, selectedCards, turnChoices, uncapLevels, state.additionalCounts);
 
   return {
     selectedPatternIndex: index,
