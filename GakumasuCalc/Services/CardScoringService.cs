@@ -214,6 +214,7 @@ public class CardScoringService
 
                     selected.Add(best);
                     usedIds.Add(best.Card.Id);
+                    protectedIds.Add(best.Card.Id); // SP率カードはポスト最適化でスワップしない
                     accVo += best.RawVo;
                     accDa += best.RawDa;
                     accVi += best.RawVi;
@@ -230,67 +231,29 @@ public class CardScoringService
         // レンタルモード: 所持5枠 + レンタル1枠
         int ownedSlots = rentalPool != null ? 5 : 6;
 
-        // ステップ2: 残りの属性枠をステータス寄与が高い順にグリーディ選択
-        foreach (var kvp in remainingSlots.OrderByDescending(k => k.Value))
+        // チェックポイント保存（レンタルパターンC用）
+        var checkpointSelected = new List<CardScore>(selected);
+        var checkpointUsedIds = new HashSet<string>(usedIds);
+        int checkpointAccVo = accVo, checkpointAccDa = accDa, checkpointAccVi = accVi;
+        var checkpointRemainingSlots = new Dictionary<string, int>(remainingSlots);
+        int checkpointRemainingFree = remainingFree;
+
+        // ステップ2: グリーディに所持枠を埋める
+        // レンタル必須カードがある場合はそのステータスを事前加算して補完的なカードを選ぶ
+        int fillAccVo = accVo, fillAccDa = accDa, fillAccVi = accVi;
+        if (requiredRentalCard != null)
         {
-            var type = kvp.Key;
-            int count = kvp.Value;
-            if (count <= 0) continue;
-
-            var candidates = cardContributions
-                .Where(cs => (cs.Card.Type == type || cs.Card.Type == "all")
-                             && !usedIds.Contains(cs.Card.Id))
-                .ToList();
-
-            for (int i = 0; i < count && selected.Count < ownedSlots; i++)
-            {
-                var best = SelectBestCard(candidates, usedIds, accVo, accDa, accVi, statCap);
-                if (best == null) break;
-
-                selected.Add(best);
-                usedIds.Add(best.Card.Id);
-                accVo += best.RawVo;
-                accDa += best.RawDa;
-                accVi += best.RawVi;
-            }
+            fillAccVo += requiredRentalCard.RawVo;
+            fillAccDa += requiredRentalCard.RawDa;
+            fillAccVi += requiredRentalCard.RawVi;
         }
-
-        // フリー枠: 属性を問わず最良のカードを選択
-        for (int i = 0; i < remainingFree && selected.Count < ownedSlots; i++)
-        {
-            var freeCandidates = cardContributions
-                .Where(cs => !usedIds.Contains(cs.Card.Id))
-                .ToList();
-
-            var best = SelectBestCard(freeCandidates, usedIds, accVo, accDa, accVi, statCap);
-            if (best == null) break;
-
-            selected.Add(best);
-            usedIds.Add(best.Card.Id);
-            accVo += best.RawVo;
-            accDa += best.RawDa;
-            accVi += best.RawVi;
-        }
-
-        // 所持枠に満たない場合、フィルタ済みから補充
-        if (selected.Count < ownedSlots)
-        {
-            var remaining = cardContributions
-                .Where(cs => !usedIds.Contains(cs.Card.Id))
-                .ToList();
-
-            while (selected.Count < ownedSlots)
-            {
-                var best = SelectBestCard(remaining, usedIds, accVo, accDa, accVi, statCap);
-                if (best == null) break;
-
-                selected.Add(best);
-                usedIds.Add(best.Card.Id);
-                accVo += best.RawVo;
-                accDa += best.RawDa;
-                accVi += best.RawVi;
-            }
-        }
+        var fillResult = GreedyFillOwned(cardContributions, selected, usedIds, fillAccVo, fillAccDa, fillAccVi, remainingSlots, remainingFree, ownedSlots, statCap);
+        selected = fillResult.Selected;
+        usedIds = fillResult.UsedIds;
+        // 事前加算分を差し引いて実際の累積ステータスを得る
+        accVo = fillResult.AccVo - (requiredRentalCard?.RawVo ?? 0);
+        accDa = fillResult.AccDa - (requiredRentalCard?.RawDa ?? 0);
+        accVi = fillResult.AccVi - (requiredRentalCard?.RawVi ?? 0);
 
         // レンタル1枠: 全カードプールから4凸で最良の1枚を選択
         if (rentalPool != null && selected.Count < 6)
@@ -326,34 +289,28 @@ public class CardScoringService
             var defaultRental = SelectBestCard(unusedRentalCandidates, usedIds, accVo, accDa, accVi, statCap);
             int defaultTotal = CalculateCappedTotal(baseStats, selected, defaultRental, statCap);
 
-            // パターンB: 所持カードXをレンタルX(4凸)に昇格し、空いた所持枠に代替カードを入れる
-            // 全候補を評価して最も改善が大きい1つだけを採用する
-            CardScore? bestSwapRental = null;
-            CardScore? bestSwapReplacement = null;
-            CardScore? bestSwapTarget = null;
-            int bestSwapTotal = defaultTotal;
+            // 最良の結果を追跡
+            int bestOverallTotal = defaultTotal;
+            CardScore? bestOverallRental = defaultRental;
+            List<CardScore>? bestOverallSelected = null; // null = 現在のselectedをそのまま使う
 
+            // パターンB: 所持カードXをレンタルX(4凸)に昇格し、空いた所持枠に代替カードを入れる
             foreach (var ownedCard in selected)
             {
-                // 必須カードはスワップ対象外
                 if (protectedIds.Contains(ownedCard.Card.Id)) continue;
 
                 if (!allRentalContributions.TryGetValue(ownedCard.Card.Id, out var rentalVersion))
                     continue;
 
-                // レンタル(4凸)と所持凸の差分がなければスキップ
                 int rentalGain = rentalVersion.RawVo + rentalVersion.RawDa + rentalVersion.RawVi;
                 int ownedGain = ownedCard.RawVo + ownedCard.RawDa + ownedCard.RawVi;
                 if (rentalGain <= ownedGain) continue;
 
-                // Xを除外した状態での累積ステータス
                 int swapAccVo = accVo - ownedCard.RawVo;
                 int swapAccDa = accDa - ownedCard.RawDa;
                 int swapAccVi = accVi - ownedCard.RawVi;
 
-                // 空いた所持枠に入れる最良の代替カードを探す（X自身は除外 — レンタルに回すため）
                 var swapUsedIds = new HashSet<string>(usedIds);
-                // ownedCard.Card.Id は除外しない（レンタルに回すのでこの枠では使えない）
                 var replacementCandidates = cardContributions
                     .Where(cs => !swapUsedIds.Contains(cs.Card.Id))
                     .ToList();
@@ -361,37 +318,55 @@ public class CardScoringService
 
                 if (replacement == null) continue;
 
-                // スワップ後の合計をキャップ込みで計算
                 var swapSelected = selected.Where(s => s.Card.Id != ownedCard.Card.Id).Append(replacement).ToList();
                 int swapTotal = CalculateCappedTotal(baseStats, swapSelected, rentalVersion, statCap);
 
-                if (swapTotal > bestSwapTotal)
+                if (swapTotal > bestOverallTotal)
                 {
-                    bestSwapTotal = swapTotal;
-                    bestSwapRental = rentalVersion;
-                    bestSwapReplacement = replacement;
-                    bestSwapTarget = ownedCard;
+                    bestOverallTotal = swapTotal;
+                    bestOverallRental = rentalVersion;
+                    bestOverallSelected = swapSelected;
                 }
             }
 
-            // 最良のスワップがあれば適用、なければ従来のレンタル選択を使用
-            CardScore? finalRental;
-            if (bestSwapTarget != null && bestSwapRental != null && bestSwapReplacement != null)
+            // パターンC: 各レンタル候補に対して所持カードを最適に再選択
+            // レンタルのステータスを事前加算し、補完的な所持カードが選ばれるようにする
+            foreach (var rentalCandidate in allRentalContributions.Values)
             {
-                selected.Remove(bestSwapTarget);
-                selected.Add(bestSwapReplacement);
-                // bestSwapTarget.Card.Id は usedIds に残す（レンタルとして使用するため）
-                usedIds.Add(bestSwapReplacement.Card.Id);
-                accVo += bestSwapReplacement.RawVo - bestSwapTarget.RawVo;
-                accDa += bestSwapReplacement.RawDa - bestSwapTarget.RawDa;
-                accVi += bestSwapReplacement.RawVi - bestSwapTarget.RawVi;
-                finalRental = bestSwapRental;
-            }
-            else
-            {
-                finalRental = defaultRental;
+                if (protectedIds.Contains(rentalCandidate.Card.Id)) continue;
+
+                // レンタル候補を所持選択から除外
+                var excludedUsedIds = new HashSet<string>(checkpointUsedIds) { rentalCandidate.Card.Id };
+
+                // レンタルのステータスを事前加算してグリーディ選択
+                var candidateFill = GreedyFillOwned(
+                    cardContributions, checkpointSelected, excludedUsedIds,
+                    checkpointAccVo + rentalCandidate.RawVo,
+                    checkpointAccDa + rentalCandidate.RawDa,
+                    checkpointAccVi + rentalCandidate.RawVi,
+                    checkpointRemainingSlots, checkpointRemainingFree,
+                    ownedSlots, statCap);
+
+                int candidateTotal = CalculateCappedTotal(baseStats, candidateFill.Selected, rentalCandidate, statCap);
+
+                if (candidateTotal > bestOverallTotal)
+                {
+                    bestOverallTotal = candidateTotal;
+                    bestOverallRental = rentalCandidate;
+                    bestOverallSelected = candidateFill.Selected;
+                }
             }
 
+            // 最良の結果を適用
+            if (bestOverallSelected != null)
+            {
+                selected = bestOverallSelected;
+                usedIds = new HashSet<string>(selected.Select(s => s.Card.Id));
+                accVo = baseStats.Vo; accDa = baseStats.Da; accVi = baseStats.Vi;
+                foreach (var s in selected) { accVo += s.RawVo; accDa += s.RawDa; accVi += s.RawVi; }
+            }
+
+            CardScore? finalRental = bestOverallRental;
             if (finalRental != null)
             {
                 finalRental.IsRental = true;
@@ -424,6 +399,13 @@ public class CardScoringService
             }
         }
 
+        // ポスト最適化: 実際の計算結果を使ってカードスワップを試行
+        if (rentalPool != null)
+        {
+            PostOptimize(selected, cardContributions, protectedIds,
+                plan, lessonAllocation, mainStats, uncapLevels, additionalCounts);
+        }
+
         // キャップ適用後の実効値でTotalValueを再計算
         RecalculateWithCap(selected, baseStats, statCap);
 
@@ -434,6 +416,167 @@ public class CardScoringService
             Label = GenerateLabel(cardTypeSlots, freeSlots),
             SelectedCards = selected
         };
+    }
+
+    /// <summary>
+    /// 実際のStatusCalculationServiceを使い、カードスワップで改善を試みるポスト最適化。
+    /// 近似スコアリングでは捉えきれないパラボーナス等の相互作用を補正する。
+    /// </summary>
+    private void PostOptimize(
+        List<CardScore> selected,
+        List<CardScore> candidates,
+        HashSet<string> protectedIds,
+        TrainingPlan plan,
+        Dictionary<string, int> lessonAllocation,
+        List<string> mainStats,
+        Dictionary<string, int>? uncapLevels,
+        AdditionalCounts? additionalCounts)
+    {
+        var calcService = new StatusCalculationService();
+        var turnChoices = BuildTurnChoices(plan, mainStats);
+
+        int Evaluate(List<SupportCard> cards)
+        {
+            var uc = new Dictionary<string, int>(uncapLevels ?? new());
+            foreach (var cs in selected.Where(c => c.IsRental))
+                uc[cs.Card.Id] = 4;
+            return calcService.Calculate(plan, cards, turnChoices, uc, additionalCounts).FinalStatus.Total;
+        }
+
+        bool improved;
+        do
+        {
+            improved = false;
+            var currentCards = selected.Select(c => c.Card).ToList();
+            int currentTotal = Evaluate(currentCards);
+
+            foreach (var ownedCard in selected.Where(c => !c.IsRental).ToList())
+            {
+                bool ownedIsProtectedSp = protectedIds.Contains(ownedCard.Card.Id)
+                    && ownedCard.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate");
+                bool ownedIsProtectedNonSp = protectedIds.Contains(ownedCard.Card.Id) && !ownedIsProtectedSp;
+                // 必須カードなど非SPの保護カードはスキップ
+                if (ownedIsProtectedNonSp) continue;
+
+                foreach (var candidate in candidates)
+                {
+                    if (selected.Any(c => c.Card.Id == candidate.Card.Id)) continue;
+                    // タイプ分布を維持: 同じタイプ同士、または all タイプとの交換のみ許可
+                    if (candidate.Card.Type != ownedCard.Card.Type
+                        && candidate.Card.Type != "all"
+                        && ownedCard.Card.Type != "all") continue;
+                    // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
+                    if (ownedIsProtectedSp
+                        && !candidate.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"))
+                        continue;
+
+                    var testCards = new List<SupportCard>(currentCards);
+                    int idx = testCards.IndexOf(ownedCard.Card);
+                    testCards[idx] = candidate.Card;
+
+                    int testTotal = Evaluate(testCards);
+                    if (testTotal > currentTotal)
+                    {
+                        int selIdx = selected.IndexOf(ownedCard);
+                        selected[selIdx] = candidate;
+                        // SP率保護を新カードに引き継ぐ
+                        if (ownedIsProtectedSp)
+                        {
+                            protectedIds.Remove(ownedCard.Card.Id);
+                            protectedIds.Add(candidate.Card.Id);
+                        }
+                        currentTotal = testTotal;
+                        improved = true;
+                        break;
+                    }
+                }
+                if (improved) break;
+            }
+        } while (improved);
+    }
+
+    /// <summary>
+    /// プランとメイン属性からターン選択を生成する。
+    /// </summary>
+    private static List<TurnChoice> BuildTurnChoices(TrainingPlan plan, List<string> mainStats)
+    {
+        var choices = new List<TurnChoice>();
+        var subStat = new[] { "vo", "da", "vi" }.First(s => !mainStats.Contains(s));
+
+        static ActionType LessonAction(string stat) => stat switch
+        {
+            "vo" => ActionType.VoLesson,
+            "da" => ActionType.DaLesson,
+            _ => ActionType.ViLesson
+        };
+        static ActionType ClassAction(string stat) => stat switch
+        {
+            "vo" => ActionType.VoClass,
+            "da" => ActionType.DaClass,
+            _ => ActionType.ViClass
+        };
+
+        var main1Action = LessonAction(mainStats[0]);
+        var main2Action = mainStats.Count > 1 ? LessonAction(mainStats[1]) : main1Action;
+        var subClassAction = ClassAction(subStat);
+
+        int midExamWeek = plan.Schedule
+            .Where(w => w.IsFixedEvent && w.EventName == "中間試験")
+            .Select(w => w.Week)
+            .FirstOrDefault();
+        if (midExamWeek == 0) midExamWeek = 10;
+
+        var lessonWeeks = plan.Schedule
+            .Where(w => !w.IsFixedEvent && w.Lessons.Count > 0)
+            .OrderBy(w => w.Week)
+            .ToList();
+
+        // 中間前: 交互
+        bool toggle = false;
+        foreach (var w in lessonWeeks.Where(w => w.Week < midExamWeek))
+        {
+            choices.Add(new TurnChoice { Week = w.Week, ChosenAction = toggle ? main2Action : main1Action });
+            toggle = !toggle;
+        }
+
+        // 中間後: メイン1:メイン2 = 2:1
+        int afterCount = 0;
+        foreach (var w in lessonWeeks.Where(w => w.Week > midExamWeek))
+        {
+            choices.Add(new TurnChoice { Week = w.Week, ChosenAction = (afterCount % 3 == 1) ? main2Action : main1Action });
+            afterCount++;
+        }
+
+        // 非レッスン週
+        foreach (var w in plan.Schedule)
+        {
+            if (w.IsFixedEvent || w.Lessons.Count > 0) continue;
+            var actions = w.AvailableActions;
+
+            bool hasClass = actions.Any(a => a.Contains("class"));
+            if (hasClass)
+            {
+                var subClassStr = subStat + "_class";
+                if (actions.Contains(subClassStr))
+                    choices.Add(new TurnChoice { Week = w.Week, ChosenAction = subClassAction });
+                else
+                {
+                    var mainClassStr = mainStats[0] + "_class";
+                    if (actions.Contains(mainClassStr))
+                        choices.Add(new TurnChoice { Week = w.Week, ChosenAction = ClassAction(mainStats[0]) });
+                }
+            }
+            else if (actions.Contains("activity_supply"))
+                choices.Add(new TurnChoice { Week = w.Week, ChosenAction = ActionType.ActivitySupply });
+            else if (actions.Contains("outing"))
+                choices.Add(new TurnChoice { Week = w.Week, ChosenAction = ActionType.Outing });
+            else if (actions.Contains("consultation"))
+                choices.Add(new TurnChoice { Week = w.Week, ChosenAction = ActionType.Consultation });
+            else if (actions.Contains("special_training"))
+                choices.Add(new TurnChoice { Week = w.Week, ChosenAction = ActionType.SpecialTraining });
+        }
+
+        return choices;
     }
 
     /// <summary>
@@ -472,6 +615,84 @@ public class CardScoringService
         }
 
         return best;
+    }
+
+    /// <summary>
+    /// チェックポイント状態からグリーディに所持枠を埋める。
+    /// </summary>
+    private (List<CardScore> Selected, HashSet<string> UsedIds, int AccVo, int AccDa, int AccVi)
+        GreedyFillOwned(
+            List<CardScore> contributions,
+            List<CardScore> selectedInit,
+            HashSet<string> usedIdsInit,
+            int accVoInit, int accDaInit, int accViInit,
+            Dictionary<string, int> remainingSlotsInit,
+            int remainingFreeInit,
+            int ownedSlots,
+            int statCap)
+    {
+        var sel = new List<CardScore>(selectedInit);
+        var used = new HashSet<string>(usedIdsInit);
+        int aVo = accVoInit, aDa = accDaInit, aVi = accViInit;
+
+        // 属性枠
+        foreach (var kvp in remainingSlotsInit.OrderByDescending(k => k.Value))
+        {
+            var type = kvp.Key;
+            int count = kvp.Value;
+            if (count <= 0) continue;
+
+            var candidates = contributions
+                .Where(cs => (cs.Card.Type == type || cs.Card.Type == "all")
+                             && !used.Contains(cs.Card.Id))
+                .ToList();
+
+            for (int i = 0; i < count && sel.Count < ownedSlots; i++)
+            {
+                var best = SelectBestCard(candidates, used, aVo, aDa, aVi, statCap);
+                if (best == null) break;
+                sel.Add(best);
+                used.Add(best.Card.Id);
+                aVo += best.RawVo;
+                aDa += best.RawDa;
+                aVi += best.RawVi;
+            }
+        }
+
+        // フリー枠
+        for (int i = 0; i < remainingFreeInit && sel.Count < ownedSlots; i++)
+        {
+            var freeCandidates = contributions
+                .Where(cs => !used.Contains(cs.Card.Id))
+                .ToList();
+            var best = SelectBestCard(freeCandidates, used, aVo, aDa, aVi, statCap);
+            if (best == null) break;
+            sel.Add(best);
+            used.Add(best.Card.Id);
+            aVo += best.RawVo;
+            aDa += best.RawDa;
+            aVi += best.RawVi;
+        }
+
+        // 補充
+        if (sel.Count < ownedSlots)
+        {
+            var remaining = contributions
+                .Where(cs => !used.Contains(cs.Card.Id))
+                .ToList();
+            while (sel.Count < ownedSlots)
+            {
+                var best = SelectBestCard(remaining, used, aVo, aDa, aVi, statCap);
+                if (best == null) break;
+                sel.Add(best);
+                used.Add(best.Card.Id);
+                aVo += best.RawVo;
+                aDa += best.RawDa;
+                aVi += best.RawVi;
+            }
+        }
+
+        return (sel, used, aVo, aDa, aVi);
     }
 
     /// <summary>

@@ -5,11 +5,13 @@
   WeekSchedule,
   StatusValues,
   AdditionalCounts,
+  TurnChoice,
 } from '../types/models';
+import type { ActionType } from '../types/enums';
 import { additionalCountsToRecord } from '../types/models';
 import type { CardScore, EffectBreakdown, DeckResult } from '../types/results';
 import { sv } from '../utils/statusValues';
-import { getUncapLevel, getEffectValue } from './statusCalculation';
+import { getUncapLevel, getEffectValue, calculate } from './statusCalculation';
 import { DEFAULT_STAT_CAP } from '../utils/constants';
 
 // --- Helper: WeekSchedule utilities ---
@@ -394,6 +396,241 @@ export function calculateCardContribution(
   };
 }
 
+// --- Greedy fill owned slots from checkpoint ---
+
+function greedyFillOwned(
+  contributions: CardScore[],
+  selectedInit: CardScore[],
+  usedIdsInit: Set<string>,
+  accVoInit: number,
+  accDaInit: number,
+  accViInit: number,
+  remainingSlotsInit: Record<string, number>,
+  remainingFreeInit: number,
+  ownedSlots: number,
+  statCap: number,
+): {
+  selected: CardScore[];
+  usedIds: Set<string>;
+  accVo: number;
+  accDa: number;
+  accVi: number;
+} {
+  const sel = [...selectedInit];
+  const used = new Set(usedIdsInit);
+  let aVo = accVoInit,
+    aDa = accDaInit,
+    aVi = accViInit;
+
+  // 属性枠
+  const sortedSlots = Object.entries(remainingSlotsInit).sort(
+    (a, b) => b[1] - a[1],
+  );
+  for (const [type, count] of sortedSlots) {
+    if (count <= 0) continue;
+    const candidates = contributions.filter(
+      (cs) =>
+        (cs.card.type === type || cs.card.type === 'all') &&
+        !used.has(cs.card.id),
+    );
+    for (let i = 0; i < count && sel.length < ownedSlots; i++) {
+      const best = selectBestCard(candidates, used, aVo, aDa, aVi, statCap);
+      if (best == null) break;
+      sel.push(best);
+      used.add(best.card.id);
+      aVo += best.raw_vo;
+      aDa += best.raw_da;
+      aVi += best.raw_vi;
+    }
+  }
+
+  // フリー枠
+  for (let i = 0; i < remainingFreeInit && sel.length < ownedSlots; i++) {
+    const freeCandidates = contributions.filter(
+      (cs) => !used.has(cs.card.id),
+    );
+    const best = selectBestCard(freeCandidates, used, aVo, aDa, aVi, statCap);
+    if (best == null) break;
+    sel.push(best);
+    used.add(best.card.id);
+    aVo += best.raw_vo;
+    aDa += best.raw_da;
+    aVi += best.raw_vi;
+  }
+
+  // 補充
+  if (sel.length < ownedSlots) {
+    const remaining = contributions.filter((cs) => !used.has(cs.card.id));
+    while (sel.length < ownedSlots) {
+      const best = selectBestCard(remaining, used, aVo, aDa, aVi, statCap);
+      if (best == null) break;
+      sel.push(best);
+      used.add(best.card.id);
+      aVo += best.raw_vo;
+      aDa += best.raw_da;
+      aVi += best.raw_vi;
+    }
+  }
+
+  return { selected: sel, usedIds: used, accVo: aVo, accDa: aDa, accVi: aVi };
+}
+
+// --- Post-optimization using actual calculation ---
+
+function postOptimize(
+  selected: CardScore[],
+  candidates: CardScore[],
+  protectedIds: Set<string>,
+  plan: TrainingPlan,
+  mainStats: string[],
+  uncapLevels?: Record<string, number>,
+  additionalCounts?: AdditionalCounts,
+): void {
+  const turnChoices = buildTurnChoices(plan, mainStats);
+
+  function evaluate(cards: SupportCard[]): number {
+    const uc: Record<string, number> = { ...(uncapLevels ?? {}) };
+    for (const cs of selected) {
+      if (cs.is_rental) uc[cs.card.id] = 4;
+    }
+    const fs = calculate(plan, cards, turnChoices, uc, additionalCounts)
+      .final_status;
+    return fs.vo + fs.da + fs.vi;
+  }
+
+  let improved: boolean;
+  do {
+    improved = false;
+    const currentCards = selected.map((c) => c.card);
+    let currentTotal = evaluate(currentCards);
+
+    for (let si = 0; si < selected.length; si++) {
+      const ownedCard = selected[si];
+      if (ownedCard.is_rental) continue;
+      const hasSpRate = (card: SupportCard) =>
+        card.effects.some((e) => e.trigger === 'equip' && e.value_type === 'sp_rate');
+      const ownedIsProtectedSp =
+        protectedIds.has(ownedCard.card.id) && hasSpRate(ownedCard.card);
+      const ownedIsProtectedNonSp =
+        protectedIds.has(ownedCard.card.id) && !ownedIsProtectedSp;
+      // 必須カードなど非SPの保護カードはスキップ
+      if (ownedIsProtectedNonSp) continue;
+
+      for (const candidate of candidates) {
+        if (selected.some((c) => c.card.id === candidate.card.id)) continue;
+        // タイプ分布を維持: 同じタイプ同士、または all タイプとの交換のみ許可
+        if (
+          candidate.card.type !== ownedCard.card.type &&
+          candidate.card.type !== 'all' &&
+          ownedCard.card.type !== 'all'
+        )
+          continue;
+        // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
+        if (ownedIsProtectedSp && !hasSpRate(candidate.card)) continue;
+
+        const testCards = [...currentCards];
+        testCards[si] = candidate.card;
+
+        const testTotal = evaluate(testCards);
+        if (testTotal > currentTotal) {
+          selected[si] = candidate;
+          // SP率保護を新カードに引き継ぐ
+          if (ownedIsProtectedSp) {
+            protectedIds.delete(ownedCard.card.id);
+            protectedIds.add(candidate.card.id);
+          }
+          currentTotal = testTotal;
+          improved = true;
+          break;
+        }
+      }
+      if (improved) break;
+    }
+  } while (improved);
+}
+
+function buildTurnChoices(
+  plan: TrainingPlan,
+  mainStats: string[],
+): TurnChoice[] {
+  const choices: TurnChoice[] = [];
+  const subStat = ['vo', 'da', 'vi'].find(
+    (s) => !mainStats.includes(s),
+  ) as string;
+
+  const lessonAction = (stat: string): ActionType =>
+    `${stat}_lesson` as ActionType;
+  const classAction = (stat: string): ActionType =>
+    `${stat}_class` as ActionType;
+
+  const main1Action = lessonAction(mainStats[0]);
+  const main2Action =
+    mainStats.length > 1 ? lessonAction(mainStats[1]) : main1Action;
+  const subClassAction = classAction(subStat);
+
+  let midExamWeek =
+    plan.schedule.find(
+      (w) => isFixedEvent(w) && w.event_name === '中間試験',
+    )?.week ?? 10;
+  if (midExamWeek === 0) midExamWeek = 10;
+
+  const lessonWeeks = plan.schedule
+    .filter((w) => !isFixedEvent(w) && w.lessons.length > 0)
+    .sort((a, b) => a.week - b.week);
+
+  // Before mid: alternate
+  let toggle = false;
+  for (const w of lessonWeeks.filter((w) => w.week < midExamWeek)) {
+    choices.push({
+      week: w.week,
+      chosen_action: toggle ? main2Action : main1Action,
+    });
+    toggle = !toggle;
+  }
+
+  // After mid: main1:main2 = 2:1
+  let afterCount = 0;
+  for (const w of lessonWeeks.filter((w) => w.week > midExamWeek)) {
+    choices.push({
+      week: w.week,
+      chosen_action: afterCount % 3 === 1 ? main2Action : main1Action,
+    });
+    afterCount++;
+  }
+
+  // Non-lesson weeks
+  for (const w of plan.schedule) {
+    if (isFixedEvent(w) || w.lessons.length > 0) continue;
+    const actions = w.available_actions ?? [];
+
+    const hasClass = actions.some((a) => a.includes('class'));
+    if (hasClass) {
+      const subClassStr = `${subStat}_class`;
+      if (actions.includes(subClassStr)) {
+        choices.push({ week: w.week, chosen_action: subClassAction });
+      } else {
+        const mainClassStr = `${mainStats[0]}_class`;
+        if (actions.includes(mainClassStr)) {
+          choices.push({
+            week: w.week,
+            chosen_action: classAction(mainStats[0]),
+          });
+        }
+      }
+    } else if (actions.includes('activity_supply')) {
+      choices.push({ week: w.week, chosen_action: 'activity_supply' });
+    } else if (actions.includes('outing')) {
+      choices.push({ week: w.week, chosen_action: 'outing' });
+    } else if (actions.includes('consultation')) {
+      choices.push({ week: w.week, chosen_action: 'consultation' });
+    } else if (actions.includes('special_training')) {
+      choices.push({ week: w.week, chosen_action: 'special_training' });
+    }
+  }
+
+  return choices;
+}
+
 // --- Select best card ---
 
 function selectBestCard(
@@ -700,6 +937,7 @@ export function selectOptimalDeck(
 
         selected.push(best);
         usedIds.add(best.card.id);
+        protectedIds.add(best.card.id); // SP率カードはポスト最適化でスワップしない
         accVo += best.raw_vo;
         accDa += best.raw_da;
         accVi += best.raw_vi;
@@ -717,84 +955,39 @@ export function selectOptimalDeck(
   // レンタルモード: 所持5枠 + レンタル1枠
   const ownedSlots = rentalPool != null ? 5 : 6;
 
-  // ステップ2: 残りの属性枠をステータス寄与が高い順にグリーディ選択
-  const sortedRemainingSlots = Object.entries(remainingSlots).sort(
-    (a, b) => b[1] - a[1],
-  );
-  for (const [type, count] of sortedRemainingSlots) {
-    if (count <= 0) continue;
+  // チェックポイント保存（レンタルパターンC用）
+  const checkpointSelected = [...selected];
+  const checkpointUsedIds = new Set(usedIds);
+  const checkpointAccVo = accVo,
+    checkpointAccDa = accDa,
+    checkpointAccVi = accVi;
+  const checkpointRemainingSlots = { ...remainingSlots };
+  const checkpointRemainingFree = remainingFree;
 
-    const candidates = cardContributions.filter(
-      (cs) =>
-        (cs.card.type === type || cs.card.type === 'all') &&
-        !usedIds.has(cs.card.id),
-    );
-
-    for (let i = 0; i < count && selected.length < ownedSlots; i++) {
-      const best = selectBestCard(
-        candidates,
-        usedIds,
-        accVo,
-        accDa,
-        accVi,
-        statCap,
-      );
-      if (best == null) break;
-
-      selected.push(best);
-      usedIds.add(best.card.id);
-      accVo += best.raw_vo;
-      accDa += best.raw_da;
-      accVi += best.raw_vi;
-    }
-  }
-
-  // フリー枠: 属性を問わず最良のカードを選択
-  for (let i = 0; i < remainingFree && selected.length < ownedSlots; i++) {
-    const freeCandidates = cardContributions.filter(
-      (cs) => !usedIds.has(cs.card.id),
-    );
-
-    const best = selectBestCard(
-      freeCandidates,
+  // ステップ2: グリーディに所持枠を埋める
+  // レンタル必須カードがある場合はそのステータスを事前加算して補完的なカードを選ぶ
+  {
+    const fillAccVo = accVo + (requiredRentalCard?.raw_vo ?? 0);
+    const fillAccDa = accDa + (requiredRentalCard?.raw_da ?? 0);
+    const fillAccVi = accVi + (requiredRentalCard?.raw_vi ?? 0);
+    const fill = greedyFillOwned(
+      cardContributions,
+      selected,
       usedIds,
-      accVo,
-      accDa,
-      accVi,
+      fillAccVo,
+      fillAccDa,
+      fillAccVi,
+      remainingSlots,
+      remainingFree,
+      ownedSlots,
       statCap,
     );
-    if (best == null) break;
-
-    selected.push(best);
-    usedIds.add(best.card.id);
-    accVo += best.raw_vo;
-    accDa += best.raw_da;
-    accVi += best.raw_vi;
-  }
-
-  // 所持枠に満たない場合、フィルタ済みから補充
-  if (selected.length < ownedSlots) {
-    const remaining = cardContributions.filter(
-      (cs) => !usedIds.has(cs.card.id),
-    );
-
-    while (selected.length < ownedSlots) {
-      const best = selectBestCard(
-        remaining,
-        usedIds,
-        accVo,
-        accDa,
-        accVi,
-        statCap,
-      );
-      if (best == null) break;
-
-      selected.push(best);
-      usedIds.add(best.card.id);
-      accVo += best.raw_vo;
-      accDa += best.raw_da;
-      accVi += best.raw_vi;
-    }
+    selected = fill.selected;
+    usedIds = fill.usedIds;
+    // 事前加算分を差し引いて実際の累積ステータスを得る
+    accVo = fill.accVo - (requiredRentalCard?.raw_vo ?? 0);
+    accDa = fill.accDa - (requiredRentalCard?.raw_da ?? 0);
+    accVi = fill.accVi - (requiredRentalCard?.raw_vi ?? 0);
   }
 
   // レンタル1枠: 全カードプールから4凸で最良の1枚を選択
@@ -855,35 +1048,29 @@ export function selectOptimalDeck(
       statCap,
     );
 
-    // パターンB: 所持カードXをレンタルX(4凸)に昇格し、空いた所持枠に代替カードを入れる
-    // 全候補を評価して最も改善が大きい1つだけを採用する
-    let bestSwapRental: CardScore | undefined = undefined;
-    let bestSwapReplacement: CardScore | undefined = undefined;
-    let bestSwapTarget: CardScore | undefined = undefined;
-    let bestSwapTotal = defaultTotal;
+    // 最良の結果を追跡
+    let bestOverallTotal = defaultTotal;
+    let bestOverallRental: CardScore | undefined = defaultRental;
+    let bestOverallSelected: CardScore[] | undefined = undefined;
 
+    // パターンB: 所持カードXをレンタルX(4凸)に昇格し、空いた所持枠に代替カードを入れる
     for (const ownedCard of selected) {
-      // 必須カードはスワップ対象外
       if (protectedIds.has(ownedCard.card.id)) continue;
 
       const rentalVersion = allRentalContributions.get(ownedCard.card.id);
       if (rentalVersion == null) continue;
 
-      // レンタル(4凸)と所持凸の差分がなければスキップ
       const rentalGain =
         rentalVersion.raw_vo + rentalVersion.raw_da + rentalVersion.raw_vi;
       const ownedGain =
         ownedCard.raw_vo + ownedCard.raw_da + ownedCard.raw_vi;
       if (rentalGain <= ownedGain) continue;
 
-      // Xを除外した状態での累積ステータス
       const swapAccVo = accVo - ownedCard.raw_vo;
       const swapAccDa = accDa - ownedCard.raw_da;
       const swapAccVi = accVi - ownedCard.raw_vi;
 
-      // 空いた所持枠に入れる最良の代替カードを探す（X自身は除外 — レンタルに回すため）
       const swapUsedIds = new Set<string>(usedIds);
-      // ownedCard.card.id は除外しない（レンタルに回すのでこの枠では使えない）
       const replacementCandidates = cardContributions.filter(
         (cs) => !swapUsedIds.has(cs.card.id),
       );
@@ -898,7 +1085,6 @@ export function selectOptimalDeck(
 
       if (replacement == null) continue;
 
-      // スワップ後の合計をキャップ込みで計算
       const swapSelected = selected
         .filter((s) => s.card.id !== ownedCard.card.id)
         .concat([replacement]);
@@ -909,35 +1095,63 @@ export function selectOptimalDeck(
         statCap,
       );
 
-      if (swapTotal > bestSwapTotal) {
-        bestSwapTotal = swapTotal;
-        bestSwapRental = rentalVersion;
-        bestSwapReplacement = replacement;
-        bestSwapTarget = ownedCard;
+      if (swapTotal > bestOverallTotal) {
+        bestOverallTotal = swapTotal;
+        bestOverallRental = rentalVersion;
+        bestOverallSelected = swapSelected;
       }
     }
 
-    // 最良のスワップがあれば適用、なければ従来のレンタル選択を使用
-    let finalRental: CardScore | undefined;
-    if (
-      bestSwapTarget != null &&
-      bestSwapRental != null &&
-      bestSwapReplacement != null
-    ) {
-      selected = selected.filter(
-        (s) => s.card.id !== bestSwapTarget!.card.id,
+    // パターンC: 各レンタル候補に対して所持カードを最適に再選択
+    // レンタルのステータスを事前加算し、補完的な所持カードが選ばれるようにする
+    for (const rentalCandidate of allRentalContributions.values()) {
+      if (protectedIds.has(rentalCandidate.card.id)) continue;
+
+      const excludedUsedIds = new Set(checkpointUsedIds);
+      excludedUsedIds.add(rentalCandidate.card.id);
+
+      const candidateFill = greedyFillOwned(
+        cardContributions,
+        checkpointSelected,
+        excludedUsedIds,
+        checkpointAccVo + rentalCandidate.raw_vo,
+        checkpointAccDa + rentalCandidate.raw_da,
+        checkpointAccVi + rentalCandidate.raw_vi,
+        checkpointRemainingSlots,
+        checkpointRemainingFree,
+        ownedSlots,
+        statCap,
       );
-      selected.push(bestSwapReplacement);
-      // bestSwapTarget.card.id は usedIds に残す（レンタルとして使用するため）
-      usedIds.add(bestSwapReplacement.card.id);
-      accVo += bestSwapReplacement.raw_vo - bestSwapTarget.raw_vo;
-      accDa += bestSwapReplacement.raw_da - bestSwapTarget.raw_da;
-      accVi += bestSwapReplacement.raw_vi - bestSwapTarget.raw_vi;
-      finalRental = bestSwapRental;
-    } else {
-      finalRental = defaultRental;
+
+      const candidateTotal = calculateCappedTotal(
+        baseStats,
+        candidateFill.selected,
+        rentalCandidate,
+        statCap,
+      );
+
+      if (candidateTotal > bestOverallTotal) {
+        bestOverallTotal = candidateTotal;
+        bestOverallRental = rentalCandidate;
+        bestOverallSelected = candidateFill.selected;
+      }
     }
 
+    // 最良の結果を適用
+    if (bestOverallSelected != null) {
+      selected = bestOverallSelected;
+      usedIds = new Set(selected.map((s) => s.card.id));
+      accVo = baseStats.vo;
+      accDa = baseStats.da;
+      accVi = baseStats.vi;
+      for (const s of selected) {
+        accVo += s.raw_vo;
+        accDa += s.raw_da;
+        accVi += s.raw_vi;
+      }
+    }
+
+    let finalRental: CardScore | undefined = bestOverallRental;
     if (finalRental != null) {
       finalRental = { ...finalRental, is_rental: true };
       selected.push(finalRental);
@@ -972,6 +1186,19 @@ export function selectOptimalDeck(
       accDa += best.raw_da;
       accVi += best.raw_vi;
     }
+  }
+
+  // ポスト最適化: 実際の計算結果を使ってカードスワップを試行
+  if (rentalPool != null) {
+    postOptimize(
+      selected,
+      cardContributions,
+      protectedIds,
+      plan,
+      mainStats,
+      uncapLevels,
+      additionalCounts,
+    );
   }
 
   // キャップ適用後の実効値でTotalValueを再計算

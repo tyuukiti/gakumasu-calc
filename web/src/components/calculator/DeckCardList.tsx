@@ -105,6 +105,13 @@ export default function DeckCardList() {
                   </span>
                 )}
 
+                {/* SP率バッジ */}
+                {cs.card.effects.some(e => e.trigger === 'equip' && e.value_type === 'sp_rate') && (
+                  <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-green-50 text-green-700">
+                    SP
+                  </span>
+                )}
+
                 {/* Card name */}
                 <span className={`flex-1 text-sm truncate ${cs.is_rental ? 'text-orange-600' : cs.is_required ? 'text-purple-600' : 'text-gray-800'}`}>
                   {displayName}

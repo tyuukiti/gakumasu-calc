@@ -461,7 +461,8 @@ public class MainViewModel : ViewModelBase
                     RawDa = cs.RawDa,
                     RawVi = cs.RawVi,
                     DeckLabel = pattern.Label,
-                    BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}"
+                    BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}",
+                    HasSpRate = cs.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"),
                 });
             }
             PatternResults.Add(vm);
@@ -523,6 +524,7 @@ public class MainViewModel : ViewModelBase
                 BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}",
                 IsRental = cs.IsRental,
                 IsRequired = cs.IsRequired,
+                HasSpRate = cs.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"),
             });
         }
         OnPropertyChanged(nameof(DeckLabel));
@@ -944,7 +946,10 @@ public class MainViewModel : ViewModelBase
             sb.AppendLine();
             sb.AppendLine($"[{SelectedPattern.Label}]");
             foreach (var card in SelectedPattern.Cards)
-                sb.AppendLine($"  {card.CardTypeDisplay} {card.CardName} ({card.StatValue:N0})");
+            {
+                var spMark = card.HasSpRate ? " [SP]" : "";
+                sb.AppendLine($"  {card.CardTypeDisplay} {card.CardName}{spMark} ({card.StatValue:N0})");
+            }
         }
 
         System.Windows.Clipboard.SetText(sb.ToString());
@@ -977,6 +982,10 @@ public class DeckCardViewModel : ViewModelBase
     public string BreakdownText { get; set; } = string.Empty;
     public bool IsRental { get; set; }
     public bool IsRequired { get; set; }
+    public bool HasSpRate { get; set; }
+
+    public System.Windows.Visibility SpRateVisibility =>
+        HasSpRate ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
 
     public string CardTypeDisplay => CardType switch
     {
