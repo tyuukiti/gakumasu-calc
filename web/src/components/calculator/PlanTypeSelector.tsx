@@ -1,6 +1,6 @@
 import { useCalcStore } from '../../stores/calcStore';
 import type { PlanType } from '../../types/enums';
-import { trackEvent } from '../../utils/analytics';
+import { trackEvent, trackFunnelStep } from '../../utils/analytics';
 
 const PLAN_TYPES: { value: PlanType; label: string }[] = [
   { value: 'sense', label: 'センス' },
@@ -25,6 +25,7 @@ export default function PlanTypeSelector() {
               checked={selectedPlanType === value}
               onChange={() => {
                 trackEvent('plan_type_selected', { plan_type: value });
+                trackFunnelStep('calculator', 2, 'config_set');
                 setSelectedPlanType(value);
               }}
               className="accent-[var(--color-accent)]"

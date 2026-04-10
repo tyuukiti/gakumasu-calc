@@ -13,7 +13,7 @@ import type { CardInventoryEntry } from '../types/inventory';
 import { useAppStore } from './appStore';
 import { selectMultiplePatterns } from '../services/cardScoring';
 import { calculate } from '../services/statusCalculation';
-import { trackEvent } from '../utils/analytics';
+import { trackEvent, startTimer, endTimer, incrementCounter, trackFunnelStep } from '../utils/analytics';
 
 interface CalcState {
   selectedPlanId: string;
@@ -425,7 +425,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
         }
       }
 
-      console.log(`計算開始: plan=${plan.id}, mainStats=${mainStats}, subStat=${subStat}, cards=${candidateCards.length}枚`);
+      startTimer('calculation');
 
       const patterns = selectMultiplePatterns(
         plan,
@@ -440,8 +440,6 @@ export const useCalcStore = create<CalcState>((set, get) => ({
         rentalPool,
         requiredCardIds,
       );
-
-      console.log(`パターン数: ${patterns.length}, 合計: ${patterns.map(p => p.total_value)}`);
 
       // Find best pattern
       let bestIndex = 0;
@@ -462,6 +460,17 @@ export const useCalcStore = create<CalcState>((set, get) => ({
 
       // Apply best pattern
       if (patterns.length > 0) {
+        const calcTimeMs = endTimer('calculation');
+        const sessionCalcCount = incrementCounter('calculation');
+
+        const updates = applySelectedPatternImpl(
+          { ...get(), deckResults: patterns, _lastMainStats: mainStats, _lastLessonWeekCount: lessonWeekCount },
+          bestIndex,
+        );
+        set(updates as Partial<CalcState>);
+
+        // 計算結果の詳細トラッキング
+        const finalResult = updates.calculationResult;
         trackEvent('calculation_executed', {
           plan_id: state.selectedPlanId,
           plan_type: state.selectedPlanType,
@@ -470,18 +479,23 @@ export const useCalcStore = create<CalcState>((set, get) => ({
           owned_only: state.ownedOnly,
           contest_mode: state.contestMode,
           patterns_count: patterns.length,
+          calc_time_ms: calcTimeMs,
+          session_calc_count: sessionCalcCount,
+          result_vo: finalResult?.final_status.vo ?? 0,
+          result_da: finalResult?.final_status.da ?? 0,
+          result_vi: finalResult?.final_status.vi ?? 0,
+          result_total: finalResult
+            ? finalResult.final_status.vo + finalResult.final_status.da + finalResult.final_status.vi
+            : 0,
+          best_pattern_label: patterns[bestIndex]?.label ?? '',
+          candidate_cards_count: candidateCards.length,
         });
-        const updates = applySelectedPatternImpl(
-          { ...get(), deckResults: patterns, _lastMainStats: mainStats, _lastLessonWeekCount: lessonWeekCount },
-          bestIndex,
-        );
-        set(updates as Partial<CalcState>);
+        trackFunnelStep('calculator', 3, 'calculation_done');
       } else {
         set({ errorMessage: '有効な編成パターンが見つかりませんでした' });
         trackEvent('calculation_error', { error_message: '有効な編成パターンが見つかりませんでした' });
       }
     } catch (e) {
-      console.error('計算エラー:', e);
       set({ errorMessage: `計算エラー: ${(e as Error).message}` });
       trackEvent('calculation_error', { error_message: (e as Error).message });
     }

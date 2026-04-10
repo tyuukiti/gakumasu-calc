@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAppStore } from '../stores/appStore';
 import { saveInventory, initializeFromCards, exportInventoryJson, importInventoryJson } from '../services/inventory';
-import { trackEvent } from '../utils/analytics';
+import { trackEvent, setUserProperties } from '../utils/analytics';
 import type { CardInventoryEntry } from '../types/inventory';
 import InventoryFilters from '../components/inventory/InventoryFilters';
 import CardTile from '../components/inventory/CardTile';
@@ -52,11 +52,24 @@ export default function InventoryPage() {
       });
   }, [cards, filterText, filterRarity, filterType, filterOwned, entryMap]);
 
+  const syncUserProperties = useCallback((updated: CardInventoryEntry[]) => {
+    const owned = updated.filter(e => e.owned);
+    const avgUncap = owned.length > 0
+      ? +(owned.reduce((s, e) => s + e.uncap, 0) / owned.length).toFixed(1)
+      : 0;
+    setUserProperties({
+      owned_card_count: owned.length,
+      avg_uncap_level: avgUncap,
+      has_inventory: owned.length > 0,
+    });
+  }, []);
+
   const updateEntry = useCallback((cardId: string, updater: (e: CardInventoryEntry) => CardInventoryEntry) => {
     const newEntries = entries.map(e => e.card_id === cardId ? updater({ ...e }) : e);
     setInventory(newEntries);
     saveInventory(newEntries);
-  }, [entries, setInventory]);
+    syncUserProperties(newEntries);
+  }, [entries, setInventory, syncUserProperties]);
 
   const ownedCount = entries.filter(e => e.owned).length;
 
@@ -79,6 +92,7 @@ export default function InventoryPage() {
       const merged = initializeFromCards(cards, imported);
       setInventory(merged);
       saveInventory(merged);
+      syncUserProperties(merged);
       const ownedCount = imported.filter(e => e.owned).length;
       setStatusMessage(`インポートしました (${ownedCount}枚所持)`);
       trackEvent('inventory_imported', { owned_count: ownedCount });
@@ -95,6 +109,7 @@ export default function InventoryPage() {
     );
     setInventory(newEntries);
     saveInventory(newEntries);
+    syncUserProperties(newEntries);
     trackEvent('select_all_visible', { count: filtered.length });
   };
 
@@ -105,6 +120,7 @@ export default function InventoryPage() {
     );
     setInventory(newEntries);
     saveInventory(newEntries);
+    syncUserProperties(newEntries);
     trackEvent('deselect_all_visible', { count: filtered.length });
   };
 

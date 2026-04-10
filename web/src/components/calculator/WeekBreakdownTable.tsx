@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCalcStore } from '../../stores/calcStore';
-import { trackEvent } from '../../utils/analytics';
+import { trackEvent, trackFunnelStep } from '../../utils/analytics';
 
 export default function WeekBreakdownTable() {
   const [expanded, setExpanded] = useState(false);
@@ -16,6 +16,7 @@ export default function WeekBreakdownTable() {
         onClick={() => {
           const next = !expanded;
           trackEvent('week_breakdown_expanded', { expanded: next });
+          if (next) trackFunnelStep('calculator', 4, 'result_detail_viewed');
           setExpanded(next);
         }}
       >
