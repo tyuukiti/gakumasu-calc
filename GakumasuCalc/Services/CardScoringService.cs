@@ -452,10 +452,13 @@ public class CardScoringService
 
             foreach (var ownedCard in selected.Where(c => !c.IsRental).ToList())
             {
+                // 必須カードは無条件でスワップ不可
+                if (ownedCard.IsRequired) continue;
+
                 bool ownedIsProtectedSp = protectedIds.Contains(ownedCard.Card.Id)
                     && ownedCard.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate");
                 bool ownedIsProtectedNonSp = protectedIds.Contains(ownedCard.Card.Id) && !ownedIsProtectedSp;
-                // 必須カードなど非SPの保護カードはスキップ
+                // 非SPの保護カードはスキップ
                 if (ownedIsProtectedNonSp) continue;
 
                 foreach (var candidate in candidates)
