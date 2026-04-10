@@ -505,20 +505,24 @@ public class MainViewModel : ViewModelBase
         DeckCards.Clear();
         foreach (var cs in pattern.SelectedCards)
         {
-            var displayName = cs.IsRental ? $"{cs.Card.Name}（レンタル）" : cs.Card.Name;
+            var suffix = cs.IsRental ? " (レンタル)" : cs.IsRequired ? " (必須)" : "";
+            var displayName = cs.Card.Name + suffix;
             var breakdown = string.Join("\n", cs.Breakdowns
                 .Select(b => $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
             DeckCards.Add(new DeckCardViewModel
             {
                 CardName = displayName,
                 CardType = cs.Card.Type,
+                CardRarity = cs.Card.Rarity,
                 CardPlan = cs.Card.Plan,
                 StatValue = cs.TotalValue,
                 RawVo = cs.RawVo,
                 RawDa = cs.RawDa,
                 RawVi = cs.RawVi,
                 DeckLabel = pattern.Label,
-                BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}"
+                BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}",
+                IsRental = cs.IsRental,
+                IsRequired = cs.IsRequired,
             });
         }
         OnPropertyChanged(nameof(DeckLabel));
@@ -971,6 +975,8 @@ public class DeckCardViewModel : ViewModelBase
     public int RawVi { get; set; }
     public string DeckLabel { get; set; } = string.Empty;
     public string BreakdownText { get; set; } = string.Empty;
+    public bool IsRental { get; set; }
+    public bool IsRequired { get; set; }
 
     public string CardTypeDisplay => CardType switch
     {
@@ -989,6 +995,31 @@ public class DeckCardViewModel : ViewModelBase
         "free" => "フ",
         _ => ""
     };
+
+    // 属性バッジの色
+    public System.Windows.Media.Brush TypeBadgeForeground => CardType switch
+    {
+        "vo" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x6B, 0x8A)),
+        "da" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6B, 0x9F, 0xFF)),
+        "vi" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xD3, 0x6B)),
+        "all" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50)),
+        _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x55, 0x55, 0x55)),
+    };
+
+    public System.Windows.Media.Brush TypeBadgeBackground => CardType switch
+    {
+        "vo" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xEB, 0xEE)),
+        "da" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE3, 0xF2, 0xFD)),
+        "vi" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xF8, 0xE1)),
+        "all" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE8, 0xF5, 0xE9)),
+        _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF0, 0xF0, 0xF0)),
+    };
+
+    // カード名の色 (レンタル=オレンジ、必須=紫、通常=黒)
+    public System.Windows.Media.Brush CardNameForeground =>
+        IsRental ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xEA, 0x58, 0x0C))
+        : IsRequired ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x7C, 0x3A, 0xED))
+        : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x33, 0x33, 0x33));
 }
 
 public class PatternResultViewModel : ViewModelBase
