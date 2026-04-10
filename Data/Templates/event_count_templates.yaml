@@ -11,8 +11,8 @@
     skill_change: 2
     good_condition_acquire: 5
     concentrate_acquire: 5
-    active_acquire: 11
-    mental_acquire: 11
+    active_acquire: 8
+    mental_acquire: 8
     consultation_drink: 6
 
 - name: ロジック（好印象）
@@ -26,8 +26,8 @@
     skill_custom: 3
     good_impression_acquire: 5
     motivation_acquire: 5
-    active_acquire: 11
-    mental_acquire: 11
+    active_acquire: 8
+    mental_acquire: 8
     consultation_drink: 6
 
 - name: ロジック（やる気）
@@ -41,8 +41,8 @@
     skill_custom: 3
     genki_acquire: 5
     motivation_acquire: 5
-    active_acquire: 11
-    mental_acquire: 11
+    active_acquire: 8
+    mental_acquire: 8
     consultation_drink: 6
 
 - name: アノマリー（強気）
@@ -57,8 +57,8 @@
     active_enhance: 3
     active_delete: 2
     aggressive_acquire: 5
-    active_acquire: 11
-    mental_acquire: 11
+    active_acquire: 8
+    mental_acquire: 8
     mental_enhance: 1
     consultation_drink: 6
 
@@ -74,8 +74,8 @@
     active_enhance: 3
     active_delete: 2
     fullpower_acquire: 5
-    active_acquire: 11
-    mental_acquire: 11
+    active_acquire: 8
+    mental_acquire: 8
     mental_enhance: 1
     conserve_acquire: 5
     consultation_drink: 6
