@@ -913,6 +913,8 @@ export function selectOptimalDeck(
   }
 
   // ステップ1: SP率カードをユーザ指定枚数分、先に確保
+  const spCardSlotStat: Record<string, string> = {}; // cardId -> 消費したスロットのstat key
+  const spCardUsedFree = new Set<string>(); // フリー枠を消費したcardId
   if (spCounts != null) {
     for (const [stat, need] of Object.entries(spCounts)) {
       if (need <= 0) continue;
@@ -947,8 +949,10 @@ export function selectOptimalDeck(
 
         // SP率カードが属性枠にカウントされるか、フリー枠を消費するか判定
         if (stat in remainingSlots && remainingSlots[stat] > 0) {
+          spCardSlotStat[best.card.id] = stat;
           remainingSlots[stat]--;
         } else {
+          spCardUsedFree.add(best.card.id);
           remainingFree = Math.max(0, remainingFree - 1);
         }
       }
@@ -1058,7 +1062,7 @@ export function selectOptimalDeck(
 
     // パターンB: 所持カードXをレンタルX(4凸)に昇格し、空いた所持枠に代替カードを入れる
     for (const ownedCard of selected) {
-      if (protectedIds.has(ownedCard.card.id)) continue;
+      if (ownedCard.is_required) continue;
 
       const rentalVersion = allRentalContributions.get(ownedCard.card.id);
       if (rentalVersion == null) continue;
@@ -1108,20 +1112,47 @@ export function selectOptimalDeck(
     // パターンC: 各レンタル候補に対して所持カードを最適に再選択
     // レンタルのステータスを事前加算し、補完的な所持カードが選ばれるようにする
     for (const rentalCandidate of allRentalContributions.values()) {
-      if (protectedIds.has(rentalCandidate.card.id)) continue;
+      // 必須カードのみスキップ（SP保護カードは許可）
+      const existingOwned = checkpointSelected.find(
+        (cs) => cs.card.id === rentalCandidate.card.id,
+      );
+      if (existingOwned?.is_required) continue;
+
+      // チェックポイントに含まれるカード（SP保護等）→除外してスロット復元
+      let localSelected = checkpointSelected;
+      let localAccVo = checkpointAccVo;
+      let localAccDa = checkpointAccDa;
+      let localAccVi = checkpointAccVi;
+      let localRemainingSlots = checkpointRemainingSlots;
+      let localRemainingFree = checkpointRemainingFree;
+
+      if (existingOwned != null) {
+        localSelected = checkpointSelected.filter(
+          (cs) => cs.card.id !== rentalCandidate.card.id,
+        );
+        localAccVo -= existingOwned.raw_vo;
+        localAccDa -= existingOwned.raw_da;
+        localAccVi -= existingOwned.raw_vi;
+        localRemainingSlots = { ...checkpointRemainingSlots };
+        if (existingOwned.card.id in spCardSlotStat) {
+          localRemainingSlots[spCardSlotStat[existingOwned.card.id]]++;
+        } else if (spCardUsedFree.has(existingOwned.card.id)) {
+          localRemainingFree++;
+        }
+      }
 
       const excludedUsedIds = new Set(checkpointUsedIds);
       excludedUsedIds.add(rentalCandidate.card.id);
 
       const candidateFill = greedyFillOwned(
         cardContributions,
-        checkpointSelected,
+        localSelected,
         excludedUsedIds,
-        checkpointAccVo + rentalCandidate.raw_vo,
-        checkpointAccDa + rentalCandidate.raw_da,
-        checkpointAccVi + rentalCandidate.raw_vi,
-        checkpointRemainingSlots,
-        checkpointRemainingFree,
+        localAccVo + rentalCandidate.raw_vo,
+        localAccDa + rentalCandidate.raw_da,
+        localAccVi + rentalCandidate.raw_vi,
+        localRemainingSlots,
+        localRemainingFree,
         ownedSlots,
         statCap,
       );

@@ -192,6 +192,8 @@ public class CardScoringService
         }
 
         // ステップ1: SP率カードをユーザ指定枚数分、先に確保
+        var spCardSlotStat = new Dictionary<string, string>(); // cardId -> 消費したスロットのstat key
+        var spCardUsedFree = new HashSet<string>(); // フリー枠を消費したcardId
         if (spCounts != null)
         {
             foreach (var kvp in spCounts)
@@ -221,9 +223,15 @@ public class CardScoringService
 
                     // SP率カードが属性枠にカウントされるか、フリー枠を消費するか判定
                     if (remainingSlots.ContainsKey(stat) && remainingSlots[stat] > 0)
+                    {
+                        spCardSlotStat[best.Card.Id] = stat;
                         remainingSlots[stat]--;
+                    }
                     else
+                    {
+                        spCardUsedFree.Add(best.Card.Id);
                         remainingFree = Math.Max(0, remainingFree - 1);
+                    }
                 }
             }
         }
@@ -297,7 +305,7 @@ public class CardScoringService
             // パターンB: 所持カードXをレンタルX(4凸)に昇格し、空いた所持枠に代替カードを入れる
             foreach (var ownedCard in selected)
             {
-                if (protectedIds.Contains(ownedCard.Card.Id)) continue;
+                if (ownedCard.IsRequired) continue;
 
                 if (!allRentalContributions.TryGetValue(ownedCard.Card.Id, out var rentalVersion))
                     continue;
@@ -333,18 +341,39 @@ public class CardScoringService
             // レンタルのステータスを事前加算し、補完的な所持カードが選ばれるようにする
             foreach (var rentalCandidate in allRentalContributions.Values)
             {
-                if (protectedIds.Contains(rentalCandidate.Card.Id)) continue;
+                // 必須カードのみスキップ（SP保護カードは許可）
+                var existingOwned = checkpointSelected.FirstOrDefault(cs => cs.Card.Id == rentalCandidate.Card.Id);
+                if (existingOwned?.IsRequired == true) continue;
+
+                // チェックポイントに含まれるカード（SP保護等）→除外してスロット復元
+                var localSelected = checkpointSelected;
+                int localAccVo = checkpointAccVo, localAccDa = checkpointAccDa, localAccVi = checkpointAccVi;
+                var localRemainingSlots = checkpointRemainingSlots;
+                int localRemainingFree = checkpointRemainingFree;
+
+                if (existingOwned != null)
+                {
+                    localSelected = checkpointSelected.Where(cs => cs.Card.Id != rentalCandidate.Card.Id).ToList();
+                    localAccVo -= existingOwned.RawVo;
+                    localAccDa -= existingOwned.RawDa;
+                    localAccVi -= existingOwned.RawVi;
+                    localRemainingSlots = new Dictionary<string, int>(checkpointRemainingSlots);
+                    if (spCardSlotStat.TryGetValue(existingOwned.Card.Id, out var slotStat))
+                        localRemainingSlots[slotStat]++;
+                    else if (spCardUsedFree.Contains(existingOwned.Card.Id))
+                        localRemainingFree++;
+                }
 
                 // レンタル候補を所持選択から除外
                 var excludedUsedIds = new HashSet<string>(checkpointUsedIds) { rentalCandidate.Card.Id };
 
                 // レンタルのステータスを事前加算してグリーディ選択
                 var candidateFill = GreedyFillOwned(
-                    cardContributions, checkpointSelected, excludedUsedIds,
-                    checkpointAccVo + rentalCandidate.RawVo,
-                    checkpointAccDa + rentalCandidate.RawDa,
-                    checkpointAccVi + rentalCandidate.RawVi,
-                    checkpointRemainingSlots, checkpointRemainingFree,
+                    cardContributions, localSelected, excludedUsedIds,
+                    localAccVo + rentalCandidate.RawVo,
+                    localAccDa + rentalCandidate.RawDa,
+                    localAccVi + rentalCandidate.RawVi,
+                    localRemainingSlots, localRemainingFree,
                     ownedSlots, statCap);
 
                 int candidateTotal = CalculateCappedTotal(baseStats, candidateFill.Selected, rentalCandidate, statCap);
