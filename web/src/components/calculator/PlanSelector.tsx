@@ -1,6 +1,6 @@
 import { useAppStore } from '../../stores/appStore';
 import { useCalcStore } from '../../stores/calcStore';
-import { trackEvent } from '../../utils/analytics';
+import { trackEvent, trackFunnelStep } from '../../utils/analytics';
 
 export default function PlanSelector() {
   const plans = useAppStore((s) => s.plans);
@@ -15,6 +15,7 @@ export default function PlanSelector() {
         value={selectedPlanId}
         onChange={(e) => {
           trackEvent('plan_selected', { plan_id: e.target.value });
+          trackFunnelStep('calculator', 1, 'plan_selected');
           setSelectedPlanId(e.target.value);
         }}
       >

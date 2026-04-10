@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../../stores/appStore';
 import { useCalcStore } from '../../stores/calcStore';
-import { trackEvent } from '../../utils/analytics';
+import { trackEvent, trackFunnelStep } from '../../utils/analytics';
 
 const COUNT_LABELS: { key: string; label: string }[] = [
   { key: 'p_drink_acquire', label: 'Pドリンク獲得' },
@@ -52,6 +52,7 @@ export default function EventCountConfig() {
             const tmpl = filteredTemplates.find((t) => t.name === e.target.value);
             if (tmpl) {
               trackEvent('template_applied', { template_name: tmpl.name });
+              trackFunnelStep('calculator', 2, 'config_set');
               applyTemplate(tmpl);
             }
           }}

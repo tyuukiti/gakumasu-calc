@@ -3,7 +3,7 @@ import type { SupportCard, TrainingPlan, EventCountTemplate } from '../types/mod
 import type { CardInventoryEntry } from '../types/inventory'
 import { loadSupportCards, loadTrainingPlans, loadEventCountTemplates } from '../services/yamlLoader'
 import { loadInventory } from '../services/inventory'
-import { trackEvent } from '../utils/analytics'
+import { trackEvent, setUserProperties } from '../utils/analytics'
 
 interface AppState {
   cards: SupportCard[]
@@ -34,7 +34,19 @@ export const useAppStore = create<AppState>((set) => ({
       ])
       const inventory = loadInventory()
       set({ cards, plans, templates, inventory, isLoading: false })
-      console.log(`読み込み完了: カード${cards.length}枚, プラン${plans.length}件, テンプレート${templates.length}件`)
+
+      // ユーザープロパティ設定
+      const ownedCount = inventory.filter(e => e.owned).length;
+      const avgUncap = ownedCount > 0
+        ? +(inventory.filter(e => e.owned).reduce((s, e) => s + e.uncap, 0) / ownedCount).toFixed(1)
+        : 0;
+      setUserProperties({
+        owned_card_count: ownedCount,
+        avg_uncap_level: avgUncap,
+        total_card_count: cards.length,
+        has_inventory: ownedCount > 0,
+      });
+
       trackEvent('data_load_completed', {
         load_time_ms: Date.now() - startTime,
         cards_count: cards.length,

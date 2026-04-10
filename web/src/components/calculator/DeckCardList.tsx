@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCalcStore } from '../../stores/calcStore';
 import type { CardScore } from '../../types/results';
+import { trackEvent } from '../../utils/analytics';
 
 const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   vo: { bg: 'var(--color-vo-bg)', text: 'var(--color-vo)' },
@@ -74,7 +75,16 @@ export default function DeckCardList() {
             <div
               key={`${cs.card.id}-${index}`}
               className="rounded-md bg-white border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer"
-              onClick={() => setExpandedIndex(isExpanded ? null : index)}
+              onClick={() => {
+                if (!isExpanded) {
+                  trackEvent('deck_card_expanded', {
+                    card_id: cs.card.id,
+                    card_name: cs.card.name,
+                    is_rental: cs.is_rental,
+                  });
+                }
+                setExpandedIndex(isExpanded ? null : index);
+              }}
             >
               <div className="flex items-center gap-2 px-3 py-2">
                 {/* Type badge */}
