@@ -6,7 +6,9 @@
   WeekSchedule,
   TurnChoice,
   LessonConfig,
+  AdditionalCounts,
 } from '../types/models';
+import { additionalCountsToRecord } from '../types/models';
 import type { CalculationResult, WeekBreakdown } from '../types/results';
 import type { ActionType } from '../types/enums';
 import { svZero, svAdd, svClone } from '../utils/statusValues';
@@ -72,6 +74,7 @@ export function calculate(
   selectedCards: SupportCard[],
   turnChoices: TurnChoice[],
   uncapLevels?: Record<string, number>,
+  additionalCounts?: AdditionalCounts,
 ): CalculationResult {
   // Step 1: base status
   const baseStatus = svClone(plan.base_status);
@@ -102,6 +105,22 @@ export function calculate(
       week: week.week,
       action_name: actionName,
       gain: weekGain,
+    });
+  }
+
+  // Step 3.5: additional trigger fires (from event count templates)
+  const additionalGain = fireAdditionalTriggers(
+    selectedCards,
+    triggerCounters,
+    uncapLevels,
+    additionalCounts,
+  );
+  if (additionalGain.vo !== 0 || additionalGain.da !== 0 || additionalGain.vi !== 0) {
+    accumulated = svAdd(accumulated, additionalGain);
+    weekDetails.push({
+      week: 99,
+      action_name: '追加イベント効果',
+      gain: additionalGain,
     });
   }
 
@@ -334,6 +353,33 @@ function calculateSpecialTrainingGain(
   // Special training trigger
   const stGain = fireTrigger('special_training', cards, triggerCounters, uncapLevels);
   return svAdd(baseGain, stGain);
+}
+
+/**
+ * Fire additional triggers from event count templates.
+ * Each trigger in additionalCounts is fired the specified number of times,
+ * respecting max_count limits already partially consumed by weekly processing.
+ */
+function fireAdditionalTriggers(
+  cards: SupportCard[],
+  triggerCounters: Record<string, number>,
+  uncapLevels: Record<string, number> | undefined,
+  additionalCounts?: AdditionalCounts,
+): StatusValues {
+  if (additionalCounts == null) return svZero();
+
+  let gain = svZero();
+  const addRec = additionalCountsToRecord(additionalCounts);
+
+  for (const [trigger, fireCount] of Object.entries(addRec)) {
+    if (fireCount <= 0) continue;
+    for (let i = 0; i < fireCount; i++) {
+      const triggerGain = fireTrigger(trigger, cards, triggerCounters, uncapLevels);
+      gain = svAdd(gain, triggerGain);
+    }
+  }
+
+  return gain;
 }
 
 /**

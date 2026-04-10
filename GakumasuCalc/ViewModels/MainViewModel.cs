@@ -500,7 +500,7 @@ public class MainViewModel : ViewModelBase
         // レンタルカードは4凸として計算
         foreach (var cs in pattern.SelectedCards.Where(cs => cs.IsRental))
             uncapLevels[cs.Card.Id] = 4;
-        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels);
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts());
 
         DeckCards.Clear();
         foreach (var cs in pattern.SelectedCards)
@@ -846,7 +846,7 @@ public class MainViewModel : ViewModelBase
 
         // 現在のターン選択をそのまま使って再計算
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
-        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels());
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts());
 
         var maxStat = Math.Max(ResultVo, Math.Max(ResultDa, ResultVi));
         ResultMaxValue = maxStat > 0 ? maxStat : 1;
