@@ -1035,7 +1035,7 @@ def main():
                     new_count += 1
 
                 # 画像ダウンロード
-                if detail.get("image_url") and normalize_name(entry.name) not in norm_image_mapping:
+                if detail.get("image_url") and not (IMAGE_DIR / norm_image_mapping.get(normalize_name(entry.name), {}).get("filename", "")).exists():
                     img_url = detail["image_url"]
                     ext = img_url.rsplit(".", 1)[-1].lower()
                     if ext not in ("png", "jpg", "jpeg"):
@@ -1081,7 +1081,7 @@ def main():
                             update_count += 1
 
                 # 画像が未取得なら取得
-                if detail.get("image_url") and normalize_name(entry.name) not in norm_image_mapping:
+                if detail.get("image_url") and not (IMAGE_DIR / norm_image_mapping.get(normalize_name(entry.name), {}).get("filename", "")).exists():
                     img_url = detail["image_url"]
                     ext = img_url.rsplit(".", 1)[-1].lower()
                     if ext not in ("png", "jpg", "jpeg"):
