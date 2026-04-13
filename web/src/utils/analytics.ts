@@ -65,4 +65,10 @@ export function trackFunnelStep(
     step_name: stepName,
     is_first_time: isFirstTime,
   });
+
+  // GA4ファネル探索で使えるようステップ名を個別イベントとしても送信
+  trackEvent(stepName, {
+    funnel_name: funnelName,
+    step_number: stepNumber,
+  });
 }
