@@ -2423,7 +2423,7 @@ support_cards:
   plan: logic
   tag: exam_item
   effects:
-  - trigger: sp_end
+  - trigger: vi_sp_end
     stat: vi
     values: [13, 13, 13, 17, 17]
     value_type: flat
