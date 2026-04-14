@@ -51,7 +51,7 @@ support_cards:
     value_type: flat
   - trigger: concentrate_acquire
     stat: da
-    values: [3, 3, 3, 3, 4]
+    values: [35, 35, 35, 35, 35]
     value_type: flat
     max_count: 2
     condition: da>=700
@@ -772,7 +772,7 @@ support_cards:
     stat: da
     values: [7, 7, 7, 7, 7]
     value_type: flat
-  - trigger: lesson_end
+  - trigger: class_end
     stat: da
     values: [10, 10, 10, 10, 10]
     value_type: flat
@@ -1349,7 +1349,7 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
-  - trigger: lesson_end
+  - trigger: class_end
     stat: vi
     values: [15, 15, 15, 15, 15]
     value_type: flat
@@ -2484,3 +2484,28 @@ support_cards:
     value_type: flat
     max_count: 4
     condition: deck>=20
+- id: SP_SSR_0097
+  name: 上かッ！！
+  rarity: SSR
+  type: da
+  plan: logic
+  tag: skill
+  effects:
+  - trigger: equip
+    stat: da
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: sp_end
+    stat: da
+    values: [15, 15, 21, 21, 21]
+    value_type: flat
+    max_count: 4
+    condition: deck>=20
+  - trigger: da_sp_end
+    stat: da
+    values: [13, 13, 13, 13, 17]
+    value_type: flat
+  - trigger: skill_ssr_acquire
+    stat: da
+    values: [5, 5, 5, 5, 6]
+    value_type: flat

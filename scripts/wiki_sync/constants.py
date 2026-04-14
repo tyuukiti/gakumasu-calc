@@ -45,7 +45,7 @@ TRIGGER_MAP = [
     ("ビジュアル通常レッスン終了", "vi_normal_end"),
     ("レッスン終了", "lesson_end"),
     # その他
-    ("授業終了", "class_end"), ("お出かけ終了", "outing_end"),
+    ("授業・営業終了", "class_end"), ("授業終了", "class_end"), ("お出かけ終了", "outing_end"),
     ("相談Pドリンク", "consultation_drink"), ("相談選択", "consultation"),
     ("試験終了", "exam_end"), ("試験・オーディション終了", "exam_end"),
     ("特別指導", "special_training"),
@@ -86,7 +86,7 @@ ITEM_TRIGGER_MAP = [
     ("ViSP終了", "vi_sp_end"),
     ("試験・オーディション終了", "exam_end"),
     ("お出かけ終了", "outing_end"),
-    ("授業・営業終了", "lesson_end"),
+    ("授業・営業終了", "class_end"),
     ("レッスン終了", "lesson_end"),
     ("活動支給・差し入れ", "activity_supply"),
     ("相談選択", "consultation"),

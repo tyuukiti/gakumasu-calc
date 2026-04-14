@@ -1858,6 +1858,13 @@ support_cards:
     values: [6, 6, 6, 11, 11]
     value_type: flat
     max_count: 6
+  - trigger: consultation
+    stat: vo
+    values: [30, 30, 30, 30, 30]
+    value_type: flat
+    max_count: 1
+    condition: vo>=400
+    source: item
 - id: SP_SR_0008
   name: ふわふわでワクワク
   rarity: SR
