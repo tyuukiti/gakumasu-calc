@@ -10,6 +10,9 @@ def classify_ability(name: str) -> tuple[str | None, str]:
     アビリティ名からtriggerとvalue_typeを判定。
     Returns: (trigger, value_type)  trigger=None の場合はスキップ対象。
     """
+    # 体力回復・体力消費はステータス上昇ではないためスキップ
+    if "体力回復" in name or "体力消費" in name:
+        return None, "flat"
     if re.search(r"初期.+上昇", name):
         return "equip", "flat"
     if "レッスンサポート発生率" in name:
@@ -111,13 +114,15 @@ def build_new_card(
     return card
 
 
-def classify_and_match(effects: list[dict], wiki_abilities: list[dict]) -> tuple[bool, list[str]]:
-    """既存effectsの値をWikiアビリティで更新する"""
+def classify_and_match(effects: list[dict], wiki_abilities: list[dict], default_stat: str = "vo") -> tuple[bool, list[str]]:
+    """既存effectsの値をWikiアビリティで更新し、不足分を追加、不要分を削除する"""
     updated = False
     logs = []
-    matched_ids: set[int] = set()
+    matched_effect_ids: set[int] = set()
+    matched_wiki_indices: set[int] = set()
 
-    for wiki_abi in wiki_abilities:
+    # Phase 1: 既存effectsとWikiアビリティのマッチング・値更新
+    for wi, wiki_abi in enumerate(wiki_abilities):
         name = wiki_abi["name"]
         values = parse_uncap_values(wiki_abi["uncap_values"])
         if values is None:
@@ -138,7 +143,7 @@ def classify_and_match(effects: list[dict], wiki_abilities: list[dict]) -> tuple
         if target_trigger == "equip" and target_vtype == "flat":
             candidates = [
                 e for e in effects
-                if id(e) not in matched_ids
+                if id(e) not in matched_effect_ids
                 and e.get("trigger") == "equip"
                 and e.get("value_type") == "flat"
                 and (stat is None or e.get("stat") == stat)
@@ -153,7 +158,7 @@ def classify_and_match(effects: list[dict], wiki_abilities: list[dict]) -> tuple
                 matched_effect = candidates[0]
         else:
             for e in effects:
-                if id(e) in matched_ids:
+                if id(e) in matched_effect_ids:
                     continue
                 if (e.get("trigger") == target_trigger
                     and e.get("value_type") == target_vtype
@@ -161,15 +166,80 @@ def classify_and_match(effects: list[dict], wiki_abilities: list[dict]) -> tuple
                     matched_effect = e
                     break
 
-        if matched_effect is None:
+        if matched_effect is not None:
+            matched_effect_ids.add(id(matched_effect))
+            matched_wiki_indices.add(wi)
+
+            old_values = matched_effect.get("values", [])
+            if old_values != values:
+                matched_effect["values"] = values
+                updated = True
+                logs.append(f"    ✓ {target_trigger}/{target_vtype}: {old_values} → {values}")
+
+    # Phase 3候補: Phase 2で追加する前に収集
+    remove_candidates = [
+        e for e in effects
+        if id(e) not in matched_effect_ids and e.get("source") != "item"
+    ]
+
+    # Phase 2: Wikiにあるが既存effectsにない → 新規追加
+    for wi, wiki_abi in enumerate(wiki_abilities):
+        if wi in matched_wiki_indices:
+            continue
+        name = wiki_abi["name"]
+        values = parse_uncap_values(wiki_abi["uncap_values"])
+        if values is None:
             continue
 
-        matched_ids.add(id(matched_effect))
+        trigger, value_type = classify_ability(name)
+        if trigger is None:
+            continue
 
-        old_values = matched_effect.get("values", [])
-        if old_values != values:
-            matched_effect["values"] = values
-            updated = True
-            logs.append(f"    ✓ {target_trigger}/{target_vtype}: {old_values} → {values}")
+        abi_stat = detect_stat(name, default_stat)
+
+        max_count = None
+        mc_match = re.search(r"(\d+)回", name)
+        if mc_match:
+            max_count = int(mc_match.group(1))
+
+        condition = None
+        cond_match = re.search(r"(\w+)が(\d+)\w*以上", name)
+        if cond_match:
+            cond_key = cond_match.group(1)
+            cond_val = cond_match.group(2)
+            cond_map = {"所持スキルカード": "deck"}
+            key = cond_map.get(cond_key, cond_key)
+            condition = f"{key}>={cond_val}"
+
+        eff: dict = {
+            "trigger": trigger,
+            "stat": abi_stat,
+            "values": values,
+            "value_type": value_type,
+        }
+        if max_count:
+            eff["max_count"] = max_count
+        if condition:
+            eff["condition"] = condition
+
+        effects.append(eff)
+        updated = True
+        logs.append(f"    + 追加: {trigger}/{value_type} stat={abi_stat} values={values}")
+
+    # Phase 3: Wikiアビリティに対応するtrigger+vtypeが存在しないエフェクトを削除
+    # (同じtrigger+vtypeの別アビリティが存在する場合は残す)
+    wiki_trigger_vtypes: set[tuple[str, str]] = set()
+    for wiki_abi in wiki_abilities:
+        t, vt = classify_ability(wiki_abi["name"])
+        if t is not None:
+            wiki_trigger_vtypes.add((t, vt))
+
+    if wiki_trigger_vtypes:
+        for e in remove_candidates:
+            key = (e.get("trigger"), e.get("value_type"))
+            if key not in wiki_trigger_vtypes:
+                effects.remove(e)
+                updated = True
+                logs.append(f"    - 削除: {e.get('trigger')}/{e.get('value_type')} stat={e.get('stat')}")
 
     return updated, logs
