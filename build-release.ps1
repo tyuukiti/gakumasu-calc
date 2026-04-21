@@ -18,7 +18,7 @@ param(
 $ErrorActionPreference = "Stop"
 $RepoRoot = $PSScriptRoot
 $OutputDir = Join-Path $RepoRoot "release"
-$Projects = @("GakumasuCalc", "CardInventoryManager", "SupportCardEditor")
+$Projects = @("GakumasuCalc", "CardInventoryManager")
 
 Write-Host "=== GakumasuCalc Release Build v$Version ===" -ForegroundColor Cyan
 

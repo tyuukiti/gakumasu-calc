@@ -147,6 +147,7 @@ export interface EventCountTemplate {
   name: string;
   plan_id: string;
   counts: Record<string, number>;
+  week_actions?: Record<number, ActionType>;
 }
 
 export interface EventCountTemplateFile {

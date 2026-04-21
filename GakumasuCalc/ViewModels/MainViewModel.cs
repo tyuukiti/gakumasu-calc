@@ -125,7 +125,11 @@ public class MainViewModel : ViewModelBase
     public string SelectedPlanType
     {
         get => _selectedPlanType;
-        set => SetProperty(ref _selectedPlanType, value);
+        set
+        {
+            if (SetProperty(ref _selectedPlanType, value))
+                FilterEventCountTemplates();
+        }
     }
 
     public TrainingPlan? SelectedPlan
@@ -182,7 +186,12 @@ public class MainViewModel : ViewModelBase
         set
         {
             if (SetProperty(ref _selectedEventTemplate, value) && value != null)
+            {
                 ApplyEventTemplate(value);
+                // 既に計算済みならターン選択を道中テンプレートで再適用
+                if (_deckResults.Count > 0 && SelectedPattern != null)
+                    ApplySelectedPattern(SelectedPattern.Index);
+            }
         }
     }
 
@@ -493,7 +502,7 @@ public class MainViewModel : ViewModelBase
 
         // このパターンのレッスン配分を復元
         var allocation = BuildLessonAllocationFromPattern(pattern, _lastMainStats, _lastLessonWeekCount);
-        AutoAssignTurnChoices(allocation, _lastMainStats);
+        AutoAssignTurnChoices(allocation, _lastMainStats, _selectedEventTemplate);
 
         var selectedCards = pattern.SelectedCards.Select(cs => cs.Card).ToList();
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
@@ -624,7 +633,7 @@ public class MainViewModel : ViewModelBase
     ///   中間後: メイン1:メイン2 = 1:2 (パラメータを早く伸ばすため)
     /// 授業週: サブ属性の授業を選択
     /// </summary>
-    private void AutoAssignTurnChoices(Dictionary<string, int> allocation, List<string> mainStats)
+    private void AutoAssignTurnChoices(Dictionary<string, int> allocation, List<string> mainStats, EventCountTemplate? template = null)
     {
         var subStat = new[] { "vo", "da", "vi" }.First(s => !mainStats.Contains(s));
 
@@ -724,6 +733,16 @@ public class MainViewModel : ViewModelBase
                 a is ActionType.VoClass or ActionType.DaClass or ActionType.ViClass);
 
             if (hasLesson) continue; // レッスン週は上で設定済み
+
+            // 道中テンプレートで週ごとのアクションが指定されていれば優先
+            if (template?.WeekActions != null
+                && template.WeekActions.TryGetValue(tc.Week, out var overrideStr)
+                && TurnChoiceViewModel.TryParseAction(overrideStr, out var overrideAction)
+                && tc.AvailableActions.Contains(overrideAction))
+            {
+                tc.SelectedAction = overrideAction;
+                continue;
+            }
 
             if (hasClass && tc.AvailableActions.Contains(subClassAction))
             {
@@ -830,11 +849,20 @@ public class MainViewModel : ViewModelBase
     private void FilterEventCountTemplates()
     {
         var planId = _selectedPlan?.Id ?? string.Empty;
+        var planTypeKeyword = _selectedPlanType switch
+        {
+            "sense" => "センス",
+            "logic" => "ロジック",
+            "anomaly" => "アノマリー",
+            _ => null
+        };
+
         EventCountTemplates.Clear();
         foreach (var t in _allEventCountTemplates)
         {
-            if (string.IsNullOrEmpty(t.PlanId) || t.PlanId == planId)
-                EventCountTemplates.Add(t);
+            if (!string.IsNullOrEmpty(t.PlanId) && t.PlanId != planId) continue;
+            if (planTypeKeyword != null && !t.Name.Contains(planTypeKeyword)) continue;
+            EventCountTemplates.Add(t);
         }
         SelectedEventTemplate = null;
     }
@@ -1066,6 +1094,7 @@ public class EventCountTemplate
     public string Name { get; set; } = string.Empty;
     public string PlanId { get; set; } = string.Empty;
     public AdditionalCounts Counts { get; set; } = new();
+    public Dictionary<int, string>? WeekActions { get; set; }
 
     public override string ToString() => Name;
 }

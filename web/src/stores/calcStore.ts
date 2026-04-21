@@ -25,6 +25,7 @@ interface CalcState {
   daSpCount: number;
   viSpCount: number;
   additionalCounts: AdditionalCounts;
+  selectedTemplateName: string | null;
   ownedOnly: boolean;
   contestMode: boolean;
   requiredCardIds: string[];
@@ -90,6 +91,7 @@ function buildUncapLevels(
 function autoAssignTurnChoices(
   plan: TrainingPlan,
   mainStats: string[],
+  template?: EventCountTemplate | null,
 ): TurnChoice[] {
   const subStat = ['vo', 'da', 'vi'].find((s) => !mainStats.includes(s)) ?? 'vi';
   const subClassAction: ActionType = `${subStat}_class` as ActionType;
@@ -165,8 +167,14 @@ function autoAssignTurnChoices(
     }
   }
 
-  // Non-lesson weeks: class (sub) > activity_supply > outing > consultation > special_training
+  // Non-lesson weeks: template override > class (sub) > activity_supply > outing > consultation > special_training
   for (const w of otherWeeks) {
+    const override = template?.week_actions?.[w.week];
+    if (override && w.available_actions.includes(override)) {
+      choices.push({ week: w.week, chosen_action: override });
+      continue;
+    }
+
     const hasClass = w.available_actions.some((a) =>
       a === 'vo_class' || a === 'da_class' || a === 'vi_class',
     );
@@ -205,15 +213,18 @@ function applySelectedPatternImpl(
     return { selectedPatternIndex: index };
   }
 
-  const { plans } = useAppStore.getState();
+  const { plans, templates } = useAppStore.getState();
   const plan = plans.find((p) => p.id === state.selectedPlanId);
   if (!plan) return { selectedPatternIndex: index, errorMessage: 'プランが見つかりません' };
 
   const pattern = state.deckResults[index];
   const mainStats = state._lastMainStats;
 
-  // Auto-assign turn choices
-  const turnChoices = autoAssignTurnChoices(plan, mainStats);
+  // Auto-assign turn choices (respect selected template's week_actions if any)
+  const template = state.selectedTemplateName
+    ? templates.find((t) => t.name === state.selectedTemplateName && t.plan_id === plan.id) ?? null
+    : null;
+  const turnChoices = autoAssignTurnChoices(plan, mainStats, template);
 
   // Build uncap levels
   const { cards: allCards, inventory } = useAppStore.getState();
@@ -246,6 +257,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   daSpCount: 0,
   viSpCount: 0,
   additionalCounts: emptyAdditionalCounts(),
+  selectedTemplateName: null,
   ownedOnly: false,
   contestMode: false,
   requiredCardIds: [],
@@ -259,6 +271,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   setSelectedPlanId: (id) =>
     set({
       selectedPlanId: id,
+      selectedTemplateName: null,
       deckResults: [],
       calculationResult: null,
       errorMessage: null,
@@ -313,7 +326,17 @@ export const useCalcStore = create<CalcState>((set, get) => ({
         (counts as Record<string, number>)[key] = value;
       }
     }
-    set({ additionalCounts: counts });
+    set({ additionalCounts: counts, selectedTemplateName: template.name });
+
+    // Re-apply pattern to refresh turn choices using the new template's week_actions
+    const state = get();
+    if (state.calculationResult && state.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(
+        { ...state, additionalCounts: counts, selectedTemplateName: template.name },
+        state.selectedPatternIndex,
+      );
+      set(updates as Partial<CalcState>);
+    }
   },
 
   setOwnedOnly: (v) => set({ ownedOnly: v }),
