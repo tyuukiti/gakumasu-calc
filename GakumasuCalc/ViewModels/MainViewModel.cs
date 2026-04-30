@@ -18,7 +18,6 @@ public class MainViewModel : ViewModelBase
 
     private TrainingPlan? _selectedPlan;
     private CalculationResult? _result;
-    private int _resultMaxValue = 1;
 
     // 所持カードフィルタ
     private bool _ownedOnly;
@@ -227,15 +226,9 @@ public class MainViewModel : ViewModelBase
     public bool IsDaAtCap => ResultDa >= StatCap;
     public bool IsViAtCap => ResultVi >= StatCap;
 
-    public int ResultMaxValue
-    {
-        get => _resultMaxValue;
-        private set => SetProperty(ref _resultMaxValue, value);
-    }
-
-    public double VoBarWidth => ResultMaxValue > 0 ? (double)ResultVo / ResultMaxValue * 300 : 0;
-    public double DaBarWidth => ResultMaxValue > 0 ? (double)ResultDa / ResultMaxValue * 300 : 0;
-    public double ViBarWidth => ResultMaxValue > 0 ? (double)ResultVi / ResultMaxValue * 300 : 0;
+    public double VoBarWidth => StatCap > 0 ? (double)ResultVo / StatCap * 300 : 0;
+    public double DaBarWidth => StatCap > 0 ? (double)ResultDa / StatCap * 300 : 0;
+    public double ViBarWidth => StatCap > 0 ? (double)ResultVi / StatCap * 300 : 0;
 
     public string DeckLabel
     {
@@ -538,12 +531,6 @@ public class MainViewModel : ViewModelBase
         }
         OnPropertyChanged(nameof(DeckLabel));
         OnPropertyChanged(nameof(DeckTotal));
-
-        var maxStat = Math.Max(ResultVo, Math.Max(ResultDa, ResultVi));
-        ResultMaxValue = maxStat > 0 ? maxStat : 1;
-        OnPropertyChanged(nameof(VoBarWidth));
-        OnPropertyChanged(nameof(DaBarWidth));
-        OnPropertyChanged(nameof(ViBarWidth));
     }
 
     /// <summary>
@@ -881,12 +868,6 @@ public class MainViewModel : ViewModelBase
         // 現在のターン選択をそのまま使って再計算
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
         Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts());
-
-        var maxStat = Math.Max(ResultVo, Math.Max(ResultDa, ResultVi));
-        ResultMaxValue = maxStat > 0 ? maxStat : 1;
-        OnPropertyChanged(nameof(VoBarWidth));
-        OnPropertyChanged(nameof(DaBarWidth));
-        OnPropertyChanged(nameof(ViBarWidth));
     }
 
     /// <summary>

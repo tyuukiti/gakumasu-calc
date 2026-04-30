@@ -19,7 +19,6 @@ export default function ResultDisplay() {
 
   const { final_status } = result;
   const total = final_status.vo + final_status.da + final_status.vi;
-  const maxStat = Math.max(final_status.vo, final_status.da, final_status.vi, 1);
 
   return (
     <div className="space-y-3">
@@ -27,7 +26,7 @@ export default function ResultDisplay() {
       {STAT_CONFIG.map(({ key, label, color, bgColor }) => {
         const value = final_status[key];
         const atCap = value >= statCap;
-        const widthPercent = (value / maxStat) * 100;
+        const widthPercent = (value / statCap) * 100;
         return (
           <div key={key} className="flex items-center gap-3">
             <span className="w-14 text-sm font-bold" style={{ color }}>{label}</span>
