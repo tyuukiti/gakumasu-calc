@@ -18,7 +18,6 @@ public class MainViewModel : ViewModelBase
 
     private TrainingPlan? _selectedPlan;
     private CalculationResult? _result;
-    private int _resultMaxValue = 1;
 
     // 所持カードフィルタ
     private bool _ownedOnly;
@@ -125,7 +124,11 @@ public class MainViewModel : ViewModelBase
     public string SelectedPlanType
     {
         get => _selectedPlanType;
-        set => SetProperty(ref _selectedPlanType, value);
+        set
+        {
+            if (SetProperty(ref _selectedPlanType, value))
+                FilterEventCountTemplates();
+        }
     }
 
     public TrainingPlan? SelectedPlan
@@ -182,7 +185,12 @@ public class MainViewModel : ViewModelBase
         set
         {
             if (SetProperty(ref _selectedEventTemplate, value) && value != null)
+            {
                 ApplyEventTemplate(value);
+                // 既に計算済みならターン選択を道中テンプレートで再適用
+                if (_deckResults.Count > 0 && SelectedPattern != null)
+                    ApplySelectedPattern(SelectedPattern.Index);
+            }
         }
     }
 
@@ -218,15 +226,9 @@ public class MainViewModel : ViewModelBase
     public bool IsDaAtCap => ResultDa >= StatCap;
     public bool IsViAtCap => ResultVi >= StatCap;
 
-    public int ResultMaxValue
-    {
-        get => _resultMaxValue;
-        private set => SetProperty(ref _resultMaxValue, value);
-    }
-
-    public double VoBarWidth => ResultMaxValue > 0 ? (double)ResultVo / ResultMaxValue * 300 : 0;
-    public double DaBarWidth => ResultMaxValue > 0 ? (double)ResultDa / ResultMaxValue * 300 : 0;
-    public double ViBarWidth => ResultMaxValue > 0 ? (double)ResultVi / ResultMaxValue * 300 : 0;
+    public double VoBarWidth => StatCap > 0 ? (double)ResultVo / StatCap * 300 : 0;
+    public double DaBarWidth => StatCap > 0 ? (double)ResultDa / StatCap * 300 : 0;
+    public double ViBarWidth => StatCap > 0 ? (double)ResultVi / StatCap * 300 : 0;
 
     public string DeckLabel
     {
@@ -493,7 +495,7 @@ public class MainViewModel : ViewModelBase
 
         // このパターンのレッスン配分を復元
         var allocation = BuildLessonAllocationFromPattern(pattern, _lastMainStats, _lastLessonWeekCount);
-        AutoAssignTurnChoices(allocation, _lastMainStats);
+        AutoAssignTurnChoices(allocation, _lastMainStats, _selectedEventTemplate);
 
         var selectedCards = pattern.SelectedCards.Select(cs => cs.Card).ToList();
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
@@ -529,12 +531,6 @@ public class MainViewModel : ViewModelBase
         }
         OnPropertyChanged(nameof(DeckLabel));
         OnPropertyChanged(nameof(DeckTotal));
-
-        var maxStat = Math.Max(ResultVo, Math.Max(ResultDa, ResultVi));
-        ResultMaxValue = maxStat > 0 ? maxStat : 1;
-        OnPropertyChanged(nameof(VoBarWidth));
-        OnPropertyChanged(nameof(DaBarWidth));
-        OnPropertyChanged(nameof(ViBarWidth));
     }
 
     /// <summary>
@@ -624,7 +620,7 @@ public class MainViewModel : ViewModelBase
     ///   中間後: メイン1:メイン2 = 1:2 (パラメータを早く伸ばすため)
     /// 授業週: サブ属性の授業を選択
     /// </summary>
-    private void AutoAssignTurnChoices(Dictionary<string, int> allocation, List<string> mainStats)
+    private void AutoAssignTurnChoices(Dictionary<string, int> allocation, List<string> mainStats, EventCountTemplate? template = null)
     {
         var subStat = new[] { "vo", "da", "vi" }.First(s => !mainStats.Contains(s));
 
@@ -724,6 +720,16 @@ public class MainViewModel : ViewModelBase
                 a is ActionType.VoClass or ActionType.DaClass or ActionType.ViClass);
 
             if (hasLesson) continue; // レッスン週は上で設定済み
+
+            // 道中テンプレートで週ごとのアクションが指定されていれば優先
+            if (template?.WeekActions != null
+                && template.WeekActions.TryGetValue(tc.Week, out var overrideStr)
+                && TurnChoiceViewModel.TryParseAction(overrideStr, out var overrideAction)
+                && tc.AvailableActions.Contains(overrideAction))
+            {
+                tc.SelectedAction = overrideAction;
+                continue;
+            }
 
             if (hasClass && tc.AvailableActions.Contains(subClassAction))
             {
@@ -830,11 +836,20 @@ public class MainViewModel : ViewModelBase
     private void FilterEventCountTemplates()
     {
         var planId = _selectedPlan?.Id ?? string.Empty;
+        var planTypeKeyword = _selectedPlanType switch
+        {
+            "sense" => "センス",
+            "logic" => "ロジック",
+            "anomaly" => "アノマリー",
+            _ => null
+        };
+
         EventCountTemplates.Clear();
         foreach (var t in _allEventCountTemplates)
         {
-            if (string.IsNullOrEmpty(t.PlanId) || t.PlanId == planId)
-                EventCountTemplates.Add(t);
+            if (!string.IsNullOrEmpty(t.PlanId) && t.PlanId != planId) continue;
+            if (planTypeKeyword != null && !t.Name.Contains(planTypeKeyword)) continue;
+            EventCountTemplates.Add(t);
         }
         SelectedEventTemplate = null;
     }
@@ -853,12 +868,6 @@ public class MainViewModel : ViewModelBase
         // 現在のターン選択をそのまま使って再計算
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
         Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts());
-
-        var maxStat = Math.Max(ResultVo, Math.Max(ResultDa, ResultVi));
-        ResultMaxValue = maxStat > 0 ? maxStat : 1;
-        OnPropertyChanged(nameof(VoBarWidth));
-        OnPropertyChanged(nameof(DaBarWidth));
-        OnPropertyChanged(nameof(ViBarWidth));
     }
 
     /// <summary>
@@ -1066,6 +1075,7 @@ public class EventCountTemplate
     public string Name { get; set; } = string.Empty;
     public string PlanId { get; set; } = string.Empty;
     public AdditionalCounts Counts { get; set; } = new();
+    public Dictionary<int, string>? WeekActions { get; set; }
 
     public override string ToString() => Name;
 }

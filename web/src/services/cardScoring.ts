@@ -430,7 +430,7 @@ function greedyFillOwned(
     if (count <= 0) continue;
     const candidates = contributions.filter(
       (cs) =>
-        (cs.card.type === type || cs.card.type === 'all') &&
+        (cs.card.type === type || cs.card.type === 'all' || cs.card.type === 'as') &&
         !used.has(cs.card.id),
     );
     for (let i = 0; i < count && sel.length < ownedSlots; i++) {
@@ -521,13 +521,19 @@ function postOptimize(
 
       for (const candidate of candidates) {
         if (selected.some((c) => c.card.id === candidate.card.id)) continue;
-        // タイプ分布を維持: 同じタイプ同士、または all タイプとの交換のみ許可
-        if (
-          candidate.card.type !== ownedCard.card.type &&
-          candidate.card.type !== 'all' &&
-          ownedCard.card.type !== 'all'
-        )
-          continue;
+        // タイプ分布を維持: 同じタイプ同士、または all/as タイプとの交換のみ許可
+        {
+          const candidateIsAllLike =
+            candidate.card.type === 'all' || candidate.card.type === 'as';
+          const ownedIsAllLike =
+            ownedCard.card.type === 'all' || ownedCard.card.type === 'as';
+          if (
+            candidate.card.type !== ownedCard.card.type &&
+            !candidateIsAllLike &&
+            !ownedIsAllLike
+          )
+            continue;
+        }
         // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
         if (ownedIsProtectedSp && !hasSpRate(candidate.card)) continue;
 
@@ -877,11 +883,12 @@ export function selectOptimalDeck(
         accDa += contribution.raw_da;
         accVi += contribution.raw_vi;
 
-        // スロット消費
-        if (card.type !== 'all' && card.type in remainingSlots && remainingSlots[card.type] > 0) {
+        // スロット消費 ("as" は "all" と同等に扱う)
+        const isAllLike = card.type === 'all' || card.type === 'as';
+        if (!isAllLike && card.type in remainingSlots && remainingSlots[card.type] > 0) {
           remainingSlots[card.type]--;
-        } else if (card.type === 'all') {
-          // "all" タイプ: 最大残数の属性枠を消費
+        } else if (isAllLike) {
+          // "all"/"as" タイプ: 最大残数の属性枠を消費
           const maxSlotKey = Object.entries(remainingSlots)
             .sort((a, b) => b[1] - a[1])[0];
           if (maxSlotKey && maxSlotKey[1] > 0) {
@@ -899,7 +906,10 @@ export function selectOptimalDeck(
         );
         if (spEffect != null) {
           for (const key of Object.keys(spCountsCopy)) {
-            if ((card.type === key || card.type === 'all') && spCountsCopy[key] > 0) {
+            if (
+              (card.type === key || card.type === 'all' || card.type === 'as') &&
+              spCountsCopy[key] > 0
+            ) {
               spCountsCopy[key]--;
               break;
             }
@@ -919,10 +929,10 @@ export function selectOptimalDeck(
     for (const [stat, need] of Object.entries(spCounts)) {
       if (need <= 0) continue;
 
-      // この属性のSP率を持つカードをステータス寄与順で選ぶ
+      // この属性のSP率を持つカードをステータス寄与順で選ぶ ("as" は "all" と同等)
       const spCandidates = cardContributions.filter(
         (cs) =>
-          (cs.card.type === stat || cs.card.type === 'all') &&
+          (cs.card.type === stat || cs.card.type === 'all' || cs.card.type === 'as') &&
           !usedIds.has(cs.card.id) &&
           cs.card.effects.some(
             (e) => e.trigger === 'equip' && e.value_type === 'sp_rate',

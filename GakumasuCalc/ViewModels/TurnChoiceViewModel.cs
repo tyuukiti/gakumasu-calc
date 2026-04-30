@@ -80,7 +80,7 @@ public class TurnChoiceViewModel : ViewModelBase
         };
     }
 
-    private static bool TryParseAction(string actionStr, out ActionType actionType)
+    internal static bool TryParseAction(string actionStr, out ActionType actionType)
     {
         actionType = actionStr switch
         {

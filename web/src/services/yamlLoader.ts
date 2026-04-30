@@ -1,5 +1,6 @@
 import yaml from 'js-yaml'
 import type { SupportCard, SupportCardFile, TrainingPlan, TrainingPlanFile, EventCountTemplate, EventCountTemplateFile, WeekSchedule } from '../types/models'
+import type { ActionType } from '../types/enums'
 
 const BASE = import.meta.env.BASE_URL
 
@@ -81,10 +82,22 @@ export async function loadTrainingPlans(): Promise<TrainingPlan[]> {
   return results
 }
 
+function normalizeTemplate(t: EventCountTemplate): EventCountTemplate {
+  if (!t.week_actions) return t
+  const norm: Record<number, ActionType> = {}
+  for (const [k, v] of Object.entries(t.week_actions)) {
+    const weekNum = Number(k)
+    if (!Number.isNaN(weekNum)) {
+      norm[weekNum] = v as ActionType
+    }
+  }
+  return { ...t, week_actions: norm }
+}
+
 export async function loadEventCountTemplates(): Promise<EventCountTemplate[]> {
   try {
     const data = await fetchYaml<EventCountTemplateFile>('Templates/event_count_templates.yaml')
-    return data.templates ?? []
+    return (data.templates ?? []).map(normalizeTemplate)
   } catch (e) {
     console.warn('テンプレート読み込みエラー:', e)
     return []

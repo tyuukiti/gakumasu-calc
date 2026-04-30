@@ -151,12 +151,13 @@ public class CardScoringService
                     accDa += contribution.RawDa;
                     accVi += contribution.RawVi;
 
-                    // スロット消費
-                    if (card.Type != "all" && remainingSlots.ContainsKey(card.Type) && remainingSlots[card.Type] > 0)
+                    // スロット消費 ("as" は "all" と同等に扱う)
+                    bool isAllLike = card.Type == "all" || card.Type == "as";
+                    if (!isAllLike && remainingSlots.ContainsKey(card.Type) && remainingSlots[card.Type] > 0)
                         remainingSlots[card.Type]--;
-                    else if (card.Type == "all")
+                    else if (isAllLike)
                     {
-                        // "all" タイプ: 最大残数の属性枠を消費
+                        // "all"/"as" タイプ: 最大残数の属性枠を消費
                         var maxSlot = remainingSlots.OrderByDescending(s => s.Value).FirstOrDefault();
                         if (maxSlot.Value > 0)
                             remainingSlots[maxSlot.Key]--;
@@ -172,10 +173,9 @@ public class CardScoringService
                         var spEffect = card.Effects.FirstOrDefault(e => e.Trigger == "equip" && e.ValueType == "sp_rate");
                         if (spEffect != null)
                         {
-                            var spStat = card.Type == "all" ? card.Type : card.Type;
                             foreach (var key in spCountsCopy.Keys.ToList())
                             {
-                                if ((card.Type == key || card.Type == "all") && spCountsCopy[key] > 0)
+                                if ((card.Type == key || card.Type == "all" || card.Type == "as") && spCountsCopy[key] > 0)
                                 {
                                     spCountsCopy[key]--;
                                     break;
@@ -202,9 +202,9 @@ public class CardScoringService
                 int need = kvp.Value;
                 if (need <= 0) continue;
 
-                // この属性のSP率を持つカードをステータス寄与順で選ぶ
+                // この属性のSP率を持つカードをステータス寄与順で選ぶ ("as" は "all" と同等)
                 var spCandidates = cardContributions
-                    .Where(cs => (cs.Card.Type == stat || cs.Card.Type == "all")
+                    .Where(cs => (cs.Card.Type == stat || cs.Card.Type == "all" || cs.Card.Type == "as")
                                  && !usedIds.Contains(cs.Card.Id)
                                  && cs.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"))
                     .ToList();
@@ -493,10 +493,12 @@ public class CardScoringService
                 foreach (var candidate in candidates)
                 {
                     if (selected.Any(c => c.Card.Id == candidate.Card.Id)) continue;
-                    // タイプ分布を維持: 同じタイプ同士、または all タイプとの交換のみ許可
+                    // タイプ分布を維持: 同じタイプ同士、または all/as タイプとの交換のみ許可
+                    bool candidateIsAllLike = candidate.Card.Type == "all" || candidate.Card.Type == "as";
+                    bool ownedIsAllLike = ownedCard.Card.Type == "all" || ownedCard.Card.Type == "as";
                     if (candidate.Card.Type != ownedCard.Card.Type
-                        && candidate.Card.Type != "all"
-                        && ownedCard.Card.Type != "all") continue;
+                        && !candidateIsAllLike
+                        && !ownedIsAllLike) continue;
                     // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
                     if (ownedIsProtectedSp
                         && !candidate.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"))
@@ -675,7 +677,7 @@ public class CardScoringService
             if (count <= 0) continue;
 
             var candidates = contributions
-                .Where(cs => (cs.Card.Type == type || cs.Card.Type == "all")
+                .Where(cs => (cs.Card.Type == type || cs.Card.Type == "all" || cs.Card.Type == "as")
                              && !used.Contains(cs.Card.Id))
                 .ToList();
 

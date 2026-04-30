@@ -27,17 +27,27 @@ const COUNT_LABELS: { key: string; label: string }[] = [
   { key: 'consultation_drink', label: '相談Pドリンク交換' },
 ];
 
+const PLAN_TYPE_KEYWORDS: Record<string, string> = {
+  sense: 'センス',
+  logic: 'ロジック',
+  anomaly: 'アノマリー',
+};
+
 export default function EventCountConfig() {
   const [expanded, setExpanded] = useState(false);
   const templates = useAppStore((s) => s.templates);
   const selectedPlanId = useCalcStore((s) => s.selectedPlanId);
+  const selectedPlanType = useCalcStore((s) => s.selectedPlanType);
   const additionalCounts = useCalcStore((s) => s.additionalCounts);
   const setAdditionalCount = useCalcStore((s) => s.setAdditionalCount);
   const applyTemplate = useCalcStore((s) => s.applyTemplate);
 
-  const filteredTemplates = templates.filter(
-    (t) => !t.plan_id || t.plan_id === selectedPlanId,
-  );
+  const planTypeKeyword = PLAN_TYPE_KEYWORDS[selectedPlanType];
+  const filteredTemplates = templates.filter((t) => {
+    if (t.plan_id && t.plan_id !== selectedPlanId) return false;
+    if (planTypeKeyword && !t.name.includes(planTypeKeyword)) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-2">
