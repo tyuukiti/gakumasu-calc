@@ -13,11 +13,14 @@ public class MainViewModel : ViewModelBase
     private readonly PlanLoaderService _planLoader;
     private readonly SupportCardLoaderService _cardLoader;
     private readonly InventoryService _inventoryService;
+    private readonly CharacterLoaderService _characterLoader;
     private List<SupportCard> _allCards = new();
     private List<CardInventoryEntry> _inventory = new();
+    private Character? _selectedCharacter;
 
     private TrainingPlan? _selectedPlan;
     private CalculationResult? _result;
+    private CalculationResult? _resultWithoutCharacter;
 
     // 所持カードフィルタ
     private bool _ownedOnly;
@@ -69,6 +72,92 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<TurnChoiceViewModel> TurnChoices { get; } = new();
     public ObservableCollection<DeckCardViewModel> DeckCards { get; } = new();
     public ObservableCollection<PatternResultViewModel> PatternResults { get; } = new();
+    public ObservableCollection<CharacterTileViewModel> CharacterTiles { get; } = new();
+
+    public Character? SelectedCharacter
+    {
+        get => _selectedCharacter;
+        set
+        {
+            if (SetProperty(ref _selectedCharacter, value))
+            {
+                OnPropertyChanged(nameof(HasSelectedCharacter));
+                OnPropertyChanged(nameof(SelectedCharacterDisplay));
+                OnPropertyChanged(nameof(CharacterBonusSummary));
+                OnPropertyChanged(nameof(HasUncap3Bonus));
+                foreach (var tile in CharacterTiles)
+                    tile.IsSelected = (tile.Character == value);
+                // 計算済みなら選択中パターンで再計算
+                if (Result != null && _selectedPattern != null && _deckResults.Count > 0)
+                    ApplySelectedPattern(_selectedPattern.Index);
+            }
+        }
+    }
+
+    public bool HasSelectedCharacter => _selectedCharacter != null;
+
+    public string SelectedCharacterDisplay =>
+        _selectedCharacter != null ? $": {_selectedCharacter.Name}" : "";
+
+    public string CharacterBonusSummary
+    {
+        get
+        {
+            if (_selectedCharacter == null) return string.Empty;
+            var b = _selectedCharacter.BaseStatusBonus;
+            var p = EffectiveParaBonus(_selectedCharacter);
+            return $"基礎+{b.Vo}/{b.Da}/{b.Vi}  パラボ Vo+{p.Vo:0.#}% Da+{p.Da:0.#}% Vi+{p.Vi:0.#}%";
+        }
+    }
+
+    /// <summary>
+    /// 実効パラボを返す。para_bonus は3凸ON時の最大値で、OFFなら uncap3_bonus 分を減算する。
+    /// </summary>
+    private StatBonusPercent EffectiveParaBonus(Character c)
+    {
+        if (!_uncap3BonusEnabled && c.Uncap3Bonus != null)
+            return c.ParaBonus.Subtract(c.Uncap3Bonus);
+        return c.ParaBonus;
+    }
+
+    /// <summary>
+    /// 計算で実際に渡すキャラ。3凸OFF時はパラボから3凸分を減算した一時オブジェクトを返す。
+    /// </summary>
+    private Character? GetEffectiveCharacter()
+    {
+        if (_selectedCharacter == null) return null;
+        if (_uncap3BonusEnabled || _selectedCharacter.Uncap3Bonus == null)
+            return _selectedCharacter;
+        return new Character
+        {
+            Id = _selectedCharacter.Id,
+            Name = _selectedCharacter.Name,
+            Color = _selectedCharacter.Color,
+            Initial = _selectedCharacter.Initial,
+            BaseStatusBonus = _selectedCharacter.BaseStatusBonus,
+            ParaBonus = _selectedCharacter.ParaBonus.Subtract(_selectedCharacter.Uncap3Bonus),
+            Uncap3Bonus = _selectedCharacter.Uncap3Bonus,
+        };
+    }
+
+    private bool _uncap3BonusEnabled = false;
+    public bool Uncap3BonusEnabled
+    {
+        get => _uncap3BonusEnabled;
+        set
+        {
+            if (SetProperty(ref _uncap3BonusEnabled, value))
+            {
+                OnPropertyChanged(nameof(CharacterBonusSummary));
+                if (Result != null && _selectedPattern != null && _deckResults.Count > 0)
+                    ApplySelectedPattern(_selectedPattern.Index);
+            }
+        }
+    }
+
+    public bool HasUncap3Bonus => _selectedCharacter?.Uncap3Bonus != null;
+
+    public ICommand SelectCharacterCommand { get; }
 
     private PatternResultViewModel? _selectedPattern;
     public PatternResultViewModel? SelectedPattern
@@ -212,7 +301,27 @@ public class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsVoAtCap));
             OnPropertyChanged(nameof(IsDaAtCap));
             OnPropertyChanged(nameof(IsViAtCap));
+            RaiseBasePropertyChanged();
         }
+    }
+
+    private void RaiseBasePropertyChanged()
+    {
+        OnPropertyChanged(nameof(ResultVoBase));
+        OnPropertyChanged(nameof(ResultDaBase));
+        OnPropertyChanged(nameof(ResultViBase));
+        OnPropertyChanged(nameof(ResultTotalBase));
+        OnPropertyChanged(nameof(VoBarWidthBase));
+        OnPropertyChanged(nameof(DaBarWidthBase));
+        OnPropertyChanged(nameof(ViBarWidthBase));
+        OnPropertyChanged(nameof(HasCharacterBonus));
+        OnPropertyChanged(nameof(ResultVoDelta));
+        OnPropertyChanged(nameof(ResultDaDelta));
+        OnPropertyChanged(nameof(ResultViDelta));
+        OnPropertyChanged(nameof(ResultVoDeltaText));
+        OnPropertyChanged(nameof(ResultDaDeltaText));
+        OnPropertyChanged(nameof(ResultViDeltaText));
+        OnPropertyChanged(nameof(ResultTotalBaseText));
     }
 
     public bool HasResult => Result != null;
@@ -221,14 +330,34 @@ public class MainViewModel : ViewModelBase
     public int ResultVi => Result?.FinalStatus.Vi ?? 0;
     public int ResultTotal => Result?.FinalStatus.Total ?? 0;
 
+    // キャラ補正を抜いた値（キャラ未選択時は通常結果と同値）
+    private CalculationResult? ResultBase => _resultWithoutCharacter ?? _result;
+    public int ResultVoBase => ResultBase?.FinalStatus.Vo ?? 0;
+    public int ResultDaBase => ResultBase?.FinalStatus.Da ?? 0;
+    public int ResultViBase => ResultBase?.FinalStatus.Vi ?? 0;
+    public int ResultTotalBase => ResultBase?.FinalStatus.Total ?? 0;
+
+    public bool HasCharacterBonus => _resultWithoutCharacter != null && _selectedCharacter != null;
+    public int ResultVoDelta => ResultVo - ResultVoBase;
+    public int ResultDaDelta => ResultDa - ResultDaBase;
+    public int ResultViDelta => ResultVi - ResultViBase;
+    public string ResultVoDeltaText => HasCharacterBonus && ResultVoDelta != 0 ? FormatDelta(ResultVoDelta) : string.Empty;
+    public string ResultDaDeltaText => HasCharacterBonus && ResultDaDelta != 0 ? FormatDelta(ResultDaDelta) : string.Empty;
+    public string ResultViDeltaText => HasCharacterBonus && ResultViDelta != 0 ? FormatDelta(ResultViDelta) : string.Empty;
+    public string ResultTotalBaseText => HasCharacterBonus ? $"補正なし: {ResultTotalBase:#,0}" : string.Empty;
+    private static string FormatDelta(int v) => v >= 0 ? $"+{v}" : v.ToString();
+
     private int StatCap => _selectedPlan?.StatusLimit ?? 2800;
     public bool IsVoAtCap => ResultVo >= StatCap;
     public bool IsDaAtCap => ResultDa >= StatCap;
     public bool IsViAtCap => ResultVi >= StatCap;
 
-    public double VoBarWidth => StatCap > 0 ? (double)ResultVo / StatCap * 300 : 0;
-    public double DaBarWidth => StatCap > 0 ? (double)ResultDa / StatCap * 300 : 0;
-    public double ViBarWidth => StatCap > 0 ? (double)ResultVi / StatCap * 300 : 0;
+    public double VoBarWidth => StatCap > 0 ? Math.Min((double)ResultVo / StatCap, 1.0) * 300 : 0;
+    public double DaBarWidth => StatCap > 0 ? Math.Min((double)ResultDa / StatCap, 1.0) * 300 : 0;
+    public double ViBarWidth => StatCap > 0 ? Math.Min((double)ResultVi / StatCap, 1.0) * 300 : 0;
+    public double VoBarWidthBase => StatCap > 0 ? Math.Min((double)ResultVoBase / StatCap, 1.0) * 300 : 0;
+    public double DaBarWidthBase => StatCap > 0 ? Math.Min((double)ResultDaBase / StatCap, 1.0) * 300 : 0;
+    public double ViBarWidthBase => StatCap > 0 ? Math.Min((double)ResultViBase / StatCap, 1.0) * 300 : 0;
 
     public string DeckLabel
     {
@@ -263,6 +392,7 @@ public class MainViewModel : ViewModelBase
         _planLoader = new PlanLoaderService(yamlService, Path.Combine(dataDir, "Plans"));
         _cardLoader = new SupportCardLoaderService(yamlService, Path.Combine(dataDir, "SupportCards"));
         _inventoryService = new InventoryService(Path.Combine(dataDir, "Inventory", "inventory.yaml"));
+        _characterLoader = new CharacterLoaderService(yamlService, Path.Combine(dataDir, "Characters"));
         _calculationService = new StatusCalculationService();
         _scoringService = new CardScoringService();
 
@@ -279,6 +409,12 @@ public class MainViewModel : ViewModelBase
         });
         RecalcLessonCommand = new RelayCommand(ExecuteRecalcLesson);
         CopyResultCommand = new RelayCommand(ExecuteCopyResult);
+        SelectCharacterCommand = new RelayCommand(o =>
+        {
+            var target = o as Character;
+            // 同じキャラを再度押した場合はトグルで解除
+            SelectedCharacter = (target != null && target == _selectedCharacter) ? null : target;
+        });
 
         LoadData();
     }
@@ -294,6 +430,11 @@ public class MainViewModel : ViewModelBase
 
             _allCards = _cardLoader.LoadAllCards();
             _inventory = _inventoryService.Load();
+
+            // キャラデータ読み込み（タイルビュー生成）
+            CharacterTiles.Clear();
+            foreach (var c in _characterLoader.LoadAll())
+                CharacterTiles.Add(new CharacterTileViewModel(c));
 
             // 所持カードがあればデフォルトでチェックON
             OwnedOnly = _inventory.Any(e => e.Owned);
@@ -503,7 +644,11 @@ public class MainViewModel : ViewModelBase
         // レンタルカードは4凸として計算
         foreach (var cs in pattern.SelectedCards.Where(cs => cs.IsRental))
             uncapLevels[cs.Card.Id] = 4;
-        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts());
+        var effectiveChar = GetEffectiveCharacter();
+        _resultWithoutCharacter = _selectedCharacter != null
+            ? _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), null)
+            : null;
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), effectiveChar);
 
         DeckCards.Clear();
         foreach (var cs in pattern.SelectedCards)
@@ -867,7 +1012,11 @@ public class MainViewModel : ViewModelBase
 
         // 現在のターン選択をそのまま使って再計算
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
-        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts());
+        var effectiveChar = GetEffectiveCharacter();
+        _resultWithoutCharacter = _selectedCharacter != null
+            ? _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts(), null)
+            : null;
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts(), effectiveChar);
     }
 
     /// <summary>

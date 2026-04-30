@@ -1,5 +1,5 @@
 import yaml from 'js-yaml'
-import type { SupportCard, SupportCardFile, TrainingPlan, TrainingPlanFile, EventCountTemplate, EventCountTemplateFile, WeekSchedule } from '../types/models'
+import type { SupportCard, SupportCardFile, TrainingPlan, TrainingPlanFile, EventCountTemplate, EventCountTemplateFile, WeekSchedule, Character, CharacterFile } from '../types/models'
 import type { ActionType } from '../types/enums'
 
 const BASE = import.meta.env.BASE_URL
@@ -100,6 +100,16 @@ export async function loadEventCountTemplates(): Promise<EventCountTemplate[]> {
     return (data.templates ?? []).map(normalizeTemplate)
   } catch (e) {
     console.warn('テンプレート読み込みエラー:', e)
+    return []
+  }
+}
+
+export async function loadCharacters(): Promise<Character[]> {
+  try {
+    const data = await fetchYaml<CharacterFile>('Characters/characters.yaml')
+    return data.characters ?? []
+  } catch (e) {
+    console.warn('キャラデータ読み込みエラー:', e)
     return []
   }
 }

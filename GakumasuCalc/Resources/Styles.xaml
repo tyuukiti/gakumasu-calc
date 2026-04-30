@@ -12,6 +12,11 @@
     <SolidColorBrush x:Key="VoBrush" Color="{StaticResource VoColor}"/>
     <SolidColorBrush x:Key="DaBrush" Color="{StaticResource DaColor}"/>
     <SolidColorBrush x:Key="ViBrush" Color="{StaticResource ViColor}"/>
+
+    <!-- バー暗色（キャラ補正分の表示用、各属性色の約65%輝度） -->
+    <SolidColorBrush x:Key="VoBrushDark" Color="#A64559"/>
+    <SolidColorBrush x:Key="DaBrushDark" Color="#4567A6"/>
+    <SolidColorBrush x:Key="ViBrushDark" Color="#A68945"/>
     <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}"/>
     <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource CardBgColor}"/>
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>

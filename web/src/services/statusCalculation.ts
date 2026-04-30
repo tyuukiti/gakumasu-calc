@@ -7,6 +7,7 @@
   TurnChoice,
   LessonConfig,
   AdditionalCounts,
+  Character,
 } from '../types/models';
 import { additionalCountsToRecord } from '../types/models';
 import type { CalculationResult, WeekBreakdown } from '../types/results';
@@ -75,9 +76,13 @@ export function calculate(
   turnChoices: TurnChoice[],
   uncapLevels?: Record<string, number>,
   additionalCounts?: AdditionalCounts,
+  character?: Character | null,
 ): CalculationResult {
-  // Step 1: base status
-  const baseStatus = svClone(plan.base_status);
+  // Step 1: base status (apply character bonus if selected)
+  let baseStatus = svClone(plan.base_status);
+  if (character != null) {
+    baseStatus = svAdd(baseStatus, character.base_status_bonus);
+  }
 
   // Step 2: support card equip bonus
   const supportBonus = calculateEquipBonus(selectedCards, uncapLevels);
@@ -96,6 +101,7 @@ export function calculate(
       plan,
       triggerCounters,
       uncapLevels,
+      character,
     );
 
     accumulated = svAdd(accumulated, weekGain);
@@ -158,6 +164,7 @@ function calculateWeekGain(
   plan: TrainingPlan,
   triggerCounters: Record<string, number>,
   uncapLevels: Record<string, number> | undefined,
+  character: Character | null | undefined,
 ): StatusValues {
   // fixed event
   const isFixedEvent =
@@ -175,11 +182,11 @@ function calculateWeekGain(
 
   switch (turnChoice.chosen_action as ActionType) {
     case 'vo_lesson':
-      return calculateLessonGain(week, 'vo', cards, triggerCounters, uncapLevels);
+      return calculateLessonGain(week, 'vo', cards, triggerCounters, uncapLevels, character);
     case 'da_lesson':
-      return calculateLessonGain(week, 'da', cards, triggerCounters, uncapLevels);
+      return calculateLessonGain(week, 'da', cards, triggerCounters, uncapLevels, character);
     case 'vi_lesson':
-      return calculateLessonGain(week, 'vi', cards, triggerCounters, uncapLevels);
+      return calculateLessonGain(week, 'vi', cards, triggerCounters, uncapLevels, character);
     case 'vo_class':
       return calculateClassGain(week, 'vo', cards, triggerCounters, uncapLevels);
     case 'da_class':
@@ -207,6 +214,7 @@ function calculateLessonGain(
   cards: SupportCard[],
   triggerCounters: Record<string, number>,
   uncapLevels: Record<string, number> | undefined,
+  character: Character | null | undefined,
 ): StatusValues {
   const lesson = getLesson(week, lessonType);
   if (lesson == null) {
@@ -243,6 +251,13 @@ function calculateLessonGain(
         }
       }
     }
+  }
+
+  // Add character para_bonus on the same level as support cards
+  if (character != null) {
+    paraBonusVo += character.para_bonus.vo;
+    paraBonusDa += character.para_bonus.da;
+    paraBonusVi += character.para_bonus.vi;
   }
 
   // Apply para bonus to each stat
