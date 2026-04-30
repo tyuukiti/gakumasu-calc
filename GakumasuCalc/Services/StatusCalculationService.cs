@@ -9,10 +9,13 @@ public class StatusCalculationService
         List<SupportCard> selectedCards,
         List<TurnChoice> turnChoices,
         Dictionary<string, int>? uncapLevels = null,
-        AdditionalCounts? additionalCounts = null)
+        AdditionalCounts? additionalCounts = null,
+        Character? character = null)
     {
-        // Step 1: 基礎ステータス
+        // Step 1: 基礎ステータス（キャラ選択時はキャラの基礎加算を反映）
         var baseStatus = plan.BaseStatus.Clone();
+        if (character != null)
+            baseStatus = baseStatus.Add(character.BaseStatusBonus);
 
         // Step 2: サポートカード装備ボーナス (初期値)
         var supportBonus = CalculateEquipBonus(selectedCards, uncapLevels);
@@ -25,7 +28,7 @@ public class StatusCalculationService
         foreach (var week in plan.Schedule)
         {
             var turnChoice = turnChoices.FirstOrDefault(tc => tc.Week == week.Week);
-            var weekGain = CalculateWeekGain(week, turnChoice, selectedCards, plan, triggerCounters, uncapLevels);
+            var weekGain = CalculateWeekGain(week, turnChoice, selectedCards, plan, triggerCounters, uncapLevels, character);
 
             accumulated = accumulated.Add(weekGain);
 
@@ -80,7 +83,8 @@ public class StatusCalculationService
         List<SupportCard> cards,
         TrainingPlan plan,
         Dictionary<string, int> triggerCounters,
-        Dictionary<string, int>? uncapLevels)
+        Dictionary<string, int>? uncapLevels,
+        Character? character)
     {
         // 固定イベント
         if (week.IsFixedEvent)
@@ -96,9 +100,9 @@ public class StatusCalculationService
 
         var gain = turnChoice.ChosenAction switch
         {
-            ActionType.VoLesson => CalculateLessonGain(week, "vo", cards, triggerCounters, uncapLevels),
-            ActionType.DaLesson => CalculateLessonGain(week, "da", cards, triggerCounters, uncapLevels),
-            ActionType.ViLesson => CalculateLessonGain(week, "vi", cards, triggerCounters, uncapLevels),
+            ActionType.VoLesson => CalculateLessonGain(week, "vo", cards, triggerCounters, uncapLevels, character),
+            ActionType.DaLesson => CalculateLessonGain(week, "da", cards, triggerCounters, uncapLevels, character),
+            ActionType.ViLesson => CalculateLessonGain(week, "vi", cards, triggerCounters, uncapLevels, character),
             ActionType.VoClass => CalculateClassGain(week, "vo", cards, triggerCounters, uncapLevels),
             ActionType.DaClass => CalculateClassGain(week, "da", cards, triggerCounters, uncapLevels),
             ActionType.ViClass => CalculateClassGain(week, "vi", cards, triggerCounters, uncapLevels),
@@ -115,7 +119,8 @@ public class StatusCalculationService
 
     private StatusValues CalculateLessonGain(
         WeekSchedule week, string lessonType, List<SupportCard> cards,
-        Dictionary<string, int> triggerCounters, Dictionary<string, int>? uncapLevels)
+        Dictionary<string, int> triggerCounters, Dictionary<string, int>? uncapLevels,
+        Character? character)
     {
         var lesson = week.GetLesson(lessonType);
         if (lesson == null)
@@ -143,6 +148,14 @@ public class StatusCalculationService
                         break;
                 }
             }
+        }
+
+        // キャラ固有パラボもサポカと同列に加算
+        if (character != null)
+        {
+            paraBonusVo += character.ParaBonus.Vo;
+            paraBonusDa += character.ParaBonus.Da;
+            paraBonusVi += character.ParaBonus.Vi;
         }
 
         // 各属性のパラボは該当属性のレッスン上昇値にのみ適用

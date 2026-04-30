@@ -153,3 +153,26 @@ export interface EventCountTemplate {
 export interface EventCountTemplateFile {
   templates: EventCountTemplate[];
 }
+
+// --- Character ---
+
+export interface StatBonusPercent {
+  vo: number;
+  da: number;
+  vi: number;
+}
+
+export interface Character {
+  id: string;
+  name: string;
+  color: string;
+  initial: string;
+  base_status_bonus: StatusValues;
+  para_bonus: StatBonusPercent;
+  /** 3凸時に追加されるレッスンボーナス（任意） */
+  uncap3_bonus?: StatBonusPercent;
+}
+
+export interface CharacterFile {
+  characters: Character[];
+}

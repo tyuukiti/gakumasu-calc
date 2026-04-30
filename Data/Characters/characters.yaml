@@ -1,0 +1,110 @@
+# キャラクター固有データ
+# - color: 公式イメージカラー (https://imas-db.jp/misc/color.html)
+# - base_status_bonus: plan.base_status に加算される固定値
+# - para_bonus: 週次レッスンの上昇値に乗算される属性別%（サポカ para_bonus と同列加算、3凸前提の最大値）
+# - uncap3_bonus: 3凸時のレッスンボーナス追加分（OFFで減算）
+# 並びは学園アイドルマスター公式の順
+characters:
+  - id: "char_saki"
+    name: "花海咲季"
+    color: "#E30F25"
+    initial: "咲"
+    base_status_bonus: { vo: 100, da: 100, vi: 105 }
+    para_bonus: { vo: 19.5, da: 19.5, vi: 22.5 }
+    uncap3_bonus: { vo: 3.0, da: 3.0, vi: 2.0 }
+
+  - id: "char_temari"
+    name: "月村手毬"
+    color: "#0C7BBB"
+    initial: "手"
+    base_status_bonus: { vo: 120, da: 100, vi: 80 }
+    para_bonus: { vo: 27.0, da: 26.5, vi: 8.5 }
+    uncap3_bonus: { vo: 3.0, da: 5.0, vi: 0 }
+
+  - id: "char_kotone"
+    name: "藤田ことね"
+    color: "#F8C112"
+    initial: "こ"
+    base_status_bonus: { vo: 90, da: 90, vi: 120 }
+    para_bonus: { vo: 8.0, da: 29.5, vi: 25.5 }
+    uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
+
+  - id: "char_tsubame"
+    name: "雨夜燕"
+    color: "#7B68EE"
+    initial: "燕"
+    base_status_bonus: { vo: 115, da: 135, vi: 95 }
+    para_bonus: { vo: 17.0, da: 24.0, vi: 12.0 }
+    uncap3_bonus: { vo: 2.0, da: 4.0, vi: 0 }
+
+  - id: "char_mao"
+    name: "有村麻央"
+    color: "#7F1184"
+    initial: "麻"
+    base_status_bonus: { vo: 125, da: 90, vi: 100 }
+    para_bonus: { vo: 25.0, da: 8.0, vi: 28.0 }
+    uncap3_bonus: { vo: 3.0, da: 0, vi: 5.0 }
+
+  - id: "char_lilja"
+    name: "葛城リーリヤ"
+    color: "#EAFDFF"
+    initial: "リ"
+    base_status_bonus: { vo: 80, da: 100, vi: 115 }
+    para_bonus: { vo: 18.0, da: 25.0, vi: 21.0 }
+    uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
+
+  - id: "char_china"
+    name: "倉本千奈"
+    color: "#F68B1F"
+    initial: "千"
+    base_status_bonus: { vo: 75, da: 115, vi: 125 }
+    para_bonus: { vo: 10.0, da: 29.0, vi: 23.5 }
+    uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
+
+  - id: "char_sumika"
+    name: "紫雲清夏"
+    color: "#7CFC00"
+    initial: "清"
+    base_status_bonus: { vo: 100, da: 115, vi: 90 }
+    para_bonus: { vo: 9.0, da: 28.0, vi: 26.0 }
+    uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
+
+  - id: "char_hiro"
+    name: "篠澤広"
+    color: "#00AFCC"
+    initial: "広"
+    base_status_bonus: { vo: 125, da: 120, vi: 80 }
+    para_bonus: { vo: 28.0, da: 24.5, vi: 10.0 }
+    uncap3_bonus: { vo: 5.0, da: 5.0, vi: 0 }
+
+  - id: "char_sena"
+    name: "十王星南"
+    color: "#F6AE54"
+    initial: "星"
+    base_status_bonus: { vo: 175, da: 125, vi: 140 }
+    para_bonus: { vo: 17.0, da: 8.0, vi: 24.5 }
+    uncap3_bonus: { vo: 2.0, da: 0, vi: 4.0 }
+
+  - id: "char_misuzu"
+    name: "秦谷美鈴"
+    color: "#7A99CF"
+    initial: "美"
+    base_status_bonus: { vo: 85, da: 125, vi: 135 }
+    para_bonus: { vo: 31.0, da: 10.0, vi: 20.0 }
+    uncap3_bonus: { vo: 4.0, da: 0, vi: 2.0 }
+
+  - id: "char_ume"
+    name: "花海佑芽"
+    color: "#EA533A"
+    initial: "佑"
+    base_status_bonus: { vo: 90, da: 95, vi: 100 }
+    para_bonus: { vo: 23.0, da: 28.0, vi: 15.0 }
+    uncap3_bonus: { vo: 3.0, da: 5.0, vi: 0 }
+
+  - id: "char_rinami"
+    name: "姫崎莉波"
+    color: "#F6ADC6"
+    initial: "莉"
+    base_status_bonus: { vo: 85, da: 110, vi: 110 }
+    para_bonus: { vo: 11.0, da: 24.5, vi: 28.5 }
+    uncap3_bonus: { vo: 0, da: 3.0, vi: 5.0 }

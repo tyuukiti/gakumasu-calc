@@ -100,6 +100,64 @@
                 </StackPanel>
             </Border>
 
+            <!-- キャラ選択 (折りたたみ式・任意) -->
+            <Border Style="{StaticResource SectionCard}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="キャラ選択" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <TextBlock Text="（任意）" FontSize="11" Foreground="#999"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedCharacterDisplay}"
+                                       FontSize="12" Foreground="#666" Margin="4,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                        <!-- キャラタイル(7列グリッド) -->
+                        <ItemsControl ItemsSource="{Binding CharacterTiles}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="7"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.SelectCharacterCommand,
+                                                      RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding Character}"
+                                            Background="{Binding BackgroundBrush}"
+                                            BorderBrush="{StaticResource AccentBrush}"
+                                            BorderThickness="{Binding BorderThickness}"
+                                            Margin="3" Padding="0" Height="60"
+                                            ToolTip="{Binding Name}" Cursor="Hand">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Initial}" FontSize="20" FontWeight="Bold"
+                                                       Foreground="{Binding ForegroundBrush}"
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Name}" FontSize="9"
+                                                       Foreground="{Binding ForegroundBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" MaxWidth="60"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <!-- 3凸ボーナス切替（OFFで3凸分を減算） -->
+                        <CheckBox Content="3凸レッスンボーナス込み"
+                                  IsChecked="{Binding Uncap3BonusEnabled}"
+                                  FontSize="11" Margin="0,8,0,0"
+                                  Visibility="{Binding HasUncap3Bonus, Converter={StaticResource BoolToVis}}"/>
+                        <!-- 補正サマリ -->
+                        <TextBlock Text="{Binding CharacterBonusSummary}"
+                                   FontSize="11" Foreground="#666" Margin="0,4,0,0"
+                                   Visibility="{Binding HasSelectedCharacter, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
             <!-- 属性設定 -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
@@ -449,30 +507,41 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="50"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="36"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Vocal" FontSize="14" FontWeight="Bold"
                                    Foreground="{StaticResource VoBrush}" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Height="24" CornerRadius="12"
                                 Background="#F0F0F0">
-                            <Border Background="{StaticResource VoBrush}"
-                                    CornerRadius="12" HorizontalAlignment="Left"
-                                    Width="{Binding VoBarWidth}"/>
+                            <Grid>
+                                <!-- 合計バー(暗色)：差分が右端に暗く見える -->
+                                <Border Background="{StaticResource VoBrushDark}"
+                                        CornerRadius="12" HorizontalAlignment="Left"
+                                        Width="{Binding VoBarWidth}"/>
+                                <!-- 補正なしバー(通常色)を上に重ねる -->
+                                <Border Background="{StaticResource VoBrush}"
+                                        CornerRadius="12" HorizontalAlignment="Left"
+                                        Width="{Binding VoBarWidthBase}"/>
+                            </Grid>
                         </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding ResultVo, StringFormat={}{0:#,0}}"
-                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsVoAtCap}" Value="True">
-                                            <Setter Property="Foreground" Value="#EF4444"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ResultVo, StringFormat={}{0:#,0}}"
+                                       FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                       HorizontalAlignment="Right">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsVoAtCap}" Value="True">
+                                                <Setter Property="Foreground" Value="#EF4444"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding ResultVoDeltaText}" FontSize="10" FontFamily="Consolas"
+                                       Foreground="#888" HorizontalAlignment="Right"/>
+                        </StackPanel>
                         <TextBlock Grid.Column="3" Text="MAX" FontSize="10" FontWeight="Bold"
                                    Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
                                    Visibility="{Binding IsVoAtCap, Converter={StaticResource BoolToVis}}"/>
@@ -483,30 +552,39 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="50"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="36"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Dance" FontSize="14" FontWeight="Bold"
                                    Foreground="{StaticResource DaBrush}" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Height="24" CornerRadius="12"
                                 Background="#F0F0F0">
-                            <Border Background="{StaticResource DaBrush}"
-                                    CornerRadius="12" HorizontalAlignment="Left"
-                                    Width="{Binding DaBarWidth}"/>
+                            <Grid>
+                                <Border Background="{StaticResource DaBrushDark}"
+                                        CornerRadius="12" HorizontalAlignment="Left"
+                                        Width="{Binding DaBarWidth}"/>
+                                <Border Background="{StaticResource DaBrush}"
+                                        CornerRadius="12" HorizontalAlignment="Left"
+                                        Width="{Binding DaBarWidthBase}"/>
+                            </Grid>
                         </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding ResultDa, StringFormat={}{0:#,0}}"
-                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsDaAtCap}" Value="True">
-                                            <Setter Property="Foreground" Value="#EF4444"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ResultDa, StringFormat={}{0:#,0}}"
+                                       FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                       HorizontalAlignment="Right">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDaAtCap}" Value="True">
+                                                <Setter Property="Foreground" Value="#EF4444"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding ResultDaDeltaText}" FontSize="10" FontFamily="Consolas"
+                                       Foreground="#888" HorizontalAlignment="Right"/>
+                        </StackPanel>
                         <TextBlock Grid.Column="3" Text="MAX" FontSize="10" FontWeight="Bold"
                                    Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
                                    Visibility="{Binding IsDaAtCap, Converter={StaticResource BoolToVis}}"/>
@@ -517,30 +595,39 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="50"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="36"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Visual" FontSize="14" FontWeight="Bold"
                                    Foreground="{StaticResource ViBrush}" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Height="24" CornerRadius="12"
                                 Background="#F0F0F0">
-                            <Border Background="{StaticResource ViBrush}"
-                                    CornerRadius="12" HorizontalAlignment="Left"
-                                    Width="{Binding ViBarWidth}"/>
+                            <Grid>
+                                <Border Background="{StaticResource ViBrushDark}"
+                                        CornerRadius="12" HorizontalAlignment="Left"
+                                        Width="{Binding ViBarWidth}"/>
+                                <Border Background="{StaticResource ViBrush}"
+                                        CornerRadius="12" HorizontalAlignment="Left"
+                                        Width="{Binding ViBarWidthBase}"/>
+                            </Grid>
                         </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding ResultVi, StringFormat={}{0:#,0}}"
-                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsViAtCap}" Value="True">
-                                            <Setter Property="Foreground" Value="#EF4444"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ResultVi, StringFormat={}{0:#,0}}"
+                                       FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                       HorizontalAlignment="Right">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsViAtCap}" Value="True">
+                                                <Setter Property="Foreground" Value="#EF4444"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding ResultViDeltaText}" FontSize="10" FontFamily="Consolas"
+                                       Foreground="#888" HorizontalAlignment="Right"/>
+                        </StackPanel>
                         <TextBlock Grid.Column="3" Text="MAX" FontSize="10" FontWeight="Bold"
                                    Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
                                    Visibility="{Binding IsViAtCap, Converter={StaticResource BoolToVis}}"/>
@@ -549,12 +636,17 @@
                     <!-- 合計 -->
                     <Border Margin="0,8,0,0" Padding="10,6" Background="#F5F5F5" CornerRadius="6">
                         <Grid>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
                                 <TextBlock Text="合計: " FontSize="16" Foreground="#666"
                                            VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding ResultTotal, StringFormat={}{0:#,0}}"
                                            FontSize="22" FontWeight="Bold" FontFamily="Consolas"
-                                           Foreground="{StaticResource AccentBrush}"/>
+                                           Foreground="{StaticResource AccentBrush}"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ResultTotalBaseText}" FontSize="11" FontFamily="Consolas"
+                                           Foreground="#888" Margin="10,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding HasCharacterBonus, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
                             <Button Content="コピー" Command="{Binding CopyResultCommand}"
                                     HorizontalAlignment="Right" VerticalAlignment="Center"

@@ -15,6 +15,9 @@ import { selectMultiplePatterns } from '../services/cardScoring';
 import { calculate } from '../services/statusCalculation';
 import { trackEvent, startTimer, endTimer, incrementCounter, trackFunnelStep } from '../utils/analytics';
 
+const SELECTED_CHARACTER_KEY = 'selectedCharacterId';
+const UNCAP3_BONUS_KEY = 'uncap3CharacterBonusEnabled';
+
 interface CalcState {
   selectedPlanId: string;
   selectedPlanType: PlanType;
@@ -29,9 +32,13 @@ interface CalcState {
   ownedOnly: boolean;
   contestMode: boolean;
   requiredCardIds: string[];
+  selectedCharacterId: string | null;
+  uncap3BonusEnabled: boolean;
   deckResults: DeckResult[];
   selectedPatternIndex: number;
   calculationResult: CalculationResult | null;
+  // キャラ補正を抜いた結果（キャラ未選択時は null）
+  calculationResultWithoutCharacter: CalculationResult | null;
   errorMessage: string | null;
 
   // internal state for re-applying patterns
@@ -48,6 +55,8 @@ interface CalcState {
   setContestMode: (v: boolean) => void;
   addRequiredCard: (cardId: string) => void;
   removeRequiredCard: (cardId: string) => void;
+  setSelectedCharacter: (id: string | null) => void;
+  setUncap3BonusEnabled: (v: boolean) => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
 }
@@ -238,11 +247,42 @@ function applySelectedPatternImpl(
   }
 
   const selectedCards = pattern.selected_cards.map((cs) => cs.card);
-  const result = calculate(plan, selectedCards, turnChoices, uncapLevels, state.additionalCounts);
+
+  const character = state.selectedCharacterId
+    ? useAppStore.getState().characters.find((c) => c.id === state.selectedCharacterId) ?? null
+    : null;
+
+  // para_bonus は3凸ON時の最大値。OFFなら uncap3_bonus 分を減算した一時オブジェクトを生成
+  const effectiveChar =
+    character && !state.uncap3BonusEnabled && character.uncap3_bonus
+      ? {
+          ...character,
+          para_bonus: {
+            vo: character.para_bonus.vo - character.uncap3_bonus.vo,
+            da: character.para_bonus.da - character.uncap3_bonus.da,
+            vi: character.para_bonus.vi - character.uncap3_bonus.vi,
+          },
+        }
+      : character;
+
+  const result = calculate(
+    plan,
+    selectedCards,
+    turnChoices,
+    uncapLevels,
+    state.additionalCounts,
+    effectiveChar,
+  );
+
+  // キャラ選択時のみ「補正なし」のベース結果も計算
+  const resultWithoutCharacter = character
+    ? calculate(plan, selectedCards, turnChoices, uncapLevels, state.additionalCounts, null)
+    : null;
 
   return {
     selectedPatternIndex: index,
     calculationResult: result,
+    calculationResultWithoutCharacter: resultWithoutCharacter,
     errorMessage: null,
   };
 }
@@ -261,9 +301,15 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   ownedOnly: false,
   contestMode: false,
   requiredCardIds: [],
+  selectedCharacterId:
+    typeof window !== 'undefined' ? localStorage.getItem(SELECTED_CHARACTER_KEY) : null,
+  // デフォルト OFF（3凸は課金要素で重いため）。para_bonus は3凸ON状態の最大値として保持し、OFFなら uncap3_bonus 分を減算
+  uncap3BonusEnabled:
+    typeof window !== 'undefined' && localStorage.getItem(UNCAP3_BONUS_KEY) === '1',
   deckResults: [],
   selectedPatternIndex: 0,
   calculationResult: null,
+  calculationResultWithoutCharacter: null,
   errorMessage: null,
   _lastMainStats: [],
   _lastLessonWeekCount: 0,
@@ -274,6 +320,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
       selectedTemplateName: null,
       deckResults: [],
       calculationResult: null,
+      calculationResultWithoutCharacter: null,
       errorMessage: null,
       selectedPatternIndex: 0,
     }),
@@ -352,6 +399,40 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   removeRequiredCard: (cardId) => {
     const state = get();
     set({ requiredCardIds: state.requiredCardIds.filter((id) => id !== cardId) });
+  },
+
+  setSelectedCharacter: (id) => {
+    if (id) localStorage.setItem(SELECTED_CHARACTER_KEY, id);
+    else localStorage.removeItem(SELECTED_CHARACTER_KEY);
+
+    set({ selectedCharacterId: id });
+
+    // 計算済みなら現在の選択パターンで再計算
+    const state = get();
+    if (state.calculationResult && state.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(
+        { ...state, selectedCharacterId: id },
+        state.selectedPatternIndex,
+      );
+      set(updates as Partial<CalcState>);
+    }
+  },
+
+  setUncap3BonusEnabled: (v) => {
+    // デフォルトOFF。ONのみ '1' を記録、OFFなら削除（未設定=OFF扱い）
+    if (v) localStorage.setItem(UNCAP3_BONUS_KEY, '1');
+    else localStorage.removeItem(UNCAP3_BONUS_KEY);
+
+    set({ uncap3BonusEnabled: v });
+
+    const state = get();
+    if (state.calculationResult && state.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(
+        { ...state, uncap3BonusEnabled: v },
+        state.selectedPatternIndex,
+      );
+      set(updates as Partial<CalcState>);
+    }
   },
 
   executeCalculate: () => {

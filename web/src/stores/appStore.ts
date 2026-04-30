@@ -1,7 +1,7 @@
 ﻿import { create } from 'zustand'
-import type { SupportCard, TrainingPlan, EventCountTemplate } from '../types/models'
+import type { SupportCard, TrainingPlan, EventCountTemplate, Character } from '../types/models'
 import type { CardInventoryEntry } from '../types/inventory'
-import { loadSupportCards, loadTrainingPlans, loadEventCountTemplates } from '../services/yamlLoader'
+import { loadSupportCards, loadTrainingPlans, loadEventCountTemplates, loadCharacters } from '../services/yamlLoader'
 import { loadInventory } from '../services/inventory'
 import { trackEvent, setUserProperties } from '../utils/analytics'
 
@@ -9,6 +9,7 @@ interface AppState {
   cards: SupportCard[]
   plans: TrainingPlan[]
   templates: EventCountTemplate[]
+  characters: Character[]
   inventory: CardInventoryEntry[]
   isLoading: boolean
   error: string | null
@@ -20,6 +21,7 @@ export const useAppStore = create<AppState>((set) => ({
   cards: [],
   plans: [],
   templates: [],
+  characters: [],
   inventory: [],
   isLoading: true,
   error: null,
@@ -27,13 +29,14 @@ export const useAppStore = create<AppState>((set) => ({
   initialize: async () => {
     const startTime = Date.now()
     try {
-      const [cards, plans, templates] = await Promise.all([
+      const [cards, plans, templates, characters] = await Promise.all([
         loadSupportCards(),
         loadTrainingPlans(),
         loadEventCountTemplates(),
+        loadCharacters(),
       ])
       const inventory = loadInventory()
-      set({ cards, plans, templates, inventory, isLoading: false })
+      set({ cards, plans, templates, characters, inventory, isLoading: false })
 
       // ユーザープロパティ設定
       const ownedCount = inventory.filter(e => e.owned).length;
