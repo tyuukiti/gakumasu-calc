@@ -969,7 +969,7 @@ public class CardScoringService
             if (Math.Abs(value) < 0.01) continue;
 
             // 内訳の理由テキスト生成
-            var reason2 = BuildReasonText(effect, triggerCounts, uncap);
+            var reason2 = BuildReasonText(effect, triggerCounts, uncap, card);
 
             switch (effect.Stat)
             {
@@ -1054,7 +1054,7 @@ public class CardScoringService
         _ => trigger
     };
 
-    private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel)
+    private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel, SupportCard card)
     {
         var prefix = effect.Source == "item" ? "[アイテム] " : "";
         var triggerName = TriggerDisplayName(effect.Trigger);
@@ -1063,6 +1063,13 @@ public class CardScoringService
 
         if (effect.Trigger == "equip")
         {
+            if (effect.ValueType == "flat" && effect.EventParam)
+            {
+                var boost = card.GetEventParamBoostPercent(uncapLevel);
+                var mul = 1.0 + boost / 100.0;
+                var result = (int)(val * mul);
+                return $"{prefix}{stat} 初期値+{(int)val}×{mul:0.##}={result}";
+            }
             return effect.ValueType switch
             {
                 "sp_rate" => $"{prefix}{stat} SP率+{val}%",

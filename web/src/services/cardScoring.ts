@@ -76,6 +76,7 @@ function buildReasonText(
   effect: CardEffect,
   triggerCounts: Record<string, number>,
   uncapLevel: number,
+  card: SupportCard,
 ): string {
   const prefix = effect.source === 'item' ? '[アイテム] ' : '';
   const triggerName = triggerDisplayName(effect.trigger);
@@ -83,6 +84,12 @@ function buildReasonText(
   const val = getEffectValue(effect, uncapLevel);
 
   if (effect.trigger === 'equip') {
+    if (effect.value_type === 'flat' && effect.event_param) {
+      const boost = getEventParamBoostPercent(card, uncapLevel);
+      const mul = 1 + boost / 100;
+      const result = Math.floor(val * mul);
+      return `${prefix}${stat} 初期値+${Math.floor(val)}×${mul.toFixed(2).replace(/\.?0+$/, '')}=${result}`;
+    }
     switch (effect.value_type) {
       case 'sp_rate':
         return `${prefix}${stat} SP率+${val}%`;
@@ -356,7 +363,7 @@ export function calculateCardContribution(
     if (Math.abs(value) < 0.01) continue;
 
     // 内訳の理由テキスト生成
-    const reason2 = buildReasonText(effect, triggerCounts, uncap);
+    const reason2 = buildReasonText(effect, triggerCounts, uncap, card);
 
     switch (effect.stat) {
       case 'vo':
