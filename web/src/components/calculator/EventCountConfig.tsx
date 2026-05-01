@@ -15,6 +15,7 @@ const COUNT_LABELS: { key: string; label: string }[] = [
   { key: 'active_delete', label: 'アクティブ削除' },
   { key: 'mental_acquire', label: 'メンタル獲得' },
   { key: 'mental_enhance', label: 'メンタル強化' },
+  { key: 'mental_delete', label: 'メンタル削除' },
   { key: 'active_acquire', label: 'アクティブ獲得' },
   { key: 'good_condition_acquire', label: '好調カード獲得' },
   { key: 'concentrate_acquire', label: '集中カード獲得' },

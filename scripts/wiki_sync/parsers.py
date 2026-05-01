@@ -360,6 +360,9 @@ def parse_detail_page(url: str, debug: bool = False) -> dict | None:
             })
         break
 
+    # --- サポートイベントテーブル (Lv20の「○○上昇+N」が equip/flat 固定値項目) ---
+    result["support_events"] = parse_support_event_table(tables)
+
     # --- カード画像 ---
     result["image_url"] = None
     img_tag = soup.find("img", src=re.compile(
@@ -369,6 +372,43 @@ def parse_detail_page(url: str, debug: bool = False) -> dict | None:
         result["image_url"] = img_tag["src"]
 
     return result
+
+
+def parse_support_event_table(tables) -> list[dict]:
+    """
+    サポートイベントテーブル（先頭が「解放|効果|コミュ」）から
+    「○○上昇+N」のステータス上昇効果を抽出。
+
+    Returns: [{stat, value, unlock}]  (stat=vo/da/vi, value=int, unlock=Lv20など)
+    """
+    results: list[dict] = []
+    for table in tables:
+        rows = table.find_all("tr")
+        if not rows:
+            continue
+        head_cells = [c.get_text(strip=True) for c in rows[0].find_all(["td", "th"])]
+        if not (len(head_cells) >= 3 and head_cells[0] == "解放"
+                and head_cells[1] == "効果" and head_cells[2] == "コミュ"):
+            continue
+
+        for r in rows[1:]:
+            cells = r.find_all(["td", "th"])
+            if len(cells) < 2:
+                continue
+            unlock = cells[0].get_text(strip=True)
+            effect_text = cells[1].get_text(separator=" ", strip=True)
+            # 「ビジュアル上昇+ 20」「ダンス上昇+20」両対応
+            m = re.search(r"(ボーカル|ダンス|ビジュアル)上昇\+\s*(\d+)", effect_text)
+            if not m:
+                continue
+            stat_map = {"ボーカル": "vo", "ダンス": "da", "ビジュアル": "vi"}
+            results.append({
+                "stat": stat_map[m.group(1)],
+                "value": int(m.group(2)),
+                "unlock": unlock,
+            })
+        break
+    return results
 
 
 def guess_type_from_lesson(lesson_support: str) -> str:

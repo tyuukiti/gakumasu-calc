@@ -20,7 +20,7 @@ def classify_ability(name: str) -> tuple[str | None, str]:
     if "SP" in name and "発生率" in name and "終了" not in name:
         return "equip", "sp_rate"
     if "イベント" in name and "パラメータ" in name:
-        return None, "flat"
+        return "equip", "event_param_boost"
     if "Pポイント" in name:
         return None, "flat"
     if "パラメータボーナス" in name or "レッスンボーナス" in name:
@@ -55,6 +55,18 @@ def build_new_card(
     default_stat = "all" if card_type == "as" else card_type
 
     effects = []
+
+    # サポートイベント由来の固定値equip+flat (event_param: true)
+    for ev in detail.get("support_events", []):
+        v = float(ev["value"])
+        effects.append({
+            "trigger": "equip",
+            "stat": ev["stat"],
+            "values": [v, v, v, v, v],
+            "value_type": "flat",
+            "event_param": True,
+        })
+
     for abi in abilities:
         name = abi["name"]
         values = parse_uncap_values(abi["uncap_values"])
@@ -114,12 +126,25 @@ def build_new_card(
     return card
 
 
-def classify_and_match(effects: list[dict], wiki_abilities: list[dict], default_stat: str = "vo") -> tuple[bool, list[str]]:
-    """既存effectsの値をWikiアビリティで更新し、不足分を追加、不要分を削除する"""
+def classify_and_match(
+    effects: list[dict],
+    wiki_abilities: list[dict],
+    default_stat: str = "vo",
+    support_events: list[dict] | None = None,
+) -> tuple[bool, list[str]]:
+    """既存effectsの値をWikiアビリティで更新し、不足分を追加、不要分を削除する。
+    support_events を渡すとサポートイベント由来 equip/flat (event_param: true) も同期する。
+    """
     updated = False
     logs = []
     matched_effect_ids: set[int] = set()
     matched_wiki_indices: set[int] = set()
+
+    # Phase 0: サポートイベント由来 equip/flat (event_param: true) の同期
+    if support_events is not None:
+        updated_se, logs_se = _sync_support_events(effects, support_events, matched_effect_ids)
+        updated = updated or updated_se
+        logs.extend(logs_se)
 
     # Phase 1: 既存effectsとWikiアビリティのマッチング・値更新
     for wi, wiki_abi in enumerate(wiki_abilities):
@@ -228,6 +253,7 @@ def classify_and_match(effects: list[dict], wiki_abilities: list[dict], default_
 
     # Phase 3: Wikiアビリティに対応するtrigger+vtypeが存在しないエフェクトを削除
     # (同じtrigger+vtypeの別アビリティが存在する場合は残す)
+    # event_param: true 付きはサポートイベント由来なので削除対象外
     wiki_trigger_vtypes: set[tuple[str, str]] = set()
     for wiki_abi in wiki_abilities:
         t, vt = classify_ability(wiki_abi["name"])
@@ -236,10 +262,78 @@ def classify_and_match(effects: list[dict], wiki_abilities: list[dict], default_
 
     if wiki_trigger_vtypes:
         for e in remove_candidates:
+            if e.get("event_param"):
+                continue
             key = (e.get("trigger"), e.get("value_type"))
             if key not in wiki_trigger_vtypes:
                 effects.remove(e)
                 updated = True
                 logs.append(f"    - 削除: {e.get('trigger')}/{e.get('value_type')} stat={e.get('stat')}")
+
+    return updated, logs
+
+
+def _sync_support_events(
+    effects: list[dict],
+    support_events: list[dict],
+    matched_effect_ids: set[int],
+) -> tuple[bool, list[str]]:
+    """サポートイベント由来 equip/flat (event_param: true) を effects に反映する。
+
+    既存 effects のうち以下を「サポートイベント由来候補」とみなす:
+      - event_param: true 付き equip/flat
+      - または equip/flat で values が全要素同値 (旧データ互換)
+    """
+    updated = False
+    logs: list[str] = []
+
+    # 既存候補: event_param付き or 凸定数のequip/flat
+    existing_se: dict[str, dict] = {}  # stat -> effect
+    for e in effects:
+        if e.get("trigger") != "equip" or e.get("value_type") != "flat":
+            continue
+        vals = e.get("values", [])
+        is_const = bool(vals) and len(set(vals)) == 1
+        if e.get("event_param") is True or is_const:
+            existing_se[e.get("stat")] = e
+
+    expected_stats: set[str] = set()
+    for ev in support_events:
+        stat = ev["stat"]
+        v = float(ev["value"])
+        expected_stats.add(stat)
+        new_values = [v, v, v, v, v]
+        existing = existing_se.get(stat)
+        if existing is None:
+            effects.append({
+                "trigger": "equip",
+                "stat": stat,
+                "values": new_values,
+                "value_type": "flat",
+                "event_param": True,
+            })
+            matched_effect_ids.add(id(effects[-1]))
+            updated = True
+            logs.append(f"    + サポートイベント追加: equip/flat stat={stat} values={new_values} (event_param)")
+        else:
+            matched_effect_ids.add(id(existing))
+            old_values = existing.get("values", [])
+            if old_values != new_values:
+                existing["values"] = new_values
+                updated = True
+                logs.append(f"    ✓ サポートイベント値: stat={stat} {old_values} → {new_values}")
+            if not existing.get("event_param"):
+                existing["event_param"] = True
+                updated = True
+                logs.append(f"    ✓ event_param 付与: stat={stat}")
+
+    # サポートイベントから消えた既存候補を削除 (event_param: true 付きのみ)
+    for stat, e in list(existing_se.items()):
+        if stat in expected_stats:
+            continue
+        if e.get("event_param") is True:
+            effects.remove(e)
+            updated = True
+            logs.append(f"    - サポートイベント削除: equip/flat stat={stat}")
 
     return updated, logs

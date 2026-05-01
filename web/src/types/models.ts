@@ -33,6 +33,7 @@ export interface CardEffect {
   condition?: string;
   description?: string;
   source?: string;
+  event_param?: boolean;
 }
 
 export interface LessonBonusPercent {
@@ -110,6 +111,7 @@ export interface AdditionalCounts extends Record<string, number> {
   active_delete: number;
   mental_acquire: number;
   mental_enhance: number;
+  mental_delete: number;
   active_acquire: number;
   genki_acquire: number;
   good_condition_acquire: number;
@@ -128,7 +130,7 @@ export function emptyAdditionalCounts(): AdditionalCounts {
     skill_ssr_acquire: 0, skill_enhance: 0, skill_delete: 0,
     skill_custom: 0, skill_change: 0,
     active_enhance: 0, active_delete: 0,
-    mental_acquire: 0, mental_enhance: 0, active_acquire: 0,
+    mental_acquire: 0, mental_enhance: 0, mental_delete: 0, active_acquire: 0,
     genki_acquire: 0, good_condition_acquire: 0,
     good_impression_acquire: 0, conserve_acquire: 0,
     concentrate_acquire: 0, motivation_acquire: 0,

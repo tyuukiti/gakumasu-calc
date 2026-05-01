@@ -294,11 +294,16 @@ def main():
             elif action == "update":
                 info = existing_cards[entry.name]
                 abilities = detail.get("abilities", [])
+                support_events = detail.get("support_events", [])
                 value_updated = False
-                if abilities:
+                if abilities or support_events:
                     card_type = info["card"].get("type", "vo")
                     default_stat = "all" if card_type == "as" else card_type
-                    value_updated, logs = classify_and_match(info["card"]["effects"], abilities, default_stat=default_stat)
+                    value_updated, logs = classify_and_match(
+                        info["card"]["effects"], abilities,
+                        default_stat=default_stat,
+                        support_events=support_events,
+                    )
                     for log in logs:
                         print(log)
                     if value_updated:

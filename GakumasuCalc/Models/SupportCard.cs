@@ -39,9 +39,11 @@ public class SupportCard
     public StatusValues GetInitialBonus(int uncapLevel = 4)
     {
         int vo = 0, da = 0, vi = 0;
+        var boostMul = 1.0 + GetEventParamBoostPercent(uncapLevel) / 100.0;
         foreach (var e in Effects.Where(e => e.Trigger == "equip" && e.ValueType == "flat"))
         {
-            var v = (int)e.GetValue(uncapLevel);
+            var raw = e.GetValue(uncapLevel);
+            var v = (int)(e.EventParam ? raw * boostMul : raw);
             switch (e.Stat)
             {
                 case "vo": vo += v; break;
@@ -50,6 +52,14 @@ public class SupportCard
             }
         }
         return new StatusValues(vo, da, vi);
+    }
+
+    /// <summary>このサポートカードの「イベントによるパラメータ上昇」増加% (装備時)</summary>
+    public double GetEventParamBoostPercent(int uncapLevel = 4)
+    {
+        return Effects
+            .Where(e => e.Trigger == "equip" && e.ValueType == "event_param_boost")
+            .Sum(e => e.GetValue(uncapLevel));
     }
 
     /// <summary>SP率% (装備時)</summary>
@@ -154,6 +164,13 @@ public class CardEffect
     /// <summary>効果の出典 (例: "item" = プロデュースアイテム効果)</summary>
     [YamlMember(Alias = "source")]
     public string? Source { get; set; }
+
+    /// <summary>
+    /// trueなら、この effect は「サポートイベントによるパラメータ上昇」枠で、
+    /// 同カードの value_type=event_param_boost 効果による%倍率の対象となる。
+    /// </summary>
+    [YamlMember(Alias = "event_param")]
+    public bool EventParam { get; set; }
 }
 
 public class LessonBonusPercent

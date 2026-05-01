@@ -962,14 +962,14 @@ public class CardScoringService
 
             double value = effect.ValueType switch
             {
-                "flat" => CalculateFlatValue(effect, triggerCounts, uncap),
+                "flat" => CalculateFlatValue(effect, triggerCounts, uncap, card),
                 _ => 0
             };
 
             if (Math.Abs(value) < 0.01) continue;
 
             // 内訳の理由テキスト生成
-            var reason2 = BuildReasonText(effect, triggerCounts, uncap);
+            var reason2 = BuildReasonText(effect, triggerCounts, uncap, card);
 
             switch (effect.Stat)
             {
@@ -1031,6 +1031,7 @@ public class CardScoringService
         "active_delete" => "アクティブ削除",
         "mental_acquire" => "メンタル獲得",
         "mental_enhance" => "メンタル強化",
+        "mental_delete" => "メンタル削除",
         "active_acquire" => "アクティブ獲得",
         "genki_acquire" => "元気獲得",
         "good_condition_acquire" => "好調獲得",
@@ -1053,7 +1054,7 @@ public class CardScoringService
         _ => trigger
     };
 
-    private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel)
+    private string BuildReasonText(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel, SupportCard card)
     {
         var prefix = effect.Source == "item" ? "[アイテム] " : "";
         var triggerName = TriggerDisplayName(effect.Trigger);
@@ -1062,6 +1063,12 @@ public class CardScoringService
 
         if (effect.Trigger == "equip")
         {
+            if (effect.ValueType == "flat" && effect.EventParam)
+            {
+                var boost = card.GetEventParamBoostPercent(uncapLevel);
+                var result = (int)(val * (1.0 + boost / 100.0));
+                return $"{prefix}{stat} 初期値+{(int)val}(+{(int)boost}%)={result}";
+            }
             return effect.ValueType switch
             {
                 "sp_rate" => $"{prefix}{stat} SP率+{val}%",
@@ -1136,11 +1143,17 @@ public class CardScoringService
         return counts;
     }
 
-    private double CalculateFlatValue(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel)
+    private double CalculateFlatValue(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel, SupportCard card)
     {
         var val = effect.GetValue(uncapLevel);
         if (effect.Trigger == "equip")
+        {
+            if (effect.EventParam)
+            {
+                val *= 1.0 + card.GetEventParamBoostPercent(uncapLevel) / 100.0;
+            }
             return val;
+        }
 
         int fires = triggerCounts.GetValueOrDefault(effect.Trigger, 0);
 

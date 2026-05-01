@@ -35,9 +35,11 @@ function getInitialBonus(card: SupportCard, uncapLevel: number): StatusValues {
   let vo = 0,
     da = 0,
     vi = 0;
+  const boostMul = 1 + getEventParamBoostPercent(card, uncapLevel) / 100;
   for (const e of card.effects) {
     if (e.trigger === 'equip' && e.value_type === 'flat') {
-      const v = Math.floor(getEffectValue(e, uncapLevel));
+      const raw = getEffectValue(e, uncapLevel);
+      const v = Math.floor(e.event_param ? raw * boostMul : raw);
       switch (e.stat) {
         case 'vo': vo += v; break;
         case 'da': da += v; break;
@@ -46,6 +48,16 @@ function getInitialBonus(card: SupportCard, uncapLevel: number): StatusValues {
     }
   }
   return { vo, da, vi };
+}
+
+export function getEventParamBoostPercent(card: SupportCard, uncapLevel: number): number {
+  let total = 0;
+  for (const e of card.effects) {
+    if (e.trigger === 'equip' && e.value_type === 'event_param_boost') {
+      total += getEffectValue(e, uncapLevel);
+    }
+  }
+  return total;
 }
 
 function getEffectsByTrigger(card: SupportCard, trigger: string): CardEffect[] {
