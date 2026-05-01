@@ -86,9 +86,8 @@ function buildReasonText(
   if (effect.trigger === 'equip') {
     if (effect.value_type === 'flat' && effect.event_param) {
       const boost = getEventParamBoostPercent(card, uncapLevel);
-      const mul = 1 + boost / 100;
-      const result = Math.floor(val * mul);
-      return `${prefix}${stat} 初期値+${Math.floor(val)}×${mul.toFixed(2).replace(/\.?0+$/, '')}=${result}`;
+      const result = Math.floor(val * (1 + boost / 100));
+      return `${prefix}${stat} 初期値+${Math.floor(val)}(+${Math.floor(boost)}%)=${result}`;
     }
     switch (effect.value_type) {
       case 'sp_rate':

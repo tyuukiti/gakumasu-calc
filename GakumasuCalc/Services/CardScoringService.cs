@@ -1066,9 +1066,8 @@ public class CardScoringService
             if (effect.ValueType == "flat" && effect.EventParam)
             {
                 var boost = card.GetEventParamBoostPercent(uncapLevel);
-                var mul = 1.0 + boost / 100.0;
-                var result = (int)(val * mul);
-                return $"{prefix}{stat} 初期値+{(int)val}×{mul:0.##}={result}";
+                var result = (int)(val * (1.0 + boost / 100.0));
+                return $"{prefix}{stat} 初期値+{(int)val}(+{(int)boost}%)={result}";
             }
             return effect.ValueType switch
             {
