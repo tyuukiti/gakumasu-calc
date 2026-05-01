@@ -39,6 +39,8 @@ def write_yaml_with_flow_values(filepath: str, cards: list[dict]):
                 lines.append(f"    description: {eff['description']}")
             if eff.get("source"):
                 lines.append(f"    source: {eff['source']}")
+            if eff.get("event_param") is True:
+                lines.append(f"    event_param: true")
     with open(filepath, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 

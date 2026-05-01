@@ -10,6 +10,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -26,6 +27,10 @@ support_cards:
     stat: vi
     values: [5, 5, 5, 5, 6]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0092
   name: 合格おめでとう！
   rarity: SSR
@@ -37,6 +42,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -56,6 +62,10 @@ support_cards:
     max_count: 2
     condition: da>=700
     source: item
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0091
   name: かかってらっしゃい！
   rarity: SSR
@@ -67,6 +77,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -85,6 +96,10 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0089
   name: 思い出の宝箱だ、ね
   rarity: SSR
@@ -96,6 +111,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -113,6 +129,10 @@ support_cards:
     stat: vo
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0088
   name: 手毬のリサイタル、だね
   rarity: SSR
@@ -124,6 +144,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -140,6 +161,10 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 6]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0086
   name: 堂々とサボってる！？
   rarity: SSR
@@ -151,6 +176,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -167,6 +193,10 @@ support_cards:
     stat: vo
     values: [5, 5, 5, 5, 6]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0085
   name: 自分と向き合う時間だ
   rarity: SSR
@@ -178,6 +208,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -196,6 +227,10 @@ support_cards:
     value_type: flat
     max_count: 4
     condition: deck>=20
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0084
   name: なぜこんなところにッ！？
   rarity: SSR
@@ -207,6 +242,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -230,6 +266,10 @@ support_cards:
     max_count: 2
     condition: da>=700
     source: item
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0082
   name: メリクリ、おねーちゃん♪
   rarity: SSR
@@ -241,6 +281,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -255,8 +296,12 @@ support_cards:
     value_type: flat
   - trigger: skill_enhance
     stat: da
-    values: [4, 4, 4, 4, 4]
+    values: [3, 3, 3, 3, 4]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0081
   name: やっと見つけたぞ！
   rarity: SSR
@@ -268,6 +313,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -282,8 +328,12 @@ support_cards:
     value_type: flat
   - trigger: skill_delete
     stat: da
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 8, 8, 11]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0079
   name: レディ・セット、ゴー！
   rarity: SSR
@@ -295,6 +345,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -312,6 +363,10 @@ support_cards:
     stat: vo
     values: [7, 7, 7, 7, 9]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0078
   name: クールダウンが大切よ！
   rarity: SSR
@@ -323,6 +378,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -337,8 +393,12 @@ support_cards:
     value_type: flat
   - trigger: class_end
     stat: vi
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 5, 7]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0077
   name: 月村手毬、興味深いわね
   rarity: SSR
@@ -350,6 +410,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -364,8 +425,12 @@ support_cards:
     value_type: flat
   - trigger: skill_delete
     stat: vo
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 8, 8, 11]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0076
   name: これは――お城ッ！！
   rarity: SSR
@@ -377,6 +442,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -389,11 +455,6 @@ support_cards:
     stat: vo
     values: [3, 3, 3, 4, 4]
     value_type: flat
-  - trigger: skill_custom
-    stat: vo
-    values: [11, 11, 11, 11, 11]
-    value_type: flat
-    max_count: 6
   - trigger: special_training
     stat: vo
     values: [30, 30, 30, 30, 30]
@@ -401,6 +462,15 @@ support_cards:
     max_count: 1
     condition: vo>=400
     source: item
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
+  - trigger: skill_custom
+    stat: vo
+    values: [8, 8, 8, 8, 11]
+    value_type: flat
+    max_count: 6
 - id: SP_SSR_0075
   name: 大運動会、開催っ！
   rarity: SSR
@@ -412,20 +482,25 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
     value_type: flat
   - trigger: class_end
     stat: vo
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 7, 7]
     value_type: flat
   - trigger: sp_end
     stat: vo
-    values: [3, 3, 4, 4, 4]
+    values: [15, 15, 15, 15, 21]
     value_type: flat
     max_count: 4
     condition: deck>=20
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0074
   name: ちょっと詳しいんです！
   rarity: SSR
@@ -437,6 +512,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -451,9 +527,13 @@ support_cards:
     value_type: flat
     max_count: 4
     condition: deck>=20
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
   - trigger: skill_custom
     stat: vi
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 8, 8, 11]
     value_type: flat
     max_count: 6
 - id: SP_SSR_0073
@@ -467,6 +547,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -481,8 +562,12 @@ support_cards:
     value_type: flat
   - trigger: skill_delete
     stat: vo
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 8, 8, 11]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0072
   name: おっと、危ないよ
   rarity: SSR
@@ -494,13 +579,14 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: class_end
     stat: vo
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 7, 7, 7]
     value_type: flat
   - trigger: vo_sp_end
     stat: vo
@@ -517,6 +603,10 @@ support_cards:
     max_count: 2
     condition: vo>=400
     source: item
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0071
   name: おい、来てやったぞ！
   rarity: SSR
@@ -528,6 +618,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -551,6 +642,10 @@ support_cards:
     max_count: 3
     condition: da>=700
     source: item
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0069
   name: いつまでも続けばいいのに
   rarity: SSR
@@ -562,6 +657,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -578,6 +674,10 @@ support_cards:
     stat: da
     values: [5, 5, 5, 5, 6]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0067
   name: 放っておけない気になる子
   rarity: SSR
@@ -589,22 +689,27 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
     value_type: flat
   - trigger: skill_delete
     stat: vo
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 11, 11, 11]
     value_type: flat
   - trigger: consultation_drink
     stat: vo
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 8, 11, 11]
     value_type: flat
   - trigger: activity_supply
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0065
   name: どんな関係なんですか？
   rarity: SSR
@@ -616,6 +721,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -632,6 +738,10 @@ support_cards:
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0064
   name: いつも頑張ってるね。
   rarity: SSR
@@ -643,13 +753,14 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: skill_delete
     stat: vi
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 11, 11, 11]
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
@@ -659,6 +770,10 @@ support_cards:
     stat: vi
     values: [4, 4, 4, 4, 5]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0063
   name: 推し活なひととき、だね！
   rarity: SSR
@@ -670,6 +785,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -678,15 +794,19 @@ support_cards:
     stat: vi
     values: [3, 3, 4, 4, 4]
     value_type: flat
-  - trigger: skill_custom
-    stat: vi
-    values: [11, 11, 11, 11, 11]
-    value_type: flat
-    max_count: 6
   - trigger: activity_supply
     stat: vi
     values: [12, 12, 12, 12, 17]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
+  - trigger: skill_custom
+    stat: vi
+    values: [8, 8, 8, 11, 11]
+    value_type: flat
+    max_count: 6
 - id: SP_SSR_0059
   name: よくやったな、倉本。
   rarity: SSR
@@ -698,6 +818,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -714,6 +835,10 @@ support_cards:
     stat: da
     values: [4, 4, 4, 4, 5]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0058
   name: ひとりごとです
   rarity: SSR
@@ -725,13 +850,14 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
     value_type: flat
   - trigger: skill_change
     stat: vi
-    values: [21, 21, 21, 21, 21]
+    values: [16, 16, 21, 21, 21]
     value_type: flat
     max_count: 3
   - trigger: vi_sp_end
@@ -743,6 +869,10 @@ support_cards:
     values: [17, 17, 17, 17, 22]
     value_type: flat
     max_count: 3
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0056
   name: 利用し合うのが友達！
   rarity: SSR
@@ -754,6 +884,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -765,12 +896,12 @@ support_cards:
     max_count: 2
   - trigger: skill_change
     stat: da
-    values: [21, 21, 21, 21, 21]
+    values: [16, 16, 16, 21, 21]
     value_type: flat
     max_count: 3
   - trigger: class_end
     stat: da
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 5, 7]
     value_type: flat
   - trigger: class_end
     stat: da
@@ -779,6 +910,10 @@ support_cards:
     max_count: 2
     condition: da>=400
     source: item
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0055
   name: 相変わらず不器用ね
   rarity: SSR
@@ -790,6 +925,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -806,6 +942,10 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 15]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0053
   name: 相手にとって不足なしよ！
   rarity: SSR
@@ -817,6 +957,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -829,11 +970,15 @@ support_cards:
     stat: vi
     values: [13, 13, 13, 17, 17]
     value_type: flat
-  - trigger: active_delete
+  - trigger: skill_delete
     stat: vi
-    values: [22, 22, 22, 22, 22]
+    values: [17, 17, 17, 17, 22]
     value_type: flat
     max_count: 3
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0052
   name: ここから始まるんだね！
   rarity: SSR
@@ -845,13 +990,14 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: skill_delete
     stat: da
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 11, 11, 11]
     value_type: flat
   - trigger: da_sp_end
     stat: da
@@ -859,8 +1005,12 @@ support_cards:
     value_type: flat
   - trigger: class_end
     stat: da
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 5, 7]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0051
   name: ひとりで立てますか？
   rarity: SSR
@@ -872,6 +1022,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -888,6 +1039,10 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0050
   name: 新生活のはじまりだね
   rarity: SSR
@@ -899,6 +1054,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -921,6 +1077,10 @@ support_cards:
     value_type: flat
     condition: vi>=400
     source: item
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0049
   name: あなたたちのことが好き
   rarity: SSR
@@ -932,6 +1092,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -946,8 +1107,12 @@ support_cards:
     value_type: flat
   - trigger: mental_enhance
     stat: da
-    values: [9, 9, 9, 9, 9]
+    values: [7, 7, 7, 7, 9]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0048
   name: 絶対にお渡ししますわっ！
   rarity: SSR
@@ -959,6 +1124,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -975,6 +1141,10 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 15]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0047
   name: バレンタイン♡会議中ーっ！
   rarity: SSR
@@ -1013,6 +1183,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1025,6 +1196,10 @@ support_cards:
     stat: vo
     values: [11, 11, 11, 11, 15]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0045
   name: これが私達の、3年間
   rarity: SSR
@@ -1036,18 +1211,23 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: da_sp_end
     stat: da
-    values: [5, 5, 7, 7, 7]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: class_end
     stat: da
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 5, 7]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0044
   name: もう一度、最初から！
   rarity: SSR
@@ -1059,6 +1239,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1073,8 +1254,12 @@ support_cards:
     value_type: flat
   - trigger: class_end
     stat: vo
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 5, 7]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0043
   name: 待ちなさーい！
   rarity: SSR
@@ -1086,6 +1271,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -1102,6 +1288,10 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0042
   name: あったかいね
   rarity: SSR
@@ -1113,6 +1303,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -1129,6 +1320,10 @@ support_cards:
     stat: vi
     values: [14, 14, 14, 14, 18]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0041
   name: キラキラして綺麗～っ！
   rarity: SSR
@@ -1140,6 +1335,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1157,6 +1353,10 @@ support_cards:
     values: [17, 17, 17, 17, 22]
     value_type: flat
     max_count: 2
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0038
   name: ぜったい追いついてやる！
   rarity: SSR
@@ -1168,22 +1368,27 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: class_end
     stat: vi
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 7, 7, 7]
     value_type: flat
   - trigger: skill_enhance
     stat: vi
-    values: [4, 4, 4, 4, 4]
+    values: [3, 3, 3, 4, 4]
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
     values: [13, 13, 13, 13, 17]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0037
   name: そろそろ焼けたかな？
   rarity: SSR
@@ -1195,6 +1400,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -1211,6 +1417,10 @@ support_cards:
     stat: da
     values: [12, 12, 12, 12, 17]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0036
   name: 食欲の秋なんです
   rarity: SSR
@@ -1221,6 +1431,10 @@ support_cards:
   - trigger: equip
     stat: all
     values: [14, 14, 14, 14, 14]
+    value_type: sp_rate
+  - trigger: equip
+    stat: vo
+    values: [10.5, 10.5, 14, 14, 14]
     value_type: sp_rate
 - id: SP_SSR_0035
   name: 会長、準備は万端です
@@ -1233,18 +1447,23 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: mental_enhance
     stat: vi
-    values: [9, 9, 9, 9, 9]
+    values: [7, 7, 7, 9, 9]
     value_type: flat
   - trigger: outing_end
     stat: vi
     values: [11, 11, 11, 11, 15]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0034
   name: すっかり秋色ですわね！
   rarity: SSR
@@ -1256,6 +1475,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -1272,6 +1492,10 @@ support_cards:
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0033
   name: 似合うんじゃない？
   rarity: SSR
@@ -1283,6 +1507,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1295,6 +1520,10 @@ support_cards:
     stat: da
     values: [11, 11, 11, 11, 15]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0032
   name: 二人ならあっという間だね
   rarity: SSR
@@ -1306,22 +1535,27 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: class_end
     stat: vo
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 7, 7, 7]
     value_type: flat
   - trigger: skill_enhance
     stat: vo
-    values: [4, 4, 4, 4, 4]
+    values: [3, 3, 3, 4, 4]
     value_type: flat
   - trigger: vo_sp_end
     stat: vo
     values: [13, 13, 13, 13, 17]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0030
   name: 新たな挑戦の成功ですわ！
   rarity: SSR
@@ -1333,6 +1567,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -1354,6 +1589,10 @@ support_cards:
     values: [15, 15, 15, 15, 15]
     value_type: flat
     source: item
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0029
   name: ゆっくりと過ごしましょう
   rarity: SSR
@@ -1365,18 +1604,23 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
-    values: [5, 5, 7, 7, 7]
+    values: [13, 13, 13, 17, 17]
     value_type: flat
   - trigger: consultation_drink
     stat: vi
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 8, 8, 11]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0028
   name: あっちも行きたいですわ！
   rarity: SSR
@@ -1388,6 +1632,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -1404,6 +1649,10 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0027
   name: 夏を満喫するわよ！
   rarity: SSR
@@ -1415,13 +1664,14 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: mental_enhance
     stat: da
-    values: [9, 9, 9, 9, 9]
+    values: [7, 7, 9, 9, 9]
     value_type: flat
   - trigger: da_sp_end
     stat: da
@@ -1429,8 +1679,12 @@ support_cards:
     value_type: flat
   - trigger: class_end
     stat: da
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 5, 7]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0026
   name: 花火、やりませんか……？
   rarity: SSR
@@ -1442,6 +1696,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1458,6 +1713,10 @@ support_cards:
     stat: vi
     values: [14, 14, 14, 14, 18]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0025
   name: 夏を楽しみましょう！
   rarity: SSR
@@ -1469,6 +1728,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1479,8 +1739,12 @@ support_cards:
     value_type: flat
   - trigger: consultation_drink
     stat: vo
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 8, 8, 11]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0024
   name: 一時休戦です
   rarity: SSR
@@ -1492,6 +1756,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1504,6 +1769,10 @@ support_cards:
     stat: vo
     values: [12, 12, 12, 12, 17]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0023
   name: もうっ！　冷たいよ！
   rarity: SSR
@@ -1515,6 +1784,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -1532,6 +1802,10 @@ support_cards:
     values: [17, 17, 17, 17, 22]
     value_type: flat
     max_count: 2
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0022
   name: 「ア」じゃなくて「エ」！
   rarity: SSR
@@ -1543,6 +1817,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -1559,6 +1834,10 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0021
   name: 晴れたね
   rarity: SSR
@@ -1570,18 +1849,23 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: rest
     stat: da
-    values: [22, 22, 22, 22, 22]
+    values: [17, 17, 17, 22, 22]
     value_type: flat
   - trigger: outing_end
     stat: da
     values: [11, 11, 11, 11, 15]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0020
   name: まだ上がりませんように！
   rarity: SSR
@@ -1593,6 +1877,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1603,8 +1888,12 @@ support_cards:
     value_type: flat
   - trigger: mental_enhance
     stat: vo
-    values: [9, 9, 9, 9, 9]
+    values: [7, 7, 7, 7, 9]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0019
   name: 何やってるんだろう、
   rarity: SSR
@@ -1616,6 +1905,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -1630,8 +1920,12 @@ support_cards:
     value_type: flat
   - trigger: skill_enhance
     stat: vo
-    values: [4, 4, 4, 4, 4]
+    values: [3, 3, 3, 3, 4]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0017
   name: あなたにも作ってあげる！
   rarity: SSR
@@ -1643,6 +1937,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -1653,8 +1948,12 @@ support_cards:
     value_type: flat
   - trigger: rest
     stat: vi
-    values: [22, 22, 22, 22, 22]
+    values: [17, 17, 17, 17, 22]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0015
   name: お姉ちゃんに任せなさい！
   rarity: SSR
@@ -1666,6 +1965,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1676,8 +1976,12 @@ support_cards:
     value_type: flat
   - trigger: skill_enhance
     stat: vi
-    values: [4, 4, 4, 4, 4]
+    values: [3, 3, 3, 3, 4]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0014
   name: ぐぬぬぬぬ…………！
   rarity: SSR
@@ -1689,6 +1993,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1701,6 +2006,10 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0013
   name: 次の桜の季節には。
   rarity: SSR
@@ -1712,6 +2021,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1722,8 +2032,12 @@ support_cards:
     value_type: flat
   - trigger: skill_enhance
     stat: vo
-    values: [4, 4, 4, 4, 4]
+    values: [3, 3, 3, 3, 4]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0012
   name: お疲れ様、千奈ちゃん。
   rarity: SSR
@@ -1735,6 +2049,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1747,6 +2062,10 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0011
   name: まるで王子様みたいな
   rarity: SSR
@@ -1758,6 +2077,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -1774,6 +2094,10 @@ support_cards:
     stat: vi
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0010
   name: おいしい顔、いただき～！
   rarity: SSR
@@ -1785,6 +2109,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -1799,8 +2124,12 @@ support_cards:
     value_type: flat
   - trigger: skill_enhance
     stat: da
-    values: [4, 4, 4, 4, 4]
+    values: [3, 3, 3, 3, 4]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0008
   name: 可愛いと可愛いで可愛い！
   rarity: SSR
@@ -1812,6 +2141,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -1828,6 +2158,10 @@ support_cards:
     stat: vo
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0007
   name: 私の目に狂いはない
   rarity: SSR
@@ -1839,18 +2173,23 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: class_end
     stat: vi
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 7, 7]
     value_type: flat
   - trigger: skill_enhance
     stat: vi
-    values: [4, 4, 4, 4, 4]
+    values: [3, 3, 3, 3, 4]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0006
   name: また、あんなに無理をして
   rarity: SSR
@@ -1862,6 +2201,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1874,6 +2214,10 @@ support_cards:
     stat: vo
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0005
   name: あら、奇遇ね
   rarity: SSR
@@ -1885,6 +2229,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -1895,8 +2240,12 @@ support_cards:
     value_type: flat
   - trigger: class_end
     stat: vo
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 5, 7]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0004
   name: まじか。
   rarity: SSR
@@ -1908,6 +2257,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -1920,6 +2270,10 @@ support_cards:
     stat: da
     values: [14, 14, 14, 14, 18]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0002
   name: ほら、一緒に持と♪
   rarity: SSR
@@ -1931,6 +2285,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1943,6 +2298,10 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0001
   name: きみは、自慢の生徒です
   rarity: SSR
@@ -1953,6 +2312,10 @@ support_cards:
   - trigger: equip
     stat: all
     values: [14, 14, 14, 14, 14]
+    value_type: sp_rate
+  - trigger: equip
+    stat: vo
+    values: [10.5, 10.5, 14, 14, 14]
     value_type: sp_rate
 - id: SP_SSR_0090
   name: みいつけた。
@@ -1965,6 +2328,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -1977,6 +2341,10 @@ support_cards:
     stat: vo
     values: [9, 9, 9, 12, 12]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0087
   name: オシャレもメイクも♪
   rarity: SSR
@@ -1988,19 +2356,24 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: outing_end
     stat: vi
-    values: [11, 11, 11, 11, 11]
+    values: [8, 8, 8, 8, 11]
     value_type: flat
   - trigger: exam_end
     stat: vi
     values: [11, 11, 11, 17, 17]
     value_type: flat
     max_count: 2
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0083
   name: 貸せ、手本を見せてやる！
   rarity: SSR
@@ -2012,6 +2385,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -2025,6 +2399,10 @@ support_cards:
     values: [8, 8, 8, 8, 11]
     value_type: flat
     max_count: 6
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0080
   name: ぜったいに取るんだ！
   rarity: SSR
@@ -2036,6 +2414,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -2048,6 +2427,10 @@ support_cards:
     stat: vo
     values: [3, 3, 3, 3, 5]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0068
   name: 盛り上げてこー！
   rarity: SSR
@@ -2059,6 +2442,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -2073,8 +2457,12 @@ support_cards:
     value_type: flat
   - trigger: class_end
     stat: da
-    values: [5, 5, 5, 5, 5]
+    values: [4, 4, 4, 5, 5]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0066
   name: お母さんか！
   rarity: SSR
@@ -2086,18 +2474,23 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: da_sp_end
     stat: da
-    values: [4, 4, 5, 5, 5]
+    values: [9, 9, 9, 9, 13]
     value_type: flat
   - trigger: consultation
     stat: da
     values: [9, 9, 9, 14, 14]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0057
   name: わたしと美鈴、超仲良し
   rarity: SSR
@@ -2109,18 +2502,23 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: vi_sp_end
     stat: vi
-    values: [4, 4, 5, 5, 5]
+    values: [9, 9, 9, 9, 13]
     value_type: flat
   - trigger: active_acquire
     stat: vi
     values: [1, 1, 1, 2, 2]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0054
   name: さあ、もう一戦！
   rarity: SSR
@@ -2132,18 +2530,23 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: vo_sp_end
     stat: vo
-    values: [4, 4, 5, 5, 5]
+    values: [9, 9, 9, 9, 13]
     value_type: flat
   - trigger: mental_acquire
     stat: vo
     values: [1, 1, 1, 2, 2]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0039
   name: プロデュースって大変ね
   rarity: SSR
@@ -2155,6 +2558,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -2168,6 +2572,10 @@ support_cards:
     values: [11, 11, 11, 17, 17]
     value_type: flat
     max_count: 2
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0031
   name: 1人たりとも欠ける事なく
   rarity: SSR
@@ -2179,6 +2587,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -2191,6 +2600,10 @@ support_cards:
     stat: vo
     values: [9, 9, 9, 14, 14]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0018
   name: 第2回教室パーティー！
   rarity: SSR
@@ -2202,6 +2615,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -2219,6 +2633,10 @@ support_cards:
     values: [11, 11, 11, 17, 17]
     value_type: flat
     max_count: 2
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0062
   name: すっかり仲良しって感じ♪
   rarity: SSR
@@ -2230,6 +2648,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [52, 55, 59, 62, 65]
@@ -2247,6 +2666,10 @@ support_cards:
     values: [11, 11, 11, 17, 17]
     value_type: flat
     max_count: 2
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0061
   name: 迷子のおしらせです
   rarity: SSR
@@ -2258,6 +2681,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -2272,8 +2696,12 @@ support_cards:
     value_type: flat
   - trigger: mental_enhance
     stat: vi
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 7, 7]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0060
   name: みんなの意見を聞かせて♪
   rarity: SSR
@@ -2285,6 +2713,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
@@ -2295,12 +2724,16 @@ support_cards:
     value_type: sp_rate
   - trigger: class_end
     stat: vo
-    values: [5, 5, 5, 5, 5]
+    values: [4, 4, 4, 4, 5]
     value_type: flat
   - trigger: active_enhance
     stat: vo
     values: [5, 5, 5, 7, 7]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0040
   name: さみだれ
   rarity: SSR
@@ -2312,6 +2745,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -2322,8 +2756,12 @@ support_cards:
     value_type: flat
   - trigger: mental_enhance
     stat: vi
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 7, 7]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0016
   name: こいつらめんどくさー
   rarity: SSR
@@ -2335,6 +2773,7 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -2345,8 +2784,12 @@ support_cards:
     value_type: flat
   - trigger: mental_enhance
     stat: vo
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 7, 7]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0009
   name: わたしたち、やればできる
   rarity: SSR
@@ -2358,6 +2801,7 @@ support_cards:
     stat: da
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
@@ -2368,8 +2812,12 @@ support_cards:
     value_type: flat
   - trigger: mental_enhance
     stat: da
-    values: [7, 7, 7, 7, 7]
+    values: [5, 5, 5, 7, 7]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0070
   name: 仲直りしましょう
   rarity: SSR
@@ -2381,18 +2829,23 @@ support_cards:
     stat: vo
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [52, 55, 59, 62, 65]
     value_type: flat
   - trigger: class_end
     stat: vo
-    values: [5, 5, 5, 5, 5]
+    values: [4, 4, 4, 4, 5]
     value_type: flat
   - trigger: skill_delete
     stat: vo
-    values: [8, 8, 8, 8, 8]
+    values: [6, 6, 6, 8, 8]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0003
   name: 仕事のつもりで臨みなさい
   rarity: SSR
@@ -2404,6 +2857,7 @@ support_cards:
     stat: vi
     values: [20, 20, 20, 20, 20]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [52, 55, 59, 62, 65]
@@ -2416,6 +2870,10 @@ support_cards:
     stat: vi
     values: [1, 1, 1, 2, 2]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0094
   name: 進化したお弁当、気になる
   rarity: SSR
@@ -2425,7 +2883,7 @@ support_cards:
   effects:
   - trigger: vi_sp_end
     stat: vi
-    values: [13, 13, 13, 17, 17]
+    values: [13, 13, 17, 17, 17]
     value_type: flat
   - trigger: p_item_acquire
     stat: vi
@@ -2440,6 +2898,15 @@ support_cards:
     stat: vi
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
+  - trigger: equip
+    stat: vi
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0095
   name: パーティー楽しみだねっ！
   rarity: SSR
@@ -2451,14 +2918,24 @@ support_cards:
     stat: da
     values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
-  - trigger: sp_end
-    stat: da
-    values: [4, 4, 5, 5, 5]
-    value_type: flat
   - trigger: active_enhance
     stat: da
     values: [5, 5, 5, 5, 7]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: exam_end
+    stat: da
+    values: [11, 11, 11, 17, 17]
+    value_type: flat
+    max_count: 2
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0096
   name: 長旅おつかれさま！
   rarity: SSR
@@ -2484,6 +2961,15 @@ support_cards:
     value_type: flat
     max_count: 4
     condition: deck>=20
+  - trigger: equip
+    stat: vi
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SSR_0097
   name: 上かッ！！
   rarity: SSR
@@ -2493,7 +2979,7 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    values: [6.5, 7, 7.5, 8, 8.5]
+    values: [6.5, 7, 7.5, 7.5, 8.5]
     value_type: para_bonus
   - trigger: sp_end
     stat: da
@@ -2509,3 +2995,12 @@ support_cards:
     stat: da
     values: [5, 5, 5, 5, 6]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost

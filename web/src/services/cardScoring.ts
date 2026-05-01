@@ -11,7 +11,7 @@ import type { ActionType } from '../types/enums';
 import { additionalCountsToRecord } from '../types/models';
 import type { CardScore, EffectBreakdown, DeckResult } from '../types/results';
 import { sv } from '../utils/statusValues';
-import { getUncapLevel, getEffectValue, calculate } from './statusCalculation';
+import { getUncapLevel, getEffectValue, calculate, getEventParamBoostPercent } from './statusCalculation';
 import { DEFAULT_STAT_CAP } from '../utils/constants';
 
 // --- Helper: WeekSchedule utilities ---
@@ -116,9 +116,15 @@ function calculateFlatValue(
   effect: CardEffect,
   triggerCounts: Record<string, number>,
   uncapLevel: number,
+  card: SupportCard,
 ): number {
-  const val = getEffectValue(effect, uncapLevel);
-  if (effect.trigger === 'equip') return val;
+  let val = getEffectValue(effect, uncapLevel);
+  if (effect.trigger === 'equip') {
+    if (effect.event_param) {
+      val *= 1 + getEventParamBoostPercent(card, uncapLevel) / 100;
+    }
+    return val;
+  }
 
   let fires = triggerCounts[effect.trigger] ?? 0;
   if (effect.max_count != null) {
@@ -343,7 +349,7 @@ export function calculateCardContribution(
 
     const value =
       effect.value_type === 'flat'
-        ? calculateFlatValue(effect, triggerCounts, uncap)
+        ? calculateFlatValue(effect, triggerCounts, uncap, card)
         : 0;
 
     if (Math.abs(value) < 0.01) continue;

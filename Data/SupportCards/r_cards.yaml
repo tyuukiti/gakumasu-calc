@@ -10,6 +10,7 @@ support_cards:
     stat: da
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [2.8, 3.2, 3.6, 4, 4.3]
@@ -23,6 +24,10 @@ support_cards:
     values: [7, 7, 13, 13, 13]
     value_type: flat
     max_count: 3
+  - trigger: equip
+    stat: da
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0012
   name: 念入りにストレッチ
   rarity: R
@@ -34,6 +39,7 @@ support_cards:
     stat: vi
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [23, 26, 28, 31, 33]
@@ -44,8 +50,12 @@ support_cards:
     value_type: flat
   - trigger: rest
     stat: vi
-    values: [11, 11, 11, 11, 11]
+    values: [6, 6, 11, 11, 11]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0011
   name: 全力、その後
   rarity: R
@@ -57,6 +67,7 @@ support_cards:
     stat: vo
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [23, 26, 28, 31, 33]
@@ -67,8 +78,12 @@ support_cards:
     value_type: flat
   - trigger: rest
     stat: vo
-    values: [11, 11, 11, 11, 11]
+    values: [6, 6, 11, 11, 11]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0010
   name: 枝毛をくるり
   rarity: R
@@ -80,6 +95,7 @@ support_cards:
     stat: da
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [23, 26, 28, 31, 33]
@@ -90,8 +106,12 @@ support_cards:
     value_type: flat
   - trigger: rest
     stat: da
-    values: [11, 11, 11, 11, 11]
+    values: [6, 6, 11, 11, 11]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0009
   name: 王子様のひと呼吸
   rarity: R
@@ -103,6 +123,7 @@ support_cards:
     stat: vo
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vo
     values: [23, 26, 28, 31, 33]
@@ -115,6 +136,10 @@ support_cards:
     stat: vo
     values: [4, 4, 7, 7, 7]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0008
   name: ひたむき居残りレッスン
   rarity: R
@@ -126,6 +151,7 @@ support_cards:
     stat: vi
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: vi
     values: [23, 26, 28, 31, 33]
@@ -138,6 +164,10 @@ support_cards:
     stat: vi
     values: [4, 4, 8, 8, 8]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0007
   name: 憧れを目指して
   rarity: R
@@ -149,6 +179,7 @@ support_cards:
     stat: da
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [23, 26, 28, 31, 33]
@@ -161,6 +192,10 @@ support_cards:
     stat: da
     values: [4, 4, 8, 8, 8]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0006
   name: スイッチON！
   rarity: R
@@ -172,6 +207,7 @@ support_cards:
     stat: da
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: da_lesson_end
     stat: da
     values: [1, 1, 1, 1, 3]
@@ -180,6 +216,14 @@ support_cards:
     stat: da
     values: [4, 4, 7, 7, 7]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [2.8, 3.2, 3.6, 4, 4.3]
+    value_type: para_bonus
+  - trigger: equip
+    stat: da
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0005
   name: いめーじとれーにんぐ
   rarity: R
@@ -191,14 +235,23 @@ support_cards:
     stat: vo
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: vo_lesson_end
     stat: vo
     values: [1, 1, 1, 1, 3]
     value_type: flat
   - trigger: class_end
     stat: vo
-    values: [3, 3, 3, 3, 3]
+    values: [2, 2, 3, 3, 3]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [2.8, 3.2, 3.6, 4, 4.3]
+    value_type: para_bonus
+  - trigger: equip
+    stat: vo
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0004
   name: 完全無欠のプランニング
   rarity: R
@@ -210,14 +263,23 @@ support_cards:
     stat: vi
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: vi_lesson_end
     stat: vi
     values: [1, 1, 1, 1, 3]
     value_type: flat
   - trigger: class_end
     stat: vi
-    values: [3, 3, 3, 3, 3]
+    values: [2, 2, 3, 3, 3]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [2.8, 3.2, 3.6, 4, 4.3]
+    value_type: para_bonus
+  - trigger: equip
+    stat: vi
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0003
   name: わたしのペースで
   rarity: R
@@ -229,6 +291,7 @@ support_cards:
     stat: vo
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: vo_normal_end
     stat: vo
     values: [5, 5, 5, 5, 9]
@@ -237,6 +300,14 @@ support_cards:
     stat: vo
     values: [4, 4, 8, 8, 8]
     value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [2.8, 3.2, 3.6, 4, 4.3]
+    value_type: para_bonus
+  - trigger: equip
+    stat: vo
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0002
   name: お姉ちゃん直伝メニュー
   rarity: R
@@ -248,14 +319,23 @@ support_cards:
     stat: da
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: da_normal_end
     stat: da
     values: [5, 5, 5, 5, 9]
     value_type: flat
   - trigger: class_end
     stat: da
-    values: [3, 3, 3, 3, 3]
+    values: [2, 2, 3, 3, 3]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [2.8, 3.2, 3.6, 4, 4.3]
+    value_type: para_bonus
+  - trigger: equip
+    stat: da
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost
 - id: SP_R_0001
   name: 頼れる先輩お姉さん
   rarity: R
@@ -267,6 +347,7 @@ support_cards:
     stat: vi
     values: [10, 10, 10, 10, 10]
     value_type: flat
+    event_param: true
   - trigger: vi_normal_end
     stat: vi
     values: [5, 5, 5, 5, 9]
@@ -275,3 +356,11 @@ support_cards:
     stat: vi
     values: [4, 4, 7, 7, 7]
     value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [2.8, 3.2, 3.6, 4, 4.3]
+    value_type: para_bonus
+  - trigger: equip
+    stat: vi
+    values: [0, 50, 50, 75, 100]
+    value_type: event_param_boost

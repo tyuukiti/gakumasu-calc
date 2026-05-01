@@ -962,7 +962,7 @@ public class CardScoringService
 
             double value = effect.ValueType switch
             {
-                "flat" => CalculateFlatValue(effect, triggerCounts, uncap),
+                "flat" => CalculateFlatValue(effect, triggerCounts, uncap, card),
                 _ => 0
             };
 
@@ -1136,11 +1136,17 @@ public class CardScoringService
         return counts;
     }
 
-    private double CalculateFlatValue(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel)
+    private double CalculateFlatValue(CardEffect effect, Dictionary<string, int> triggerCounts, int uncapLevel, SupportCard card)
     {
         var val = effect.GetValue(uncapLevel);
         if (effect.Trigger == "equip")
+        {
+            if (effect.EventParam)
+            {
+                val *= 1.0 + card.GetEventParamBoostPercent(uncapLevel) / 100.0;
+            }
             return val;
+        }
 
         int fires = triggerCounts.GetValueOrDefault(effect.Trigger, 0);
 

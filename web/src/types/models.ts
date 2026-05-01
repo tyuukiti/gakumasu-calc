@@ -33,6 +33,7 @@ export interface CardEffect {
   condition?: string;
   description?: string;
   source?: string;
+  event_param?: boolean;
 }
 
 export interface LessonBonusPercent {
