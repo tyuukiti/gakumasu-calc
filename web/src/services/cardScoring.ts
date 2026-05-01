@@ -46,6 +46,7 @@ function triggerDisplayName(trigger: string): string {
     active_delete: 'アクティブ削除',
     mental_acquire: 'メンタル獲得',
     mental_enhance: 'メンタル強化',
+    mental_delete: 'メンタル削除',
     active_acquire: 'アクティブ獲得',
     genki_acquire: '元気獲得',
     good_condition_acquire: '好調獲得',

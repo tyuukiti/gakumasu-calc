@@ -388,6 +388,16 @@
                                          Style="{StaticResource NumericTextBox}"
                                          FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
                             </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="メンタル削除" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MentalDelete, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
                         </StackPanel>
 
                         <!-- 列3: カード種別獲得 -->

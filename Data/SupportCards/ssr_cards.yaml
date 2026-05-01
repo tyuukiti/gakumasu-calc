@@ -970,15 +970,15 @@ support_cards:
     stat: vi
     values: [13, 13, 13, 17, 17]
     value_type: flat
-  - trigger: skill_delete
-    stat: vi
-    values: [17, 17, 17, 17, 22]
-    value_type: flat
-    max_count: 3
   - trigger: equip
     stat: vi
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: mental_delete
+    stat: vi
+    values: [17, 17, 17, 17, 22]
+    value_type: flat
+    max_count: 3
 - id: SP_SSR_0052
   name: ここから始まるんだね！
   rarity: SSR

@@ -52,6 +52,7 @@ public class MainViewModel : ViewModelBase
     private int _activeDelete;
     private int _mentalAcquire;
     private int _mentalEnhance;
+    private int _mentalDelete;
     private int _activeAcquire;
     private int _genkiAcquire;
     private int _goodConditionAcquire;
@@ -252,6 +253,7 @@ public class MainViewModel : ViewModelBase
     public int ActiveDelete { get => _activeDelete; set => SetProperty(ref _activeDelete, value); }
     public int MentalAcquire { get => _mentalAcquire; set => SetProperty(ref _mentalAcquire, value); }
     public int MentalEnhance { get => _mentalEnhance; set => SetProperty(ref _mentalEnhance, value); }
+    public int MentalDelete { get => _mentalDelete; set => SetProperty(ref _mentalDelete, value); }
     public int ActiveAcquire { get => _activeAcquire; set => SetProperty(ref _activeAcquire, value); }
     public int GenkiAcquire { get => _genkiAcquire; set => SetProperty(ref _genkiAcquire, value); }
     public int GoodConditionAcquire { get => _goodConditionAcquire; set => SetProperty(ref _goodConditionAcquire, value); }
@@ -922,6 +924,7 @@ public class MainViewModel : ViewModelBase
             ActiveDelete = ActiveDelete,
             MentalAcquire = MentalAcquire,
             MentalEnhance = MentalEnhance,
+            MentalDelete = MentalDelete,
             ActiveAcquire = ActiveAcquire,
             GenkiAcquire = GenkiAcquire,
             GoodConditionAcquire = GoodConditionAcquire,
@@ -949,6 +952,7 @@ public class MainViewModel : ViewModelBase
         ActiveDelete = c.ActiveDelete;
         MentalAcquire = c.MentalAcquire;
         MentalEnhance = c.MentalEnhance;
+        MentalDelete = c.MentalDelete;
         ActiveAcquire = c.ActiveAcquire;
         GenkiAcquire = c.GenkiAcquire;
         GoodConditionAcquire = c.GoodConditionAcquire;
@@ -1080,7 +1084,7 @@ public class MainViewModel : ViewModelBase
         PDrinkAcquire = 0; PItemAcquire = 0; SkillSsrAcquire = 0;
         SkillEnhance = 0; SkillDelete = 0; SkillCustom = 0; SkillChange = 0;
         ActiveEnhance = 0; ActiveDelete = 0;
-        MentalAcquire = 0; MentalEnhance = 0; ActiveAcquire = 0;
+        MentalAcquire = 0; MentalEnhance = 0; MentalDelete = 0; ActiveAcquire = 0;
         GenkiAcquire = 0; GoodConditionAcquire = 0;
         GoodImpressionAcquire = 0; ConserveAcquire = 0;
         ConcentrateAcquire = 0; MotivationAcquire = 0;

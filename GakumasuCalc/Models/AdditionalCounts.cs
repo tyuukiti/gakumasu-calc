@@ -30,6 +30,7 @@ public class AdditionalCounts
 
     // カード操作
     public int MentalEnhance { get; set; }
+    public int MentalDelete { get; set; }
     public int ActiveAcquire { get; set; }
 
     // その他
@@ -50,6 +51,7 @@ public class AdditionalCounts
             ["active_delete"] = ActiveDelete,
             ["mental_acquire"] = MentalAcquire,
             ["mental_enhance"] = MentalEnhance,
+            ["mental_delete"] = MentalDelete,
             ["active_acquire"] = ActiveAcquire,
             ["genki_acquire"] = GenkiAcquire,
             ["good_condition_acquire"] = GoodConditionAcquire,

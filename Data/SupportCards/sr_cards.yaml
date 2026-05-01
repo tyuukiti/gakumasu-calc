@@ -652,15 +652,15 @@ support_cards:
     stat: da
     values: [6, 6, 6, 11, 11]
     value_type: flat
-  - trigger: skill_delete
-    stat: da
-    values: [8, 16, 16, 16, 16]
-    value_type: flat
-    max_count: 3
   - trigger: equip
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: mental_delete
+    stat: da
+    values: [8, 16, 16, 16, 16]
+    value_type: flat
+    max_count: 3
 - id: SP_SR_0051
   name: スパルタ＆スパイス
   rarity: SR
@@ -741,15 +741,15 @@ support_cards:
     stat: vi
     values: [7, 7, 7, 7, 13]
     value_type: flat
-  - trigger: skill_delete
-    stat: vi
-    values: [8, 8, 8, 16, 16]
-    value_type: flat
-    max_count: 3
   - trigger: equip
     stat: vi
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: mental_delete
+    stat: vi
+    values: [8, 8, 8, 16, 16]
+    value_type: flat
+    max_count: 3
 - id: SP_SR_0048
   name: あん・どぅ・とろわっ！
   rarity: SR

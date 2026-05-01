@@ -31,6 +31,7 @@ TRIGGER_MAP = [
     ("アクティブスキルカード獲得", "active_acquire"),
     ("アクティブ獲得", "active_acquire"),
     ("メンタルスキルカード強化", "mental_enhance"),
+    ("メンタルスキルカード削除", "mental_delete"),
     ("メンタルスキルカード獲得", "mental_acquire"),
     ("スキルカード強化", "skill_enhance"),
     ("スキルカード削除", "skill_delete"),
