@@ -38,7 +38,7 @@ function Stage-DataFiles($StageDir) {
     $DataSrc = Join-Path $RepoRoot "Data"
     $DataDst = Join-Path $StageDir "Data"
 
-    foreach ($sub in @("Plans", "SupportCards", "Templates")) {
+    foreach ($sub in @("Plans", "SupportCards", "Templates", "Characters")) {
         $dst = Join-Path $DataDst $sub
         New-Item -ItemType Directory -Path $dst -Force | Out-Null
         Get-ChildItem (Join-Path $DataSrc $sub) -Filter "*.yaml" | Copy-Item -Destination $dst
