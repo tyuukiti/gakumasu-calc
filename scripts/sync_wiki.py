@@ -10,6 +10,7 @@ Seesaa Wiki とYAMLデータの差分同期スクリプト。
   python scripts/sync_wiki.py --dry-run        # 確認のみ (書き込みなし)
   python scripts/sync_wiki.py --update-only    # 既存カードの値更新のみ
   python scripts/sync_wiki.py --new-only       # 新規カード追加のみ
+  python scripts/sync_wiki.py --images-only    # 画像未取得カードの画像のみ取得 (YAMLは変更しない)
   python scripts/sync_wiki.py --delay 10       # リクエスト間隔を変更
   python scripts/sync_wiki.py --debug          # 詳細デバッグ出力
 """
@@ -29,6 +30,87 @@ from wiki_sync.yaml_io import (
     load_synced, save_synced,
     load_mapping, append_mapping, next_card_id,
 )
+
+
+def _image_already_downloaded(card_name: str, norm_image_mapping: dict) -> bool:
+    """画像マッピングに登録済みで、かつ実ファイルも存在するなら True。
+
+    マッピング未登録のカード（新規登録直後など）の場合に、
+    `IMAGE_DIR / ""` がディレクトリそのものを指して exists() が True を返してしまう
+    バグを避けるためのヘルパー。
+    """
+    entry = norm_image_mapping.get(normalize_name(card_name))
+    if not entry:
+        return False
+    filename = entry.get("filename", "")
+    return bool(filename) and (IMAGE_DIR / filename).exists()
+
+
+def _fetch_missing_images(args):
+    """画像未取得のカードに対してだけ画像を取得する。YAMLは変更しない。
+
+    過去のバグ（マッピング未登録時に IMAGE_DIR / "" を見て exists() が True を返すため
+    新規カードでも画像取得がスキップされる問題）により、既に _synced.txt に登録済みで
+    画像だけ落ちていないカードがある場合の救済モード。
+    """
+    print("=== 画像未取得カードの取得 ===")
+    if args.dry_run:
+        print("  [DRY-RUN]")
+    print()
+
+    # 1. 画像マッピング読み込み
+    image_mapping = load_mapping()
+    norm_image_mapping = {normalize_name(k): v for k, v in image_mapping.items()}
+
+    # 2. 一覧ページ取得
+    print("一覧ページを取得中...")
+    wiki_entries = parse_list_page()
+    print(f"  Wikiカード: {len(wiki_entries)} 枚")
+
+    # 3. 画像未取得カードを抽出
+    missing = [
+        e for e in wiki_entries
+        if e.detail_url and not _image_already_downloaded(e.name, norm_image_mapping)
+    ]
+    print(f"  画像未取得: {len(missing)} 枚")
+    for e in missing:
+        print(f"    - {e.name}")
+    print()
+
+    if not missing:
+        print("取得対象なし。終了。")
+        return
+
+    # 4. 各カードの画像取得
+    img_count = 0
+    for i, entry in enumerate(missing):
+        print(f"[{i+1}/{len(missing)}] {entry.name}")
+        try:
+            detail = parse_detail_page(entry.detail_url, debug=args.debug)
+            if detail is None:
+                print("  ⚠ 詳細ページ解析失敗")
+            else:
+                img_url = detail.get("image_url")
+                if not img_url:
+                    print("  ⚠ 画像URLが見つかりません")
+                else:
+                    ext = img_url.rsplit(".", 1)[-1].lower()
+                    if ext not in ("png", "jpg", "jpeg"):
+                        ext = "png"
+                    img_filename = f"{entry.wiki_id}.{ext}"
+                    img_path = IMAGE_DIR / img_filename
+                    print(f"  画像: {img_filename}")
+                    if not args.dry_run:
+                        download_file(img_url, img_path)
+                        append_mapping(entry.wiki_id, entry.name, img_filename)
+                        img_count += 1
+        except Exception as e:
+            print(f"  ✗ エラー: {e}")
+
+        if i < len(missing) - 1:
+            time.sleep(args.delay)
+
+    print(f"\n=== 完了: 画像 {img_count} 件取得 ===")
 
 
 def _update_item_effects_only(args):
@@ -128,12 +210,17 @@ def main():
     parser.add_argument("--new-only", action="store_true", help="新規カード追加のみ")
     parser.add_argument("--force", action="store_true", help="更新済み記録を無視して全件更新")
     parser.add_argument("--item-only", action="store_true", help="アイテム効果のみ更新")
+    parser.add_argument("--images-only", action="store_true", help="画像未取得カードの画像のみ取得")
     parser.add_argument("--delay", type=int, default=DEFAULT_DELAY, help="リクエスト間隔(秒)")
     parser.add_argument("--debug", action="store_true", help="詳細デバッグ出力")
     args = parser.parse_args()
 
     if args.item_only:
         _update_item_effects_only(args)
+        return
+
+    if args.images_only:
+        _fetch_missing_images(args)
         return
 
     print("=== Wiki 差分同期 ===")
@@ -278,7 +365,7 @@ def main():
                     new_count += 1
 
                 # 画像ダウンロード
-                if detail.get("image_url") and not (IMAGE_DIR / norm_image_mapping.get(normalize_name(entry.name), {}).get("filename", "")).exists():
+                if detail.get("image_url") and not _image_already_downloaded(entry.name, norm_image_mapping):
                     img_url = detail["image_url"]
                     ext = img_url.rsplit(".", 1)[-1].lower()
                     if ext not in ("png", "jpg", "jpeg"):
@@ -348,7 +435,7 @@ def main():
                                 update_count += 1
 
                 # 画像が未取得なら取得
-                if detail.get("image_url") and not (IMAGE_DIR / norm_image_mapping.get(normalize_name(entry.name), {}).get("filename", "")).exists():
+                if detail.get("image_url") and not _image_already_downloaded(entry.name, norm_image_mapping):
                     img_url = detail["image_url"]
                     ext = img_url.rsplit(".", 1)[-1].lower()
                     if ext not in ("png", "jpg", "jpeg"):
