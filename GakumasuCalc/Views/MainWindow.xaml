@@ -29,6 +29,31 @@
                        FontSize="20" FontWeight="Bold" Foreground="#333"
                        Margin="0,0,0,16"/>
 
+            <!-- 更新通知バナー (HasUpdate && !Dismissed のときだけ表示) -->
+            <Border Background="#E3F2FD" BorderBrush="#5C6BC0" BorderThickness="1"
+                    CornerRadius="6" Padding="12,8" Margin="0,0,0,12"
+                    Visibility="{Binding IsUpdateBannerVisible, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{Binding UpdateMessage}"
+                               FontSize="13" Foreground="#1A237E"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Content="リリースページを開く"
+                            Command="{Binding OpenReleasePageCommand}"
+                            Style="{StaticResource PrimaryButton}"
+                            FontSize="12" Padding="10,4" Margin="8,0,0,0"/>
+                    <Button Grid.Column="2" Content="✕"
+                            Command="{Binding DismissUpdateBannerCommand}"
+                            Style="{StaticResource SecondaryButton}"
+                            FontSize="12" Padding="8,4" Margin="4,0,0,0"
+                            ToolTip="このセッションで非表示にする"/>
+                </Grid>
+            </Border>
+
             <!-- 育成プラン選択 -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
@@ -1005,6 +1030,20 @@
                         </ScrollViewer>
                     </Border>
                 </Expander>
+            </Border>
+
+            <!-- バージョン情報 + 手動アップデート確認 -->
+            <Border Margin="0,4,0,16">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding CurrentVersion, StringFormat='ver {0}'}"
+                               FontSize="11" Foreground="#999" VerticalAlignment="Center"/>
+                    <Button Content="更新を確認" Command="{Binding CheckUpdateCommand}"
+                            Style="{StaticResource SecondaryButton}"
+                            FontSize="11" Padding="10,4" Margin="8,0,0,0"/>
+                    <TextBlock Text="{Binding VersionCheckStatus}"
+                               FontSize="11" Foreground="#666" Margin="8,0,0,0"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
             </Border>
 
         </StackPanel>
