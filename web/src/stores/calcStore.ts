@@ -5,8 +5,15 @@ import type {
   AdditionalCounts,
   EventCountTemplate,
   SupportCard,
+  MemoryBonus,
+  MemoryAttributeBonus,
+  MemoryPreset,
 } from '../types/models';
-import { emptyAdditionalCounts } from '../types/models';
+import {
+  emptyAdditionalCounts,
+  emptyMemoryBonus,
+  isEmptyAllMemoryBonuses,
+} from '../types/models';
 import type { PlanType, RoleType, ActionType } from '../types/enums';
 import type { CalculationResult, DeckResult } from '../types/results';
 import type { CardInventoryEntry } from '../types/inventory';
@@ -17,6 +24,30 @@ import { trackEvent, startTimer, endTimer, incrementCounter, trackFunnelStep } f
 
 const SELECTED_CHARACTER_KEY = 'selectedCharacterId';
 const UNCAP3_BONUS_KEY = 'uncap3CharacterBonusEnabled';
+const MEMORY_PRESETS_KEY = 'memoryPresets';
+/** 持ち込みメモリー プリセットの保存可能件数上限。 */
+export const MAX_MEMORY_PRESETS = 5;
+
+function loadMemoryPresetsFromStorage(): MemoryPreset[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(MEMORY_PRESETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as MemoryPreset[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistMemoryPresets(presets: MemoryPreset[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(MEMORY_PRESETS_KEY, JSON.stringify(presets));
+  } catch (e) {
+    console.warn('メモリープリセットの保存に失敗:', e);
+  }
+}
 
 interface CalcState {
   selectedPlanId: string;
@@ -34,6 +65,10 @@ interface CalcState {
   requiredCardIds: string[];
   selectedCharacterId: string | null;
   uncap3BonusEnabled: boolean;
+  /** 持ち込みメモリー（最大4枚・セッション限定。永続化なし） */
+  memoryBonuses: MemoryBonus[];
+  /** 保存済みプリセット（localStorage に永続化、上限 MAX_MEMORY_PRESETS 件） */
+  memoryPresets: MemoryPreset[];
   deckResults: DeckResult[];
   selectedPatternIndex: number;
   calculationResult: CalculationResult | null;
@@ -57,6 +92,13 @@ interface CalcState {
   removeRequiredCard: (cardId: string) => void;
   setSelectedCharacter: (id: string | null) => void;
   setUncap3BonusEnabled: (v: boolean) => void;
+  setMemoryBonus: (index: number, stat: 'vo' | 'da' | 'vi', patch: Partial<MemoryAttributeBonus>) => void;
+  clearMemoryBonuses: () => void;
+  /** 現在のメモリー値を名前付きで保存。同名は上書き、上限超過は無視。 */
+  saveMemoryPreset: (name: string) => void;
+  /** プリセット名を指定して読み込み（4枠を上書き、自動再計算）。 */
+  loadMemoryPreset: (name: string) => void;
+  deleteMemoryPreset: (name: string) => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
 }
@@ -265,6 +307,9 @@ function applySelectedPatternImpl(
         }
       : character;
 
+  const memoryBonuses = state.memoryBonuses;
+  const hasAnyMemory = !isEmptyAllMemoryBonuses(memoryBonuses);
+
   const result = calculate(
     plan,
     selectedCards,
@@ -272,11 +317,12 @@ function applySelectedPatternImpl(
     uncapLevels,
     state.additionalCounts,
     effectiveChar,
+    memoryBonuses,
   );
 
-  // キャラ選択時のみ「補正なし」のベース結果も計算
-  const resultWithoutCharacter = character
-    ? calculate(plan, selectedCards, turnChoices, uncapLevels, state.additionalCounts, null)
+  // キャラ補正・メモリー補正のいずれかが有効なら「補正なし結果」を別途算出し差分表示に使う
+  const resultWithoutCharacter = (character || hasAnyMemory)
+    ? calculate(plan, selectedCards, turnChoices, uncapLevels, state.additionalCounts, null, null)
     : null;
 
   return {
@@ -306,6 +352,10 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   // デフォルト OFF（3凸は課金要素で重いため）。para_bonus は3凸ON状態の最大値として保持し、OFFなら uncap3_bonus 分を減算
   uncap3BonusEnabled:
     typeof window !== 'undefined' && localStorage.getItem(UNCAP3_BONUS_KEY) === '1',
+  // 持ち込みメモリー (最大4枚) はセッション限定。localStorage には保存しない
+  memoryBonuses: [emptyMemoryBonus(), emptyMemoryBonus(), emptyMemoryBonus(), emptyMemoryBonus()],
+  // プリセットは localStorage に永続化（メモリー値自体とは別）
+  memoryPresets: loadMemoryPresetsFromStorage(),
   deckResults: [],
   selectedPatternIndex: 0,
   calculationResult: null,
@@ -433,6 +483,98 @@ export const useCalcStore = create<CalcState>((set, get) => ({
       );
       set(updates as Partial<CalcState>);
     }
+  },
+
+  setMemoryBonus: (index, stat, patch) => {
+    const state = get();
+    if (index < 0 || index >= state.memoryBonuses.length) return;
+    const newList = state.memoryBonuses.map((m, i) =>
+      i === index ? { ...m, [stat]: { ...m[stat], ...patch } } : m,
+    );
+    set({ memoryBonuses: newList });
+
+    // 既存の setSelectedCharacter / setUncap3BonusEnabled と同じ再計算パターン
+    if (state.calculationResult && state.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(
+        { ...state, memoryBonuses: newList },
+        state.selectedPatternIndex,
+      );
+      set(updates as Partial<CalcState>);
+    }
+  },
+
+  clearMemoryBonuses: () => {
+    const newList = [emptyMemoryBonus(), emptyMemoryBonus(), emptyMemoryBonus(), emptyMemoryBonus()];
+    set({ memoryBonuses: newList });
+
+    const state = get();
+    if (state.calculationResult && state.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(
+        { ...state, memoryBonuses: newList },
+        state.selectedPatternIndex,
+      );
+      set(updates as Partial<CalcState>);
+    }
+  },
+
+  saveMemoryPreset: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const state = get();
+    // 4 要素を確保した独立コピーを作る（参照共有を避ける）
+    const snapshot: MemoryBonus[] = state.memoryBonuses.slice(0, 4).map((m) => ({
+      vo: { ...m.vo },
+      da: { ...m.da },
+      vi: { ...m.vi },
+    }));
+    while (snapshot.length < 4) snapshot.push(emptyMemoryBonus());
+
+    const existing = state.memoryPresets.findIndex((p) => p.name === trimmed);
+    let newPresets: MemoryPreset[];
+    if (existing >= 0) {
+      // 同名は上書き
+      newPresets = state.memoryPresets.map((p, i) =>
+        i === existing ? { name: trimmed, bonuses: snapshot } : p,
+      );
+    } else {
+      if (state.memoryPresets.length >= MAX_MEMORY_PRESETS) return;
+      newPresets = [...state.memoryPresets, { name: trimmed, bonuses: snapshot }];
+    }
+    persistMemoryPresets(newPresets);
+    set({ memoryPresets: newPresets });
+  },
+
+  loadMemoryPreset: (name) => {
+    const state = get();
+    const preset = state.memoryPresets.find((p) => p.name === name);
+    if (!preset) return;
+    // 4 要素を確保（プリセット側が短い場合は空で埋める）
+    const newList: MemoryBonus[] = [];
+    for (let i = 0; i < 4; i++) {
+      const src = preset.bonuses[i];
+      newList.push(
+        src
+          ? { vo: { ...src.vo }, da: { ...src.da }, vi: { ...src.vi } }
+          : emptyMemoryBonus(),
+      );
+    }
+    set({ memoryBonuses: newList });
+
+    if (state.calculationResult && state.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(
+        { ...state, memoryBonuses: newList },
+        state.selectedPatternIndex,
+      );
+      set(updates as Partial<CalcState>);
+    }
+  },
+
+  deleteMemoryPreset: (name) => {
+    const state = get();
+    const newPresets = state.memoryPresets.filter((p) => p.name !== name);
+    if (newPresets.length === state.memoryPresets.length) return;
+    persistMemoryPresets(newPresets);
+    set({ memoryPresets: newPresets });
   },
 
   executeCalculate: () => {

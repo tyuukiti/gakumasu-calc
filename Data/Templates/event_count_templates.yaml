@@ -1,4 +1,4 @@
-﻿templates:
+templates:
 - name: センス（活動支給軸）
   plan_id: hatsu_legend
   week_actions:
@@ -15,10 +15,14 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
-    skill_change: 2
+    skill_change: 3
+    active_enhance: 3
+    active_delete: 2
     good_condition_acquire: 5
     concentrate_acquire: 5
     active_acquire: 8
+    mental_enhance: 1
+    mental_delete: 2
     mental_acquire: 8
     consultation_drink: 6
 
@@ -38,9 +42,14 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
+    skill_change: 3
+    active_enhance: 3
+    active_delete: 2
     good_impression_acquire: 5
     motivation_acquire: 5
     active_acquire: 8
+    mental_enhance: 1
+    mental_delete: 2
     mental_acquire: 8
     consultation_drink: 6
 
@@ -60,9 +69,14 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
+    skill_change: 3
+    active_enhance: 3
+    active_delete: 2
     genki_acquire: 5
     motivation_acquire: 5
     active_acquire: 8
+    mental_enhance: 1
+    mental_delete: 2
     mental_acquire: 8
     consultation_drink: 6
 
@@ -82,12 +96,14 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
+    skill_change: 3
     active_enhance: 3
     active_delete: 2
     aggressive_acquire: 5
     active_acquire: 8
-    mental_acquire: 8
     mental_enhance: 1
+    mental_delete: 2
+    mental_acquire: 8
     consultation_drink: 6
 
 - name: アノマリー（全力）（活動支給軸）
@@ -106,13 +122,15 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
+    skill_change: 3
     active_enhance: 3
     active_delete: 2
     fullpower_acquire: 5
-    active_acquire: 8
-    mental_acquire: 8
-    mental_enhance: 1
     conserve_acquire: 5
+    active_acquire: 8
+    mental_enhance: 1
+    mental_delete: 2
+    mental_acquire: 8
     consultation_drink: 6
 
 - name: センス（相談削除軸）
@@ -131,10 +149,14 @@
     skill_enhance: 4
     skill_delete: 5
     skill_custom: 3
-    skill_change: 2
+    skill_change: 3
+    active_enhance: 3
+    active_delete: 2
     good_condition_acquire: 5
     concentrate_acquire: 5
     active_acquire: 8
+    mental_enhance: 1
+    mental_delete: 2
     mental_acquire: 8
     consultation_drink: 2
 
@@ -154,9 +176,14 @@
     skill_enhance: 4
     skill_delete: 5
     skill_custom: 3
+    skill_change: 3
+    active_enhance: 3
+    active_delete: 2
     good_impression_acquire: 5
     motivation_acquire: 5
     active_acquire: 8
+    mental_enhance: 1
+    mental_delete: 2
     mental_acquire: 8
     consultation_drink: 2
 
@@ -176,9 +203,14 @@
     skill_enhance: 4
     skill_delete: 5
     skill_custom: 3
+    skill_change: 3
+    active_enhance: 3
+    active_delete: 2
     genki_acquire: 5
     motivation_acquire: 5
     active_acquire: 8
+    mental_enhance: 1
+    mental_delete: 2
     mental_acquire: 8
     consultation_drink: 2
 
@@ -198,12 +230,14 @@
     skill_enhance: 4
     skill_delete: 5
     skill_custom: 3
+    skill_change: 3
     active_enhance: 3
     active_delete: 2
     aggressive_acquire: 5
     active_acquire: 8
-    mental_acquire: 8
     mental_enhance: 1
+    mental_delete: 2
+    mental_acquire: 8
     consultation_drink: 2
 
 - name: アノマリー（全力）（相談削除軸）
@@ -222,13 +256,15 @@
     skill_enhance: 4
     skill_delete: 5
     skill_custom: 3
+    skill_change: 3
     active_enhance: 3
     active_delete: 2
     fullpower_acquire: 5
-    active_acquire: 8
-    mental_acquire: 8
-    mental_enhance: 1
     conserve_acquire: 5
+    active_acquire: 8
+    mental_enhance: 1
+    mental_delete: 2
+    mental_acquire: 8
     consultation_drink: 2
 
 - name: センス
@@ -240,10 +276,14 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
-    skill_change: 2
+    skill_change: 3
+    active_enhance: 3
+    active_delete: 2
     good_condition_acquire: 5
     concentrate_acquire: 5
     active_acquire: 11
+    mental_enhance: 1
+    mental_delete: 2
     mental_acquire: 11
     consultation_drink: 6
 
@@ -256,9 +296,14 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
+    skill_change: 3
+    active_enhance: 3
+    active_delete: 2
     good_impression_acquire: 5
     motivation_acquire: 5
     active_acquire: 11
+    mental_enhance: 1
+    mental_delete: 2
     mental_acquire: 11
     consultation_drink: 6
 
@@ -271,9 +316,14 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
+    skill_change: 3
+    active_enhance: 3
+    active_delete: 2
     genki_acquire: 5
     motivation_acquire: 5
     active_acquire: 11
+    mental_enhance: 1
+    mental_delete: 2
     mental_acquire: 11
     consultation_drink: 6
 
@@ -286,12 +336,14 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
+    skill_change: 3
     active_enhance: 3
     active_delete: 2
     aggressive_acquire: 5
     active_acquire: 11
-    mental_acquire: 11
     mental_enhance: 1
+    mental_delete: 2
+    mental_acquire: 11
     consultation_drink: 6
 
 - name: アノマリー（全力）
@@ -303,11 +355,13 @@
     skill_enhance: 4
     skill_delete: 2
     skill_custom: 3
+    skill_change: 3
     active_enhance: 3
     active_delete: 2
     fullpower_acquire: 5
-    active_acquire: 11
-    mental_acquire: 11
-    mental_enhance: 1
     conserve_acquire: 5
+    active_acquire: 11
+    mental_enhance: 1
+    mental_delete: 2
+    mental_acquire: 11
     consultation_drink: 6

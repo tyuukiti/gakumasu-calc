@@ -178,3 +178,71 @@ export interface Character {
 export interface CharacterFile {
   characters: Character[];
 }
+
+// --- MemoryBonus (持ち込みメモリー) ---
+
+/** メモリーボーナス種別: 'flat'=実数値加算 / 'para'=レッスンパラメーターボーナス% */
+export type MemoryBonusType = 'flat' | 'para';
+
+export interface MemoryAttributeBonus {
+  value: number;
+  type: MemoryBonusType;
+}
+
+/** 持ち込みメモリー1枚分。Vo/Da/Vi 各属性ごとに「実数値」または「パラボ%」を1値持つ */
+export interface MemoryBonus {
+  vo: MemoryAttributeBonus;
+  da: MemoryAttributeBonus;
+  vi: MemoryAttributeBonus;
+}
+
+export function emptyMemoryAttributeBonus(): MemoryAttributeBonus {
+  return { value: 0, type: 'flat' };
+}
+
+export function emptyMemoryBonus(): MemoryBonus {
+  return {
+    vo: emptyMemoryAttributeBonus(),
+    da: emptyMemoryAttributeBonus(),
+    vi: emptyMemoryAttributeBonus(),
+  };
+}
+
+export function isEmptyMemoryBonus(m: MemoryBonus): boolean {
+  return m.vo.value === 0 && m.da.value === 0 && m.vi.value === 0;
+}
+
+export function isEmptyAllMemoryBonuses(list: MemoryBonus[] | undefined | null): boolean {
+  if (!list) return true;
+  return list.every(isEmptyMemoryBonus);
+}
+
+/** flat 種別のみを属性別に合計して StatusValues として返す（floor 適用） */
+export function sumMemoryFlat(list: MemoryBonus[] | undefined | null): StatusValues {
+  if (!list) return { vo: 0, da: 0, vi: 0 };
+  let vo = 0, da = 0, vi = 0;
+  for (const m of list) {
+    if (m.vo.type === 'flat') vo += m.vo.value;
+    if (m.da.type === 'flat') da += m.da.value;
+    if (m.vi.type === 'flat') vi += m.vi.value;
+  }
+  return { vo: Math.floor(vo), da: Math.floor(da), vi: Math.floor(vi) };
+}
+
+/** para 種別のみを属性別に合計して % 値（vo/da/vi）として返す */
+export function sumMemoryParaBonus(list: MemoryBonus[] | undefined | null): StatBonusPercent {
+  if (!list) return { vo: 0, da: 0, vi: 0 };
+  let vo = 0, da = 0, vi = 0;
+  for (const m of list) {
+    if (m.vo.type === 'para') vo += m.vo.value;
+    if (m.da.type === 'para') da += m.da.value;
+    if (m.vi.type === 'para') vi += m.vi.value;
+  }
+  return { vo, da, vi };
+}
+
+/** 持ち込みメモリーのプリセット（4枚分のセット） */
+export interface MemoryPreset {
+  name: string;
+  bonuses: MemoryBonus[];
+}

@@ -14,6 +14,7 @@ public class MainViewModel : ViewModelBase
     private readonly SupportCardLoaderService _cardLoader;
     private readonly InventoryService _inventoryService;
     private readonly CharacterLoaderService _characterLoader;
+    private readonly MemoryPresetService _memoryPresetService;
     private List<SupportCard> _allCards = new();
     private List<CardInventoryEntry> _inventory = new();
     private Character? _selectedCharacter;
@@ -74,6 +75,32 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<DeckCardViewModel> DeckCards { get; } = new();
     public ObservableCollection<PatternResultViewModel> PatternResults { get; } = new();
     public ObservableCollection<CharacterTileViewModel> CharacterTiles { get; } = new();
+    public ObservableCollection<MemoryBonusViewModel> MemoryBonuses { get; } = new();
+    public ObservableCollection<MemoryPreset> MemoryPresets { get; } = new();
+
+    private MemoryPreset? _selectedMemoryPreset;
+    public MemoryPreset? SelectedMemoryPreset
+    {
+        get => _selectedMemoryPreset;
+        set
+        {
+            if (SetProperty(ref _selectedMemoryPreset, value))
+            {
+                if (value != null)
+                    LoadMemoryPreset(value);
+            }
+        }
+    }
+
+    private string _newPresetName = string.Empty;
+    public string NewPresetName
+    {
+        get => _newPresetName;
+        set => SetProperty(ref _newPresetName, value);
+    }
+
+    public int MaxMemoryPresets => MemoryPresetService.MaxPresets;
+    public string MemoryPresetCountText => $"{MemoryPresets.Count}/{MaxMemoryPresets}";
 
     public Character? SelectedCharacter
     {
@@ -159,6 +186,119 @@ public class MainViewModel : ViewModelBase
     public bool HasUncap3Bonus => _selectedCharacter?.Uncap3Bonus != null;
 
     public ICommand SelectCharacterCommand { get; }
+    public ICommand ClearMemoryBonusesCommand { get; private set; } = null!;
+    public ICommand SaveMemoryPresetCommand { get; private set; } = null!;
+    public ICommand DeleteMemoryPresetCommand { get; private set; } = null!;
+
+    /// <summary>
+    /// メモリースロットを計算用モデルのリストに変換。
+    /// </summary>
+    private List<MemoryBonus> BuildMemoryBonuses() =>
+        MemoryBonuses.Select(vm => vm.ToModel()).ToList();
+
+    /// <summary>プリセットファイルから読み込んで MemoryPresets コレクションに反映。</summary>
+    private void LoadMemoryPresets()
+    {
+        try
+        {
+            var presets = _memoryPresetService.Load();
+            MemoryPresets.Clear();
+            foreach (var p in presets)
+                MemoryPresets.Add(p);
+            OnPropertyChanged(nameof(MemoryPresetCountText));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"プリセット読み込みエラー: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 現在選択されているプリセットを強制的に再読み込みする。
+    /// ComboBox の DropDownClosed から呼ばれ、同じ項目を再選択した時にも値が反映されるようにする。
+    /// </summary>
+    public void ReloadSelectedMemoryPreset()
+    {
+        if (_selectedMemoryPreset != null)
+            LoadMemoryPreset(_selectedMemoryPreset);
+    }
+
+    /// <summary>選択されたプリセットの値を 4 つの MemoryBonusViewModel に反映する。</summary>
+    private void LoadMemoryPreset(MemoryPreset preset)
+    {
+        for (int i = 0; i < MemoryBonuses.Count; i++)
+        {
+            var src = i < preset.Bonuses.Count ? preset.Bonuses[i] : new MemoryBonus();
+            var vm = MemoryBonuses[i];
+            vm.VoValue = src.Vo.Value;
+            vm.VoType = src.Vo.Type;
+            vm.DaValue = src.Da.Value;
+            vm.DaType = src.Da.Type;
+            vm.ViValue = src.Vi.Value;
+            vm.ViType = src.Vi.Type;
+        }
+    }
+
+    private bool CanSaveMemoryPreset()
+    {
+        if (string.IsNullOrWhiteSpace(_newPresetName)) return false;
+        // 同名は上書き扱い。同名が無くて上限超過なら不可
+        var existing = MemoryPresets.FirstOrDefault(p => p.Name == _newPresetName.Trim());
+        return existing != null || MemoryPresets.Count < MemoryPresetService.MaxPresets;
+    }
+
+    private void ExecuteSaveMemoryPreset()
+    {
+        var name = _newPresetName.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+
+        var preset = new MemoryPreset
+        {
+            Name = name,
+            Bonuses = BuildMemoryBonuses(),
+        };
+
+        var existing = MemoryPresets.FirstOrDefault(p => p.Name == name);
+        if (existing != null)
+        {
+            // 同名は上書き
+            var idx = MemoryPresets.IndexOf(existing);
+            MemoryPresets[idx] = preset;
+        }
+        else
+        {
+            if (MemoryPresets.Count >= MemoryPresetService.MaxPresets) return;
+            MemoryPresets.Add(preset);
+        }
+
+        _memoryPresetService.Save(MemoryPresets.ToList());
+        OnPropertyChanged(nameof(MemoryPresetCountText));
+        SelectedMemoryPreset = preset;
+        NewPresetName = string.Empty;
+    }
+
+    private void ExecuteDeleteMemoryPreset()
+    {
+        if (_selectedMemoryPreset == null) return;
+        MemoryPresets.Remove(_selectedMemoryPreset);
+        SelectedMemoryPreset = null;
+        _memoryPresetService.Save(MemoryPresets.ToList());
+        OnPropertyChanged(nameof(MemoryPresetCountText));
+    }
+
+    /// <summary>
+    /// メモリースロットに 0 以外の値が1つでも入っているか。
+    /// </summary>
+    private bool HasAnyMemoryBonus => MemoryBonuses.Any(m => !m.IsEmpty);
+
+    /// <summary>
+    /// メモリー入力変更時のハンドラ。既存のキャラ変更時パターンと同様に再計算をトリガする。
+    /// </summary>
+    private void OnMemoryBonusChanged()
+    {
+        if (Result != null && _selectedPattern != null && _deckResults.Count > 0)
+            ApplySelectedPattern(_selectedPattern.Index);
+    }
 
     private PatternResultViewModel? _selectedPattern;
     public PatternResultViewModel? SelectedPattern
@@ -297,9 +437,12 @@ public class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(ResultDa));
             OnPropertyChanged(nameof(ResultVi));
             OnPropertyChanged(nameof(ResultTotal));
-            OnPropertyChanged(nameof(VoBarWidth));
-            OnPropertyChanged(nameof(DaBarWidth));
-            OnPropertyChanged(nameof(ViBarWidth));
+            OnPropertyChanged(nameof(VoBarColumn));
+            OnPropertyChanged(nameof(DaBarColumn));
+            OnPropertyChanged(nameof(ViBarColumn));
+            OnPropertyChanged(nameof(VoBarColumnRemain));
+            OnPropertyChanged(nameof(DaBarColumnRemain));
+            OnPropertyChanged(nameof(ViBarColumnRemain));
             OnPropertyChanged(nameof(IsVoAtCap));
             OnPropertyChanged(nameof(IsDaAtCap));
             OnPropertyChanged(nameof(IsViAtCap));
@@ -313,9 +456,12 @@ public class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(ResultDaBase));
         OnPropertyChanged(nameof(ResultViBase));
         OnPropertyChanged(nameof(ResultTotalBase));
-        OnPropertyChanged(nameof(VoBarWidthBase));
-        OnPropertyChanged(nameof(DaBarWidthBase));
-        OnPropertyChanged(nameof(ViBarWidthBase));
+        OnPropertyChanged(nameof(VoBarColumnBase));
+        OnPropertyChanged(nameof(DaBarColumnBase));
+        OnPropertyChanged(nameof(ViBarColumnBase));
+        OnPropertyChanged(nameof(VoBarColumnBaseRemain));
+        OnPropertyChanged(nameof(DaBarColumnBaseRemain));
+        OnPropertyChanged(nameof(ViBarColumnBaseRemain));
         OnPropertyChanged(nameof(HasCharacterBonus));
         OnPropertyChanged(nameof(ResultVoDelta));
         OnPropertyChanged(nameof(ResultDaDelta));
@@ -339,7 +485,8 @@ public class MainViewModel : ViewModelBase
     public int ResultViBase => ResultBase?.FinalStatus.Vi ?? 0;
     public int ResultTotalBase => ResultBase?.FinalStatus.Total ?? 0;
 
-    public bool HasCharacterBonus => _resultWithoutCharacter != null && _selectedCharacter != null;
+    // キャラ補正・メモリー補正いずれかが有効なら true（差分バー/差分テキストの表示判定）
+    public bool HasCharacterBonus => _resultWithoutCharacter != null;
     public int ResultVoDelta => ResultVo - ResultVoBase;
     public int ResultDaDelta => ResultDa - ResultDaBase;
     public int ResultViDelta => ResultVi - ResultViBase;
@@ -354,12 +501,28 @@ public class MainViewModel : ViewModelBase
     public bool IsDaAtCap => ResultDa >= StatCap;
     public bool IsViAtCap => ResultVi >= StatCap;
 
-    public double VoBarWidth => StatCap > 0 ? Math.Min((double)ResultVo / StatCap, 1.0) * 300 : 0;
-    public double DaBarWidth => StatCap > 0 ? Math.Min((double)ResultDa / StatCap, 1.0) * 300 : 0;
-    public double ViBarWidth => StatCap > 0 ? Math.Min((double)ResultVi / StatCap, 1.0) * 300 : 0;
-    public double VoBarWidthBase => StatCap > 0 ? Math.Min((double)ResultVoBase / StatCap, 1.0) * 300 : 0;
-    public double DaBarWidthBase => StatCap > 0 ? Math.Min((double)ResultDaBase / StatCap, 1.0) * 300 : 0;
-    public double ViBarWidthBase => StatCap > 0 ? Math.Min((double)ResultViBase / StatCap, 1.0) * 300 : 0;
+    // バー幅は Grid.ColumnDefinitions の Star 比率で表現し、親要素いっぱいに伸びるようにする。
+    // [ratio*][1-ratio*] の2列構成で 1列目にバーを描画。比率はプランの StatusLimit を分母にして算出。
+    private double VoRatio => StatCap > 0 ? Math.Min((double)ResultVo / StatCap, 1.0) : 0;
+    private double DaRatio => StatCap > 0 ? Math.Min((double)ResultDa / StatCap, 1.0) : 0;
+    private double ViRatio => StatCap > 0 ? Math.Min((double)ResultVi / StatCap, 1.0) : 0;
+    private double VoRatioBase => StatCap > 0 ? Math.Min((double)ResultVoBase / StatCap, 1.0) : 0;
+    private double DaRatioBase => StatCap > 0 ? Math.Min((double)ResultDaBase / StatCap, 1.0) : 0;
+    private double ViRatioBase => StatCap > 0 ? Math.Min((double)ResultViBase / StatCap, 1.0) : 0;
+
+    public System.Windows.GridLength VoBarColumn => new(VoRatio, System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength DaBarColumn => new(DaRatio, System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength ViBarColumn => new(ViRatio, System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength VoBarColumnRemain => new(Math.Max(1.0 - VoRatio, 0), System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength DaBarColumnRemain => new(Math.Max(1.0 - DaRatio, 0), System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength ViBarColumnRemain => new(Math.Max(1.0 - ViRatio, 0), System.Windows.GridUnitType.Star);
+
+    public System.Windows.GridLength VoBarColumnBase => new(VoRatioBase, System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength DaBarColumnBase => new(DaRatioBase, System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength ViBarColumnBase => new(ViRatioBase, System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength VoBarColumnBaseRemain => new(Math.Max(1.0 - VoRatioBase, 0), System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength DaBarColumnBaseRemain => new(Math.Max(1.0 - DaRatioBase, 0), System.Windows.GridUnitType.Star);
+    public System.Windows.GridLength ViBarColumnBaseRemain => new(Math.Max(1.0 - ViRatioBase, 0), System.Windows.GridUnitType.Star);
 
     public string DeckLabel
     {
@@ -395,6 +558,7 @@ public class MainViewModel : ViewModelBase
         _cardLoader = new SupportCardLoaderService(yamlService, Path.Combine(dataDir, "SupportCards"));
         _inventoryService = new InventoryService(Path.Combine(dataDir, "Inventory", "inventory.yaml"));
         _characterLoader = new CharacterLoaderService(yamlService, Path.Combine(dataDir, "Characters"));
+        _memoryPresetService = new MemoryPresetService(Path.Combine(dataDir, "MemoryPresets", "memory_presets.yaml"));
         _calculationService = new StatusCalculationService();
         _scoringService = new CardScoringService();
 
@@ -418,7 +582,23 @@ public class MainViewModel : ViewModelBase
             SelectedCharacter = (target != null && target == _selectedCharacter) ? null : target;
         });
 
+        // 持ち込みメモリースロット (4枠) を初期化。値変更時に再計算をトリガするコールバックを渡す。
+        for (int i = 1; i <= 4; i++)
+            MemoryBonuses.Add(new MemoryBonusViewModel(i, OnMemoryBonusChanged));
+
+        ClearMemoryBonusesCommand = new RelayCommand(_ =>
+        {
+            foreach (var vm in MemoryBonuses)
+                vm.Reset();
+        });
+
+        SaveMemoryPresetCommand = new RelayCommand(_ => ExecuteSaveMemoryPreset(),
+            _ => CanSaveMemoryPreset());
+        DeleteMemoryPresetCommand = new RelayCommand(_ => ExecuteDeleteMemoryPreset(),
+            _ => _selectedMemoryPreset != null);
+
         LoadData();
+        LoadMemoryPresets();
     }
 
     private void LoadData()
@@ -647,10 +827,12 @@ public class MainViewModel : ViewModelBase
         foreach (var cs in pattern.SelectedCards.Where(cs => cs.IsRental))
             uncapLevels[cs.Card.Id] = 4;
         var effectiveChar = GetEffectiveCharacter();
-        _resultWithoutCharacter = _selectedCharacter != null
-            ? _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), null)
+        var memoryBonuses = BuildMemoryBonuses();
+        // キャラ補正・メモリー補正のいずれかが有効なら「補正なし結果」を別途算出し差分表示に使う
+        _resultWithoutCharacter = (_selectedCharacter != null || HasAnyMemoryBonus)
+            ? _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), null, null)
             : null;
-        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), effectiveChar);
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), effectiveChar, memoryBonuses);
 
         DeckCards.Clear();
         foreach (var cs in pattern.SelectedCards)
@@ -1017,10 +1199,11 @@ public class MainViewModel : ViewModelBase
         // 現在のターン選択をそのまま使って再計算
         var choices = TurnChoices.Select(tc => tc.ToTurnChoice()).ToList();
         var effectiveChar = GetEffectiveCharacter();
-        _resultWithoutCharacter = _selectedCharacter != null
-            ? _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts(), null)
+        var memoryBonuses = BuildMemoryBonuses();
+        _resultWithoutCharacter = (_selectedCharacter != null || HasAnyMemoryBonus)
+            ? _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts(), null, null)
             : null;
-        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts(), effectiveChar);
+        Result = _calculationService.Calculate(_selectedPlan, selectedCards, choices, BuildUncapLevels(), BuildAdditionalCounts(), effectiveChar, memoryBonuses);
     }
 
     /// <summary>
