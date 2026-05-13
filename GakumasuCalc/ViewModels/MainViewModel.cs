@@ -15,6 +15,7 @@ public class MainViewModel : ViewModelBase
     private readonly InventoryService _inventoryService;
     private readonly CharacterLoaderService _characterLoader;
     private readonly MemoryPresetService _memoryPresetService;
+    private readonly VersionCheckService _versionCheckService;
     private List<SupportCard> _allCards = new();
     private List<CardInventoryEntry> _inventory = new();
     private Character? _selectedCharacter;
@@ -189,6 +190,55 @@ public class MainViewModel : ViewModelBase
     public ICommand ClearMemoryBonusesCommand { get; private set; } = null!;
     public ICommand SaveMemoryPresetCommand { get; private set; } = null!;
     public ICommand DeleteMemoryPresetCommand { get; private set; } = null!;
+    public ICommand CheckUpdateCommand { get; private set; } = null!;
+    public ICommand OpenReleasePageCommand { get; private set; } = null!;
+    public ICommand DismissUpdateBannerCommand { get; private set; } = null!;
+
+    // --- バージョンチェック関連 ---
+    public string CurrentVersion { get; }
+
+    private string _latestVersion = string.Empty;
+    public string LatestVersion
+    {
+        get => _latestVersion;
+        private set { if (SetProperty(ref _latestVersion, value)) OnPropertyChanged(nameof(UpdateMessage)); }
+    }
+
+    private string _latestReleaseUrl = string.Empty;
+    public string LatestReleaseUrl
+    {
+        get => _latestReleaseUrl;
+        private set => SetProperty(ref _latestReleaseUrl, value);
+    }
+
+    private bool _hasUpdate;
+    public bool HasUpdate
+    {
+        get => _hasUpdate;
+        private set
+        {
+            if (SetProperty(ref _hasUpdate, value))
+            {
+                OnPropertyChanged(nameof(IsUpdateBannerVisible));
+                OnPropertyChanged(nameof(UpdateMessage));
+            }
+        }
+    }
+
+    private bool _isUpdateBannerDismissed;
+    public bool IsUpdateBannerVisible => _hasUpdate && !_isUpdateBannerDismissed;
+
+    private string _versionCheckStatus = string.Empty;
+    public string VersionCheckStatus
+    {
+        get => _versionCheckStatus;
+        private set => SetProperty(ref _versionCheckStatus, value);
+    }
+
+    public string UpdateMessage =>
+        string.IsNullOrEmpty(_latestVersion)
+            ? string.Empty
+            : $"新しいバージョン v{_latestVersion} が公開されています";
 
     /// <summary>
     /// メモリースロットを計算用モデルのリストに変換。
@@ -284,6 +334,57 @@ public class MainViewModel : ViewModelBase
         SelectedMemoryPreset = null;
         _memoryPresetService.Save(MemoryPresets.ToList());
         OnPropertyChanged(nameof(MemoryPresetCountText));
+    }
+
+    /// <summary>
+    /// GitHub から最新リリースを取得して、現在バージョンと比較する。
+    /// manual=true なら結果をステータステキストに反映（手動チェック用）。
+    /// </summary>
+    private async Task CheckUpdateAsync(bool manual)
+    {
+        if (manual)
+            VersionCheckStatus = "確認中...";
+
+        var latest = await _versionCheckService.GetLatestAsync();
+        if (latest == null)
+        {
+            if (manual)
+                VersionCheckStatus = "確認失敗（ネットワークまたは GitHub 側エラー）";
+            return;
+        }
+
+        var isNewer = VersionCheckService.IsNewer(latest.NormalizedVersion, CurrentVersion);
+        LatestVersion = latest.NormalizedVersion;
+        LatestReleaseUrl = latest.HtmlUrl;
+        HasUpdate = isNewer;
+        // 手動チェックなら毎回バナーを再表示
+        if (manual)
+        {
+            _isUpdateBannerDismissed = false;
+            OnPropertyChanged(nameof(IsUpdateBannerVisible));
+            VersionCheckStatus = isNewer
+                ? $"v{latest.NormalizedVersion} が公開されています"
+                : "最新版を利用中です";
+        }
+    }
+
+    private void OpenReleasePage()
+    {
+        var url = string.IsNullOrEmpty(_latestReleaseUrl)
+            ? "https://github.com/tyuukiti/gakumasu-calc/releases/latest"
+            : _latestReleaseUrl;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"リリースページ起動エラー: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -559,6 +660,7 @@ public class MainViewModel : ViewModelBase
         _inventoryService = new InventoryService(Path.Combine(dataDir, "Inventory", "inventory.yaml"));
         _characterLoader = new CharacterLoaderService(yamlService, Path.Combine(dataDir, "Characters"));
         _memoryPresetService = new MemoryPresetService(Path.Combine(dataDir, "MemoryPresets", "memory_presets.yaml"));
+        _versionCheckService = new VersionCheckService();
         _calculationService = new StatusCalculationService();
         _scoringService = new CardScoringService();
 
@@ -597,8 +699,21 @@ public class MainViewModel : ViewModelBase
         DeleteMemoryPresetCommand = new RelayCommand(_ => ExecuteDeleteMemoryPreset(),
             _ => _selectedMemoryPreset != null);
 
+        CheckUpdateCommand = new RelayCommand(async _ => await CheckUpdateAsync(manual: true));
+        OpenReleasePageCommand = new RelayCommand(_ => OpenReleasePage());
+        DismissUpdateBannerCommand = new RelayCommand(_ =>
+        {
+            _isUpdateBannerDismissed = true;
+            OnPropertyChanged(nameof(IsUpdateBannerVisible));
+        });
+
+        CurrentVersion = VersionCheckService.GetCurrentVersion();
+
         LoadData();
         LoadMemoryPresets();
+
+        // 起動時に非同期で更新確認（失敗は静かに無視）
+        _ = CheckUpdateAsync(manual: false);
     }
 
     private void LoadData()
