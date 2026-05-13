@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:GakumasuCalc.ViewModels"
         xmlns:conv="clr-namespace:GakumasuCalc.Converters"
+        xmlns:models="clr-namespace:GakumasuCalc.Models"
         Title="学マス 育成ステータス理論値計算ツール"
         Width="780" MinWidth="700" Height="950"
         Background="{StaticResource BgBrush}"
@@ -154,6 +155,136 @@
                         <TextBlock Text="{Binding CharacterBonusSummary}"
                                    FontSize="11" Foreground="#666" Margin="0,4,0,0"
                                    Visibility="{Binding HasSelectedCharacter, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
+            <!-- 持ち込みメモリー (折りたたみ式・任意) -->
+            <Border Style="{StaticResource SectionCard}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="持ち込みメモリー" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <TextBlock Text="（最大4枚・任意）" FontSize="11" Foreground="#999"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                        <!-- 列ヘッダ -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="28"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="Vocal" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource VoBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="Dance" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource DaBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="Visual" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource ViBrush}" HorizontalAlignment="Center"/>
+                        </Grid>
+                        <!-- 4スロット -->
+                        <ItemsControl ItemsSource="{Binding MemoryBonuses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="28"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Index}" FontSize="12"
+                                                   Foreground="#666" VerticalAlignment="Center"/>
+                                        <!-- Vocal -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding VoValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
+                                                     Style="{StaticResource NumericTextBox}"
+                                                     Width="60" FontSize="12" Padding="4,3"
+                                                     HorizontalContentAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding VoType}" SelectedValuePath="Tag"
+                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
+                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
+                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <!-- Dance -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding DaValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
+                                                     Style="{StaticResource NumericTextBox}"
+                                                     Width="60" FontSize="12" Padding="4,3"
+                                                     HorizontalContentAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding DaType}" SelectedValuePath="Tag"
+                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
+                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
+                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <!-- Visual -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding ViValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
+                                                     Style="{StaticResource NumericTextBox}"
+                                                     Width="60" FontSize="12" Padding="4,3"
+                                                     HorizontalContentAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding ViType}" SelectedValuePath="Tag"
+                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
+                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
+                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <!-- プリセット管理 -->
+                        <Border BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,8,0,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="プリセット" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="#666" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding MemoryPresetCountText}" FontSize="11"
+                                               Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox Grid.Column="0"
+                                              ItemsSource="{Binding MemoryPresets}"
+                                              SelectedItem="{Binding SelectedMemoryPreset}"
+                                              DisplayMemberPath="Name"
+                                              DropDownClosed="OnMemoryPresetDropDownClosed"
+                                              FontSize="12" Padding="6,4"/>
+                                    <Button Grid.Column="1" Content="削除"
+                                            Command="{Binding DeleteMemoryPresetCommand}"
+                                            Style="{StaticResource DangerButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                </Grid>
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding NewPresetName, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="12" Padding="6,4"
+                                             ToolTip="保存するプリセット名を入力（同名があれば上書き）"/>
+                                    <Button Grid.Column="1" Content="現在の設定を保存"
+                                            Command="{Binding SaveMemoryPresetCommand}"
+                                            Style="{StaticResource PrimaryButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                    <Button Grid.Column="2" Content="すべてクリア"
+                                            Command="{Binding ClearMemoryBonusesCommand}"
+                                            Style="{StaticResource SecondaryButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Expander>
             </Border>
@@ -523,16 +654,26 @@
                         <TextBlock Grid.Column="0" Text="Vocal" FontSize="14" FontWeight="Bold"
                                    Foreground="{StaticResource VoBrush}" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Height="24" CornerRadius="12"
-                                Background="#F0F0F0">
+                                Background="#F0F0F0" ClipToBounds="True">
                             <Grid>
                                 <!-- 合計バー(暗色)：差分が右端に暗く見える -->
-                                <Border Background="{StaticResource VoBrushDark}"
-                                        CornerRadius="12" HorizontalAlignment="Left"
-                                        Width="{Binding VoBarWidth}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding VoBarColumn}"/>
+                                        <ColumnDefinition Width="{Binding VoBarColumnRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource VoBrushDark}"
+                                            CornerRadius="12"/>
+                                </Grid>
                                 <!-- 補正なしバー(通常色)を上に重ねる -->
-                                <Border Background="{StaticResource VoBrush}"
-                                        CornerRadius="12" HorizontalAlignment="Left"
-                                        Width="{Binding VoBarWidthBase}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding VoBarColumnBase}"/>
+                                        <ColumnDefinition Width="{Binding VoBarColumnBaseRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource VoBrush}"
+                                            CornerRadius="12"/>
+                                </Grid>
                             </Grid>
                         </Border>
                         <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -570,12 +711,22 @@
                         <Border Grid.Column="1" Height="24" CornerRadius="12"
                                 Background="#F0F0F0">
                             <Grid>
-                                <Border Background="{StaticResource DaBrushDark}"
-                                        CornerRadius="12" HorizontalAlignment="Left"
-                                        Width="{Binding DaBarWidth}"/>
-                                <Border Background="{StaticResource DaBrush}"
-                                        CornerRadius="12" HorizontalAlignment="Left"
-                                        Width="{Binding DaBarWidthBase}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding DaBarColumn}"/>
+                                        <ColumnDefinition Width="{Binding DaBarColumnRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource DaBrushDark}"
+                                            CornerRadius="12"/>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding DaBarColumnBase}"/>
+                                        <ColumnDefinition Width="{Binding DaBarColumnBaseRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource DaBrush}"
+                                            CornerRadius="12"/>
+                                </Grid>
                             </Grid>
                         </Border>
                         <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -613,12 +764,22 @@
                         <Border Grid.Column="1" Height="24" CornerRadius="12"
                                 Background="#F0F0F0">
                             <Grid>
-                                <Border Background="{StaticResource ViBrushDark}"
-                                        CornerRadius="12" HorizontalAlignment="Left"
-                                        Width="{Binding ViBarWidth}"/>
-                                <Border Background="{StaticResource ViBrush}"
-                                        CornerRadius="12" HorizontalAlignment="Left"
-                                        Width="{Binding ViBarWidthBase}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding ViBarColumn}"/>
+                                        <ColumnDefinition Width="{Binding ViBarColumnRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource ViBrushDark}"
+                                            CornerRadius="12"/>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding ViBarColumnBase}"/>
+                                        <ColumnDefinition Width="{Binding ViBarColumnBaseRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource ViBrush}"
+                                            CornerRadius="12"/>
+                                </Grid>
                             </Grid>
                         </Border>
                         <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">

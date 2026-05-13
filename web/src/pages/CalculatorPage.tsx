@@ -5,6 +5,7 @@ import StatRoleConfig from '../components/calculator/StatRoleConfig';
 import EventCountConfig from '../components/calculator/EventCountConfig';
 import RequiredCardSelector from '../components/calculator/RequiredCardSelector';
 import CharacterSelector from '../components/calculator/CharacterSelector';
+import MemoryBonusInput from '../components/calculator/MemoryBonusInput';
 import OwnedOnlyToggle from '../components/calculator/OwnedOnlyToggle';
 import ContestModeToggle from '../components/calculator/ContestModeToggle';
 import ResultDisplay from '../components/calculator/ResultDisplay';
@@ -33,6 +34,7 @@ export default function CalculatorPage() {
         <EventCountConfig />
         <RequiredCardSelector />
         <CharacterSelector />
+        <MemoryBonusInput />
 
         <div className="flex items-center gap-4">
           <OwnedOnlyToggle />

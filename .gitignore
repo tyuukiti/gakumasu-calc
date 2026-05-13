@@ -26,6 +26,9 @@ Data/Images/*.PNG
 # Inventory data (user-specific)
 Data/Inventory/
 
+# Memory preset data (user-specific)
+Data/MemoryPresets/
+
 # Legacy directory (pre-rename)
 GakumasuTool/
 

@@ -8,8 +8,9 @@
   LessonConfig,
   AdditionalCounts,
   Character,
+  MemoryBonus,
 } from '../types/models';
-import { additionalCountsToRecord } from '../types/models';
+import { additionalCountsToRecord, sumMemoryFlat, sumMemoryParaBonus } from '../types/models';
 import type { CalculationResult, WeekBreakdown } from '../types/results';
 import type { ActionType } from '../types/enums';
 import { svZero, svAdd, svClone } from '../utils/statusValues';
@@ -89,11 +90,16 @@ export function calculate(
   uncapLevels?: Record<string, number>,
   additionalCounts?: AdditionalCounts,
   character?: Character | null,
+  memoryBonuses?: MemoryBonus[] | null,
 ): CalculationResult {
   // Step 1: base status (apply character bonus if selected)
   let baseStatus = svClone(plan.base_status);
   if (character != null) {
     baseStatus = svAdd(baseStatus, character.base_status_bonus);
+  }
+  // 持ち込みメモリーの実数値加算を基礎値に合流（para_bonus分は週次レッスン処理で合算）
+  if (memoryBonuses != null) {
+    baseStatus = svAdd(baseStatus, sumMemoryFlat(memoryBonuses));
   }
 
   // Step 2: support card equip bonus
@@ -114,6 +120,7 @@ export function calculate(
       triggerCounters,
       uncapLevels,
       character,
+      memoryBonuses,
     );
 
     accumulated = svAdd(accumulated, weekGain);
@@ -177,6 +184,7 @@ function calculateWeekGain(
   triggerCounters: Record<string, number>,
   uncapLevels: Record<string, number> | undefined,
   character: Character | null | undefined,
+  memoryBonuses: MemoryBonus[] | null | undefined,
 ): StatusValues {
   // fixed event
   const isFixedEvent =
@@ -194,11 +202,11 @@ function calculateWeekGain(
 
   switch (turnChoice.chosen_action as ActionType) {
     case 'vo_lesson':
-      return calculateLessonGain(week, 'vo', cards, triggerCounters, uncapLevels, character);
+      return calculateLessonGain(week, 'vo', cards, triggerCounters, uncapLevels, character, memoryBonuses);
     case 'da_lesson':
-      return calculateLessonGain(week, 'da', cards, triggerCounters, uncapLevels, character);
+      return calculateLessonGain(week, 'da', cards, triggerCounters, uncapLevels, character, memoryBonuses);
     case 'vi_lesson':
-      return calculateLessonGain(week, 'vi', cards, triggerCounters, uncapLevels, character);
+      return calculateLessonGain(week, 'vi', cards, triggerCounters, uncapLevels, character, memoryBonuses);
     case 'vo_class':
       return calculateClassGain(week, 'vo', cards, triggerCounters, uncapLevels);
     case 'da_class':
@@ -227,6 +235,7 @@ function calculateLessonGain(
   triggerCounters: Record<string, number>,
   uncapLevels: Record<string, number> | undefined,
   character: Character | null | undefined,
+  memoryBonuses: MemoryBonus[] | null | undefined,
 ): StatusValues {
   const lesson = getLesson(week, lessonType);
   if (lesson == null) {
@@ -270,6 +279,14 @@ function calculateLessonGain(
     paraBonusVo += character.para_bonus.vo;
     paraBonusDa += character.para_bonus.da;
     paraBonusVi += character.para_bonus.vi;
+  }
+
+  // 持ち込みメモリーの para_bonus 種別もサポカ・キャラと同列に加算
+  if (memoryBonuses != null) {
+    const memPara = sumMemoryParaBonus(memoryBonuses);
+    paraBonusVo += memPara.vo;
+    paraBonusDa += memPara.da;
+    paraBonusVi += memPara.vi;
   }
 
   // Apply para bonus to each stat
