@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAppStore } from './stores/appStore'
+import { useCalcStore } from './stores/calcStore'
 import CalculatorPage from './pages/CalculatorPage'
 import InventoryPage from './pages/InventoryPage'
 import { trackEvent } from './utils/analytics'
@@ -58,7 +59,13 @@ export default function App() {
   const { isLoading, error, initialize } = useAppStore()
 
   useEffect(() => {
-    initialize()
+    // 所持データがあれば「所持カードのみで計算」を自動ON（デスクトップ版 MainViewModel と整合）
+    initialize().then(() => {
+      const inventory = useAppStore.getState().inventory
+      if (inventory.some((e) => e.owned)) {
+        useCalcStore.getState().setOwnedOnly(true)
+      }
+    })
   }, [initialize])
 
   if (isLoading) {
