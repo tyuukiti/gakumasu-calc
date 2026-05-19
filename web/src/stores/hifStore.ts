@@ -260,6 +260,66 @@ function buildUncapLevels(allCards: SupportCard[], ownedOnly: boolean): Record<s
   return levels;
 }
 
+/**
+ * 通常のキャラに HIFボーナス (Vo/Da/Vi 上昇パネル) を合算した Character を返す。
+ * デッキ選出と最終表示で同じキャラを使うために共通化。
+ * HIFボーナスが全て0かつキャラ未選択なら null を返す。
+ */
+function buildHifEffectiveCharacter(
+  bl: HifBonusLevels,
+  selectedCharacterId: string | null,
+  uncap3BonusEnabled: boolean,
+): { character: ReturnType<typeof useAppStore.getState>['characters'][number] | null; hasAnyHifBonus: boolean } {
+  const app = useAppStore.getState();
+  const character = selectedCharacterId
+    ? app.characters.find((c) => c.id === selectedCharacterId) ?? null
+    : null;
+  const effectiveCharBase =
+    character && !uncap3BonusEnabled && character.uncap3_bonus
+      ? {
+          ...character,
+          para_bonus: {
+            vo: character.para_bonus.vo - character.uncap3_bonus.vo,
+            da: character.para_bonus.da - character.uncap3_bonus.da,
+            vi: character.para_bonus.vi - character.uncap3_bonus.vi,
+          },
+        }
+      : character;
+
+  const bonusVoFlat = getVoFlatBonus(bl.voUpLevel);
+  const bonusDaFlat = getDaFlatBonus(bl.daUpLevel);
+  const bonusViFlat = getViFlatBonus(bl.viUpLevel);
+  const bonusVoPara = getVoParaBonus(bl.voUpLevel);
+  const bonusDaPara = getDaParaBonus(bl.daUpLevel);
+  const bonusViPara = getViParaBonus(bl.viUpLevel);
+  const hasAnyHifBonus =
+    bonusVoFlat > 0 || bonusDaFlat > 0 || bonusViFlat > 0 ||
+    bonusVoPara > 0 || bonusDaPara > 0 || bonusViPara > 0;
+
+  if (!hasAnyHifBonus) return { character: effectiveCharBase, hasAnyHifBonus };
+
+  return {
+    character: {
+      id: effectiveCharBase?.id ?? '__hif_bonus__',
+      name: effectiveCharBase?.name ?? 'HIF Bonus',
+      color: effectiveCharBase?.color ?? '#000000',
+      initial: effectiveCharBase?.initial ?? '',
+      base_status_bonus: {
+        vo: (effectiveCharBase?.base_status_bonus.vo ?? 0) + bonusVoFlat,
+        da: (effectiveCharBase?.base_status_bonus.da ?? 0) + bonusDaFlat,
+        vi: (effectiveCharBase?.base_status_bonus.vi ?? 0) + bonusViFlat,
+      },
+      para_bonus: {
+        vo: (effectiveCharBase?.para_bonus.vo ?? 0) + bonusVoPara,
+        da: (effectiveCharBase?.para_bonus.da ?? 0) + bonusDaPara,
+        vi: (effectiveCharBase?.para_bonus.vi ?? 0) + bonusViPara,
+      },
+      uncap3_bonus: effectiveCharBase?.uncap3_bonus,
+    },
+    hasAnyHifBonus,
+  };
+}
+
 function applySelectedPatternImpl(
   state: HifState,
   index: number,
@@ -279,23 +339,17 @@ function applySelectedPatternImpl(
 
   const selectedCards = pattern.selected_cards.map((cs) => cs.card);
 
-  const character = calc.selectedCharacterId
-    ? app.characters.find((c) => c.id === calc.selectedCharacterId) ?? null
-    : null;
-  const effectiveChar =
-    character && !calc.uncap3BonusEnabled && character.uncap3_bonus
-      ? {
-          ...character,
-          para_bonus: {
-            vo: character.para_bonus.vo - character.uncap3_bonus.vo,
-            da: character.para_bonus.da - character.uncap3_bonus.da,
-            vi: character.para_bonus.vi - character.uncap3_bonus.vi,
-          },
-        }
-      : character;
+  // HIFモード: デッキ選出時と同じ「HIFボーナス込みキャラ」で再計算しないと、
+  // 選出が想定する補正値と表示値がズレて、Lv5よりLv0の方が高く出るなどの不整合になる
+  const { character: effectiveChar, hasAnyHifBonus } = buildHifEffectiveCharacter(
+    state.bonusLevels,
+    calc.selectedCharacterId,
+    calc.uncap3BonusEnabled,
+  );
 
   const memoryBonuses = calc.memoryBonuses;
   const hasAnyMemory = !isEmptyAllMemoryBonuses(memoryBonuses);
+  const hasSelectedCharacter = !!calc.selectedCharacterId;
 
   const result = calculate(
     state._lastPlan,
@@ -307,7 +361,7 @@ function applySelectedPatternImpl(
     memoryBonuses,
   );
 
-  const resultWithoutCharacter = (character || hasAnyMemory)
+  const resultWithoutCharacter = (hasSelectedCharacter || hasAnyMemory || hasAnyHifBonus)
     ? calculate(state._lastPlan, selectedCards, state._lastTurnChoices, uncapLevels, calc.additionalCounts, null, null)
     : null;
 

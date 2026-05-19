@@ -180,6 +180,46 @@ public class MainViewModel : ViewModelBase
         };
     }
 
+    /// <summary>
+    /// HIFボーナス (Vo/Da/Vi 上昇パネル) をキャラ補正に合算した Character を返す。
+    /// デッキ選出と最終表示で同じキャラを使うために共通化。
+    /// HIFボーナスが全て0かつキャラ未選択なら null を返す。
+    /// </summary>
+    private Character? GetHifEffectiveCharacter(out bool hasAnyHifBonus)
+    {
+        var baseChar = GetEffectiveCharacter();
+        var bl = HifVm.BonusLevels;
+        int bonusVoFlat = HifBonusTables.GetStatUpFlat(bl.VoUpLevel);
+        int bonusDaFlat = HifBonusTables.GetStatUpFlat(bl.DaUpLevel);
+        int bonusViFlat = HifBonusTables.GetStatUpFlat(bl.ViUpLevel);
+        int bonusVoPara = HifBonusTables.GetStatUpPara(bl.VoUpLevel);
+        int bonusDaPara = HifBonusTables.GetStatUpPara(bl.DaUpLevel);
+        int bonusViPara = HifBonusTables.GetStatUpPara(bl.ViUpLevel);
+        hasAnyHifBonus = bonusVoFlat > 0 || bonusDaFlat > 0 || bonusViFlat > 0
+                       || bonusVoPara > 0 || bonusDaPara > 0 || bonusViPara > 0;
+        if (!hasAnyHifBonus) return baseChar;
+
+        return new Character
+        {
+            Id = baseChar?.Id ?? "__hif_bonus__",
+            Name = baseChar?.Name ?? "HIF Bonus",
+            Color = baseChar?.Color ?? "#000000",
+            Initial = baseChar?.Initial ?? "",
+            BaseStatusBonus = new StatusValues(
+                (baseChar?.BaseStatusBonus.Vo ?? 0) + bonusVoFlat,
+                (baseChar?.BaseStatusBonus.Da ?? 0) + bonusDaFlat,
+                (baseChar?.BaseStatusBonus.Vi ?? 0) + bonusViFlat
+            ),
+            ParaBonus = new StatBonusPercent
+            {
+                Vo = (baseChar?.ParaBonus.Vo ?? 0) + bonusVoPara,
+                Da = (baseChar?.ParaBonus.Da ?? 0) + bonusDaPara,
+                Vi = (baseChar?.ParaBonus.Vi ?? 0) + bonusViPara,
+            },
+            Uncap3Bonus = baseChar?.Uncap3Bonus,
+        };
+    }
+
     private bool _uncap3BonusEnabled = false;
     public bool Uncap3BonusEnabled
     {
@@ -645,7 +685,10 @@ public class MainViewModel : ViewModelBase
     public string ResultTotalBaseText => HasCharacterBonus ? $"補正なし: {ResultTotalBase:#,0}" : string.Empty;
     private static string FormatDelta(int v) => v >= 0 ? $"+{v}" : v.ToString();
 
-    private int StatCap => _selectedPlan?.StatusLimit ?? 2800;
+    // HIFモード時は本戦上限増加 (FinalStatLimit) を加算済みの dynamicPlan の上限を使う
+    private int StatCap => _isHifMode && _hifDynamicPlan != null
+        ? _hifDynamicPlan.StatusLimit
+        : (_selectedPlan?.StatusLimit ?? 2800);
     public bool IsVoAtCap => ResultVo >= StatCap;
     public bool IsDaAtCap => ResultDa >= StatCap;
     public bool IsViAtCap => ResultVi >= StatCap;
@@ -1013,10 +1056,15 @@ public class MainViewModel : ViewModelBase
         // レンタルカードは4凸として計算
         foreach (var cs in pattern.SelectedCards.Where(cs => cs.IsRental))
             uncapLevels[cs.Card.Id] = 4;
-        var effectiveChar = GetEffectiveCharacter();
+        // HIFモードではデッキ選出時と同じ「HIFボーナス込みキャラ」で再計算しないと
+        // 選出が想定する補正値と表示値がズレてしまう
+        bool hasAnyHifBonus = false;
+        var effectiveChar = _isHifMode
+            ? GetHifEffectiveCharacter(out hasAnyHifBonus)
+            : GetEffectiveCharacter();
         var memoryBonuses = BuildMemoryBonuses();
-        // キャラ補正・メモリー補正のいずれかが有効なら「補正なし結果」を別途算出し差分表示に使う
-        _resultWithoutCharacter = (_selectedCharacter != null || HasAnyMemoryBonus)
+        // キャラ補正・メモリー補正・HIFボーナスのいずれかが有効なら「補正なし結果」を別途算出し差分表示に使う
+        _resultWithoutCharacter = (_selectedCharacter != null || HasAnyMemoryBonus || hasAnyHifBonus)
             ? _calculationService.Calculate(planForCalc, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), null, null)
             : null;
         Result = _calculationService.Calculate(planForCalc, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), effectiveChar, memoryBonuses);
@@ -1164,44 +1212,9 @@ public class MainViewModel : ViewModelBase
 
         // HIF専用パターン計算 (Vo×3 / Da×3 / Vi×3 / オールフリー)
         // キャラ補正・メモリーは PostOptimize の評価値と最終表示値を一致させるため渡す
-        var hifEffectiveCharBase = GetEffectiveCharacter();
         var hifMemoryBonuses = BuildMemoryBonuses();
-
-        // HIFボーナス: Vo/Da/Vi 上昇 (flat + paraBonus) をキャラ補正に合算
-        var bl = HifVm.BonusLevels;
-        int bonusVoFlat = HifBonusTables.GetStatUpFlat(bl.VoUpLevel);
-        int bonusDaFlat = HifBonusTables.GetStatUpFlat(bl.DaUpLevel);
-        int bonusViFlat = HifBonusTables.GetStatUpFlat(bl.ViUpLevel);
-        int bonusVoPara = HifBonusTables.GetStatUpPara(bl.VoUpLevel);
-        int bonusDaPara = HifBonusTables.GetStatUpPara(bl.DaUpLevel);
-        int bonusViPara = HifBonusTables.GetStatUpPara(bl.ViUpLevel);
-        int hifFinalCapBonus = HifBonusTables.GetFinalCapBonus(bl.FinalStatLimitLevel);
-
-        Character? hifEffectiveChar = hifEffectiveCharBase;
-        bool hasAnyBonus = bonusVoFlat > 0 || bonusDaFlat > 0 || bonusViFlat > 0
-                         || bonusVoPara > 0 || bonusDaPara > 0 || bonusViPara > 0;
-        if (hasAnyBonus)
-        {
-            hifEffectiveChar = new Character
-            {
-                Id = hifEffectiveCharBase?.Id ?? "__hif_bonus__",
-                Name = hifEffectiveCharBase?.Name ?? "HIF Bonus",
-                Color = hifEffectiveCharBase?.Color ?? "#000000",
-                Initial = hifEffectiveCharBase?.Initial ?? "",
-                BaseStatusBonus = new StatusValues(
-                    (hifEffectiveCharBase?.BaseStatusBonus.Vo ?? 0) + bonusVoFlat,
-                    (hifEffectiveCharBase?.BaseStatusBonus.Da ?? 0) + bonusDaFlat,
-                    (hifEffectiveCharBase?.BaseStatusBonus.Vi ?? 0) + bonusViFlat
-                ),
-                ParaBonus = new StatBonusPercent
-                {
-                    Vo = (hifEffectiveCharBase?.ParaBonus.Vo ?? 0) + bonusVoPara,
-                    Da = (hifEffectiveCharBase?.ParaBonus.Da ?? 0) + bonusDaPara,
-                    Vi = (hifEffectiveCharBase?.ParaBonus.Vi ?? 0) + bonusViPara,
-                },
-                Uncap3Bonus = hifEffectiveCharBase?.Uncap3Bonus,
-            };
-        }
+        var hifEffectiveChar = GetHifEffectiveCharacter(out _);
+        int hifFinalCapBonus = HifBonusTables.GetFinalCapBonus(HifVm.BonusLevels.FinalStatLimitLevel);
 
         // status_limit に本戦上限増加を加算 (hifCap は後段で dynamicPlan.StatusLimit から取得される)
         if (hifFinalCapBonus > 0)
