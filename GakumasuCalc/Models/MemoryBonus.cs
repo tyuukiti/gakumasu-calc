@@ -1,3 +1,5 @@
+using YamlDotNet.Serialization;
+
 namespace GakumasuCalc.Models;
 
 /// <summary>
@@ -17,6 +19,7 @@ public class MemoryAttributeBonus
     public double Value { get; set; }
     public MemoryBonusType Type { get; set; } = MemoryBonusType.Flat;
 
+    [YamlIgnore]
     public bool IsEmpty => Value == 0;
 
     public MemoryAttributeBonus() { }
@@ -38,6 +41,7 @@ public class MemoryBonus
     public MemoryAttributeBonus Da { get; set; } = new();
     public MemoryAttributeBonus Vi { get; set; } = new();
 
+    [YamlIgnore]
     public bool IsEmpty => Vo.IsEmpty && Da.IsEmpty && Vi.IsEmpty;
 
     /// <summary>

@@ -321,7 +321,18 @@ public class MainViewModel : ViewModelBase
             MemoryPresets.Add(preset);
         }
 
-        _memoryPresetService.Save(MemoryPresets.ToList());
+        try
+        {
+            _memoryPresetService.Save(MemoryPresets.ToList());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"メモリープリセット保存エラー: {ex}");
+            System.Windows.MessageBox.Show(
+                $"プリセットの保存に失敗しました。\n\n{ex.Message}",
+                "保存失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            return;
+        }
         OnPropertyChanged(nameof(MemoryPresetCountText));
         SelectedMemoryPreset = preset;
         NewPresetName = string.Empty;
@@ -332,7 +343,17 @@ public class MainViewModel : ViewModelBase
         if (_selectedMemoryPreset == null) return;
         MemoryPresets.Remove(_selectedMemoryPreset);
         SelectedMemoryPreset = null;
-        _memoryPresetService.Save(MemoryPresets.ToList());
+        try
+        {
+            _memoryPresetService.Save(MemoryPresets.ToList());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"メモリープリセット削除エラー: {ex}");
+            System.Windows.MessageBox.Show(
+                $"プリセットの削除に失敗しました。\n\n{ex.Message}",
+                "削除失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
         OnPropertyChanged(nameof(MemoryPresetCountText));
     }
 

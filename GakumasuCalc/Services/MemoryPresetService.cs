@@ -39,14 +39,33 @@ public class MemoryPresetService
         try
         {
             var yaml = File.ReadAllText(_path, Encoding.UTF8);
+            // 旧バージョンが書き込んだ計算プロパティ (is_empty) を除去してデシリアライズ
+            yaml = StripReadOnlyFields(yaml);
             var file = _deserializer.Deserialize<MemoryPresetFile>(yaml);
             return file?.Presets ?? new List<MemoryPreset>();
         }
-        catch
+        catch (Exception ex)
         {
             // 破損ファイルが残っていても起動を妨げない
+            System.Diagnostics.Debug.WriteLine($"MemoryPreset 読込失敗: {ex}");
             return new List<MemoryPreset>();
         }
+    }
+
+    /// <summary>
+    /// 旧バージョンで誤って書き出された計算プロパティの行を YAML から削除する。
+    /// </summary>
+    private static string StripReadOnlyFields(string yaml)
+    {
+        var lines = yaml.Split('\n');
+        var keep = new List<string>(lines.Length);
+        foreach (var line in lines)
+        {
+            // "is_empty:" を含む行は破棄 (インデント問わず)
+            if (System.Text.RegularExpressions.Regex.IsMatch(line, @"^\s*is_empty\s*:")) continue;
+            keep.Add(line);
+        }
+        return string.Join('\n', keep);
     }
 
     public void Save(List<MemoryPreset> presets)
