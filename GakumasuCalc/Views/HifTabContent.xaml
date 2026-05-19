@@ -756,7 +756,7 @@
                 </Expander>
             </Border>
 
-            <!-- レッスン内イベント回数 (簡易表示。詳細は通常モードタブで設定可) -->
+            <!-- レッスン内イベント回数 -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -772,9 +772,242 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </StackPanel>
-                    <TextBlock FontSize="11" Foreground="#888">
-                        個別カウントの詳細編集は通常モードタブで行ってください（HIFタブと共有されます）。
-                    </TextBlock>
+
+                    <Expander Header="詳細を編集" IsExpanded="False" FontSize="12" Foreground="#666">
+                    <WrapPanel Margin="0,8,0,0">
+                        <!-- 列1: アイテム系 -->
+                        <StackPanel Margin="0,0,24,0">
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Pドリンク獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding PDrinkAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Pアイテム獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding PItemAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキル(SSR)獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillSsrAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="相談ドリンク交換" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ConsultationDrink, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- 列2: スキル操作系 -->
+                        <StackPanel Margin="0,0,24,0">
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキル強化" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillEnhance, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキル削除" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillDelete, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキルカスタム" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillCustom, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキルチェンジ" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillChange, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="アクティブ強化" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ActiveEnhance, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="アクティブ削除" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ActiveDelete, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="アクティブ獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ActiveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="メンタル強化" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MentalEnhance, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="メンタル削除" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MentalDelete, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- 列3: カード種別獲得 -->
+                        <StackPanel>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="メンタル獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MentalAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="好調カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding GoodConditionAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="集中カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ConcentrateAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="元気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding GenkiAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="好印象カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding GoodImpressionAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="やる気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MotivationAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="温存カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ConserveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="全力カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding FullpowerAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="強気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding AggressiveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </WrapPanel>
+                    </Expander>
                 </StackPanel>
             </Border>
 
