@@ -71,6 +71,12 @@ export interface WeekSchedule {
   class_effect?: StatusValues;
   consultation_effect?: StatusValues;
   special_training_effect?: StatusValues;
+  /** HIFモードの公開レッスン日でサブ属性に加算されるサブ値。実行時にユーザ選択でメイン属性以外の1属性へ加算される */
+  hif_sub_value?: number;
+  /** HIFモードの試験日で全属性に同値加算される基礎値 */
+  hif_exam_base?: number;
+  /** HIFモードの試験日でユーザが Vo/Da/Vi に振り分ける配分値の合計 */
+  hif_exam_distributed?: number;
 }
 
 export interface LessonConfig {

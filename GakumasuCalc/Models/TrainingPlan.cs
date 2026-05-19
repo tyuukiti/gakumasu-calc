@@ -72,6 +72,25 @@ public class WeekSchedule
     [YamlMember(Alias = "special_training_effect")]
     public StatusValues? SpecialTrainingEffect { get; set; }
 
+    /// <summary>
+    /// HIFモードの公開レッスン日でサブ属性に加算されるサブ値。
+    /// 実行時にユーザ選択でメイン属性以外の1属性へ加算される。
+    /// </summary>
+    [YamlMember(Alias = "hif_sub_value")]
+    public int? HifSubValue { get; set; }
+
+    /// <summary>
+    /// HIFモードの試験日で全属性に同値加算される基礎値。
+    /// </summary>
+    [YamlMember(Alias = "hif_exam_base")]
+    public int? HifExamBase { get; set; }
+
+    /// <summary>
+    /// HIFモードの試験日でユーザが Vo/Da/Vi に振り分ける配分値の合計。
+    /// </summary>
+    [YamlMember(Alias = "hif_exam_distributed")]
+    public int? HifExamDistributed { get; set; }
+
     public bool IsFree => Type == "free";
     public bool IsFixedEvent => Type == "fixed_event" || Type == "exam" || Type == "audition";
 

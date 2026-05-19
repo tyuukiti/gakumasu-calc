@@ -25,6 +25,9 @@ function normalizeWeek(w: Partial<WeekSchedule>): WeekSchedule {
     class_effect: w.class_effect,
     consultation_effect: w.consultation_effect,
     special_training_effect: w.special_training_effect,
+    hif_sub_value: w.hif_sub_value,
+    hif_exam_base: w.hif_exam_base,
+    hif_exam_distributed: w.hif_exam_distributed,
   }
 }
 
@@ -67,7 +70,7 @@ export async function loadSupportCards(): Promise<SupportCard[]> {
 }
 
 export async function loadTrainingPlans(): Promise<TrainingPlan[]> {
-  const files = ['Plans/hatsu_legend.yaml', 'Plans/nia.yaml']
+  const files = ['Plans/hatsu_legend.yaml', 'Plans/nia.yaml', 'Plans/hif.yaml']
   const results: TrainingPlan[] = []
   for (const file of files) {
     try {

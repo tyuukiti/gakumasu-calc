@@ -7,6 +7,9 @@ export default function PlanSelector() {
   const selectedPlanId = useCalcStore((s) => s.selectedPlanId);
   const setSelectedPlanId = useCalcStore((s) => s.setSelectedPlanId);
 
+  // HIFモードは専用ページ (/hif) で扱うため、通常の育成プラン選択肢から除外
+  const selectablePlans = plans.filter((p) => p.id !== 'hif');
+
   return (
     <div className="flex items-center gap-3">
       <label className="text-sm font-semibold text-gray-700 shrink-0">育成プラン</label>
@@ -20,7 +23,7 @@ export default function PlanSelector() {
         }}
       >
         <option value="">-- 選択してください --</option>
-        {plans.map((plan) => (
+        {selectablePlans.map((plan) => (
           <option key={plan.id} value={plan.id}>
             {plan.name}
           </option>

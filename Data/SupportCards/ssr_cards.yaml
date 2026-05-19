@@ -3038,3 +3038,37 @@ support_cards:
     stat: vo
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SSR_0099
+  name: ……騒々しいお祭りね
+  rarity: SSR
+  type: vi
+  plan: sense
+  tag: none
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: exam_end
+    stat: vi
+    values: [17, 17, 22, 22, 22]
+    value_type: flat
+    max_count: 2
+  - trigger: outing_end
+    stat: vi
+    values: [28, 28, 28, 38, 38]
+    value_type: flat
+    max_count: 2
+  - trigger: vi_sp_end
+    stat: vi
+    values: [13, 13, 13, 13, 17]
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost

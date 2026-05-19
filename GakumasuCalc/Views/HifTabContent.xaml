@@ -1,0 +1,1258 @@
+<UserControl x:Class="GakumasuCalc.Views.HifTabContent"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:GakumasuCalc.ViewModels"
+             xmlns:conv="clr-namespace:GakumasuCalc.Converters"
+             xmlns:models="clr-namespace:GakumasuCalc.Models">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis"/>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+        <StackPanel>
+
+            <!-- Title -->
+            <TextBlock Text="HIF (Hatsuboshi IDOL FESTIVAL)"
+                       FontSize="20" FontWeight="Bold" Foreground="#333"
+                       Margin="0,0,0,16"/>
+
+            <!-- プラン未読込時の警告 -->
+            <Border Background="#FFF8E1" BorderBrush="#FFB300" BorderThickness="1"
+                    CornerRadius="6" Padding="12,8" Margin="0,0,0,12"
+                    Visibility="{Binding HifVm.IsPlanAvailable, Converter={StaticResource InverseBoolToVis}}">
+                <TextBlock Text="{Binding HifVm.PlanStatusText}"
+                           FontSize="13" Foreground="#8D6E00"
+                           TextWrapping="Wrap"/>
+            </Border>
+
+            <!-- 育成タイプ + フィルタ (MainViewModel と共有) -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <TextBlock Text="育成タイプ" Style="{StaticResource SectionHeader}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox ItemsSource="{Binding PlanTypeOptions}"
+                                  SelectedValue="{Binding SelectedPlanType}"
+                                  SelectedValuePath="Value"
+                                  DisplayMemberPath="DisplayName"
+                                  FontSize="14" Padding="8,6" MinWidth="200"/>
+                        <CheckBox Content="所持カードのみで計算" IsChecked="{Binding OwnedOnly}"
+                                  FontSize="13" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                        <CheckBox Content="コンテストモード" IsChecked="{Binding ContestMode}"
+                                  ToolTip="スキルカード・コンテストアイテムのサポカを除外"
+                                  FontSize="13" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- スケジュール調整 (HIF固有) -->
+            <Border Style="{StaticResource SectionCard}"
+                    Visibility="{Binding HifVm.IsPlanAvailable, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="スケジュール調整" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- 一括設定: 公開レッスンのデフォルト + 試験配分プリセット -->
+                    <Border Background="#F8F9FA" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4"
+                            Padding="10,8" Margin="0,0,0,8">
+                        <StackPanel>
+                            <!-- 公開レッスン一括 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="公開レッスン:" FontSize="12" Foreground="#555"
+                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="メイン" FontSize="11" Foreground="#666"
+                                           VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <ComboBox ItemsSource="{Binding HifVm.AllStatOptions}"
+                                          SelectedValue="{Binding HifVm.BulkMainStat}"
+                                          SelectedValuePath="Value"
+                                          DisplayMemberPath="Label"
+                                          FontSize="11" Padding="4,2" MinWidth="80" Margin="0,0,8,0"/>
+                                <TextBlock Text="サブ" FontSize="11" Foreground="#666"
+                                           VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <ComboBox ItemsSource="{Binding HifVm.AvailableBulkSubStats}"
+                                          SelectedValue="{Binding HifVm.BulkSubStat}"
+                                          SelectedValuePath="Value"
+                                          DisplayMemberPath="Label"
+                                          FontSize="11" Padding="4,2" MinWidth="80" Margin="0,0,8,0"/>
+                                <Button Content="全公開レッスンに適用"
+                                        Command="{Binding HifVm.ApplyBulkLessonChoiceCommand}"
+                                        Style="{StaticResource PrimaryButton}"
+                                        FontSize="11" Padding="10,4"/>
+                            </StackPanel>
+                            <!-- 授業一括 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="授業:" FontSize="12" Foreground="#555"
+                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="属性" FontSize="11" Foreground="#666"
+                                           VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <ComboBox ItemsSource="{Binding HifVm.AllStatOptions}"
+                                          SelectedValue="{Binding HifVm.BulkClassStat}"
+                                          SelectedValuePath="Value"
+                                          DisplayMemberPath="Label"
+                                          FontSize="11" Padding="4,2" MinWidth="80" Margin="0,0,8,0"/>
+                                <Button Content="全授業に適用"
+                                        Command="{Binding HifVm.ApplyBulkClassChoiceCommand}"
+                                        Style="{StaticResource PrimaryButton}"
+                                        FontSize="11" Padding="10,4"/>
+                            </StackPanel>
+
+                            <!-- 試験配分一括 -->
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="試験配分:" FontSize="12" Foreground="#555"
+                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <Button Content="Vo 全振り"
+                                        Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_all"
+                                        Style="{StaticResource TintedOutlineButton}"
+                                        Background="{StaticResource VoBgBrush}"
+                                        Foreground="{StaticResource VoBrushDark}"
+                                        BorderBrush="{StaticResource VoBrushDark}"
+                                        Margin="0,0,4,0"/>
+                                <Button Content="Da 全振り"
+                                        Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="da_all"
+                                        Style="{StaticResource TintedOutlineButton}"
+                                        Background="{StaticResource DaBgBrush}"
+                                        Foreground="{StaticResource DaBrushDark}"
+                                        BorderBrush="{StaticResource DaBrushDark}"
+                                        Margin="0,0,4,0"/>
+                                <Button Content="Vi 全振り"
+                                        Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vi_all"
+                                        Style="{StaticResource TintedOutlineButton}"
+                                        Background="{StaticResource ViBgBrush}"
+                                        Foreground="{StaticResource ViBrushDark}"
+                                        BorderBrush="{StaticResource ViBrushDark}"
+                                        Margin="0,0,4,0"/>
+                                <Button Content="均等3分割"
+                                        Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="equal"
+                                        Style="{StaticResource TintedOutlineButton}"
+                                        Background="White"
+                                        Foreground="#555555"
+                                        BorderBrush="#BDBDBD"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- プリセット保存・読み込み -->
+                    <Border BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Margin="0,0,0,8" Padding="0,8,0,0">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <TextBlock Text="プリセット" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="#666" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding HifVm.SchedulePresetCountText}" FontSize="11"
+                                           Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox Grid.Column="0"
+                                          ItemsSource="{Binding HifVm.SchedulePresets}"
+                                          SelectedItem="{Binding HifVm.SelectedSchedulePreset}"
+                                          DisplayMemberPath="Name"
+                                          FontSize="12" Padding="6,4"/>
+                                <Button Grid.Column="1" Content="削除"
+                                        Command="{Binding HifVm.DeleteSchedulePresetCommand}"
+                                        Style="{StaticResource DangerButton}"
+                                        FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding HifVm.NewPresetName, UpdateSourceTrigger=PropertyChanged}"
+                                         FontSize="12" Padding="6,4"
+                                         ToolTip="保存するプリセット名 (同名は上書き)"/>
+                                <Button Grid.Column="1" Content="現在のスケジュールを保存"
+                                        Command="{Binding HifVm.SaveSchedulePresetCommand}"
+                                        Style="{StaticResource PrimaryButton}"
+                                        FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 個別調整 (折りたたみ) -->
+                    <Expander Header="個別調整 (全 29 日)" IsExpanded="False" FontSize="12" Foreground="#666">
+                    <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,6,0,0">
+                        <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding HifVm.ScheduleItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:HifScheduleItemViewModel}">
+                                        <Border Padding="8,4" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Day ラベル -->
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="{Binding DayLabel}" FontSize="12" FontWeight="SemiBold" Foreground="#555"/>
+                                                </StackPanel>
+
+                                                <!-- 種類ラベル -->
+                                                <TextBlock Grid.Column="1" Text="{Binding TypeLabel}" FontSize="11" Foreground="#888"
+                                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                                                <!-- 選択UI -->
+                                                <Grid Grid.Column="2">
+                                                    <!-- 固定イベント (試験以外) -->
+                                                    <TextBlock Text="{Binding EventName}" FontSize="12" FontStyle="Italic" Foreground="#999"
+                                                               VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <MultiDataTrigger>
+                                                                        <MultiDataTrigger.Conditions>
+                                                                            <Condition Binding="{Binding IsFixed}" Value="True"/>
+                                                                            <Condition Binding="{Binding IsExam}" Value="False"/>
+                                                                        </MultiDataTrigger.Conditions>
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </MultiDataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+
+                                                    <!-- 試験日: 基礎値 + 配分入力 -->
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding IsExam, Converter={StaticResource BoolToVis}}">
+                                                        <TextBlock Text="{Binding EventName}" FontSize="12" FontStyle="Italic" Foreground="#666"
+                                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding ExamBaseText}" FontSize="11" Foreground="#888"
+                                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="Vo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource VoBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                                        <TextBox Text="{Binding ExamVoAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                                                 Style="{StaticResource NumericTextBox}"
+                                                                 Width="42" FontSize="11" Padding="4,2"
+                                                                 HorizontalContentAlignment="Center" Margin="0,0,6,0"/>
+                                                        <TextBlock Text="Da" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource DaBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                                        <TextBox Text="{Binding ExamDaAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                                                 Style="{StaticResource NumericTextBox}"
+                                                                 Width="42" FontSize="11" Padding="4,2"
+                                                                 HorizontalContentAlignment="Center" Margin="0,0,6,0"/>
+                                                        <TextBlock Text="Vi" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource ViBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                                        <TextBox Text="{Binding ExamViAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                                                 Style="{StaticResource NumericTextBox}"
+                                                                 Width="42" FontSize="11" Padding="4,2"
+                                                                 HorizontalContentAlignment="Center" Margin="0,0,6,0"/>
+                                                        <TextBlock Text="{Binding ExamAllocSummary}" FontSize="11" Foreground="#666"
+                                                                   VerticalAlignment="Center"/>
+                                                    </StackPanel>
+
+                                                    <!-- 公開レッスン: メイン→サブの1ドロップダウン -->
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding IsPublicLesson, Converter={StaticResource BoolToVis}}">
+                                                        <ComboBox ItemsSource="{Binding LessonComboOptions}"
+                                                                  SelectedValue="{Binding LessonCombo}"
+                                                                  SelectedValuePath="Value"
+                                                                  DisplayMemberPath="Label"
+                                                                  FontSize="11" Padding="4,2" MinWidth="100"/>
+                                                        <TextBlock Text="{Binding LessonComboText}" FontSize="11" Foreground="#888"
+                                                                   VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                                    </StackPanel>
+
+                                                    <!-- 1選択肢のみ: ラベル表示 -->
+                                                    <TextBlock Text="{Binding TypeLabel}" FontSize="12" Foreground="#444"
+                                                               VerticalAlignment="Center"
+                                                               Visibility="{Binding IsSingleOption, Converter={StaticResource BoolToVis}}"/>
+
+                                                    <!-- 複数選択肢: ComboBox -->
+                                                    <ComboBox ItemsSource="{Binding ActionOptions}"
+                                                              SelectedValue="{Binding SelectedAction}"
+                                                              SelectedValuePath="Value"
+                                                              DisplayMemberPath="Label"
+                                                              FontSize="11" Padding="4,2" MinWidth="160" HorizontalAlignment="Left">
+                                                        <ComboBox.Style>
+                                                            <Style TargetType="ComboBox">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsFixed}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsPublicLesson}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsSingleOption}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ComboBox.Style>
+                                                    </ComboBox>
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                    </Expander>
+                </StackPanel>
+            </Border>
+
+            <!-- HIFボーナス (パネル方式の永続強化、デフォルトMAX) -->
+            <Border Style="{StaticResource SectionCard}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="HIFボーナス" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <TextBlock Text="（デフォルトMAX）" FontSize="11" Foreground="#999"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="各パネルのLvを設定" FontSize="11" Foreground="#666"
+                                       VerticalAlignment="Center"/>
+                            <Button Content="全パネル MAX に戻す"
+                                    Command="{Binding HifVm.ResetBonusLevelsCommand}"
+                                    Style="{StaticResource SecondaryButton}"
+                                    FontSize="11" Padding="8,3" Margin="12,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- 計算関与パネル -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="ボーカル上昇" FontSize="12" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBox Text="{Binding HifVm.VoUpLevel, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="40" FontSize="12" Padding="4,2" HorizontalContentAlignment="Center"/>
+                                <TextBlock Text="/5" FontSize="11" Foreground="#999" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding HifVm.VoUpEffectText}" FontSize="11" Foreground="#666"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="ダンス上昇" FontSize="12" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBox Text="{Binding HifVm.DaUpLevel, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="40" FontSize="12" Padding="4,2" HorizontalContentAlignment="Center"/>
+                                <TextBlock Text="/5" FontSize="11" Foreground="#999" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding HifVm.DaUpEffectText}" FontSize="11" Foreground="#666"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="ビジュアル上昇" FontSize="12" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBox Text="{Binding HifVm.ViUpLevel, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="40" FontSize="12" Padding="4,2" HorizontalContentAlignment="Center"/>
+                                <TextBlock Text="/5" FontSize="11" Foreground="#999" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding HifVm.ViUpEffectText}" FontSize="11" Foreground="#666"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="【本戦】パラメータ上限増加" FontSize="12" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBox Text="{Binding HifVm.FinalStatLimitLevel, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="40" FontSize="12" Padding="4,2" HorizontalContentAlignment="Center"/>
+                                <TextBlock Text="/6" FontSize="11" Foreground="#999" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding HifVm.FinalStatLimitEffectText}" FontSize="11" Foreground="#666"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+                        </Grid>
+
+                        <!-- 区切り -->
+                        <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,6,0,4"/>
+                        <TextBlock Text="(以下は計算非関与・進行度トラッキング用)" FontSize="10" Foreground="#999" Margin="0,0,0,4"/>
+
+                        <!-- 計算非関与パネル -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="SPレッスン発生率増加" FontSize="12" VerticalAlignment="Center" Foreground="#777"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBox Text="{Binding HifVm.SpRateLevel, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="40" FontSize="12" Padding="4,2" HorizontalContentAlignment="Center"/>
+                                <TextBlock Text="/5" FontSize="11" Foreground="#999" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding HifVm.SpRateEffectText}" FontSize="11" Foreground="#999"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="試験前体力回復%" FontSize="12" VerticalAlignment="Center" Foreground="#777"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBox Text="{Binding HifVm.HpRecoveryLevel, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="40" FontSize="12" Padding="4,2" HorizontalContentAlignment="Center"/>
+                                <TextBlock Text="/6" FontSize="11" Foreground="#999" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding HifVm.HpRecoveryEffectText}" FontSize="11" Foreground="#999"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="【選抜試験】初期Pポイント" FontSize="12" VerticalAlignment="Center" Foreground="#777"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBox Text="{Binding HifVm.PreExamPpLevel, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="40" FontSize="12" Padding="4,2" HorizontalContentAlignment="Center"/>
+                                <TextBlock Text="/6" FontSize="11" Foreground="#999" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding HifVm.PreExamPpEffectText}" FontSize="11" Foreground="#999"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="【本戦】初期Pポイント" FontSize="12" VerticalAlignment="Center" Foreground="#777"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBox Text="{Binding HifVm.FinalPpLevel, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="40" FontSize="12" Padding="4,2" HorizontalContentAlignment="Center"/>
+                                <TextBlock Text="/6" FontSize="11" Foreground="#999" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding HifVm.FinalPpEffectText}" FontSize="11" Foreground="#999"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="相談スキルカード割引" FontSize="12" VerticalAlignment="Center" Foreground="#777"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBox Text="{Binding HifVm.ConsultationDiscountLevel, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="40" FontSize="12" Padding="4,2" HorizontalContentAlignment="Center"/>
+                                <TextBlock Text="/6" FontSize="11" Foreground="#999" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding HifVm.ConsultationDiscountEffectText}" FontSize="11" Foreground="#999"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right" FontFamily="Consolas"/>
+                        </Grid>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
+            <!-- SP枚数設定 (Vo/Da/Vi 各独立、メイン/サブ概念なし。MainViewModel の値を共有) -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <TextBlock Text="SP枚数設定" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- Vocal -->
+                    <Border Background="{StaticResource VoBgBrush}" CornerRadius="6"
+                            Padding="12,8" Margin="0,0,0,6">
+                        <Grid>
+                            <TextBlock Text="Vocal" FontSize="14" FontWeight="Bold"
+                                       Foreground="{StaticResource VoBrushDark}"
+                                       VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
+                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox Text="{Binding VoSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Background="White"
+                                         Width="48" FontSize="13" Padding="6,3"
+                                         HorizontalContentAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Dance -->
+                    <Border Background="{StaticResource DaBgBrush}" CornerRadius="6"
+                            Padding="12,8" Margin="0,0,0,6">
+                        <Grid>
+                            <TextBlock Text="Dance" FontSize="14" FontWeight="Bold"
+                                       Foreground="{StaticResource DaBrushDark}"
+                                       VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
+                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox Text="{Binding DaSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Background="White"
+                                         Width="48" FontSize="13" Padding="6,3"
+                                         HorizontalContentAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Visual -->
+                    <Border Background="{StaticResource ViBgBrush}" CornerRadius="6"
+                            Padding="12,8" Margin="0,0,0,2">
+                        <Grid>
+                            <TextBlock Text="Visual" FontSize="14" FontWeight="Bold"
+                                       Foreground="{StaticResource ViBrushDark}"
+                                       VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
+                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox Text="{Binding ViSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Background="White"
+                                         Width="48" FontSize="13" Padding="6,3"
+                                         HorizontalContentAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- 必須カード選択 (MainViewModel と共有) -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeader}">
+                        <Run Text="必須カード"/>
+                        <Run Text="（" Foreground="#999"/><Run Text="{Binding RequiredCards.Count, Mode=OneWay}" Foreground="#999"/><Run Text="/4）" Foreground="#999"/>
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <ComboBox IsEditable="True" IsTextSearchEnabled="True"
+                                  ItemsSource="{Binding AvailableCardsForRequired}"
+                                  SelectedItem="{Binding SelectedRequiredCard}"
+                                  DisplayMemberPath="Name"
+                                  MinWidth="300" FontSize="14" Padding="8,6"/>
+                        <Button Content="追加" Command="{Binding AddRequiredCardCommand}"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Margin="8,0,0,0" Padding="12,6" FontSize="13"/>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding RequiredCards}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="{Binding Type}" FontWeight="Bold" FontSize="12" Width="30"
+                                               VerticalAlignment="Center" Foreground="#666"/>
+                                    <TextBlock Text="{Binding Rarity}" FontSize="12" Width="30"
+                                               VerticalAlignment="Center" Foreground="#999"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
+                                               MinWidth="200"/>
+                                    <Button Content="✕" FontSize="10" Padding="4,2"
+                                            Command="{Binding DataContext.RemoveRequiredCardCommand,
+                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource MaterialDesignFlatButton}"
+                                            Foreground="#999" MinWidth="0" MinHeight="0"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- キャラ選択 (折りたたみ式) -->
+            <Border Style="{StaticResource SectionCard}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="キャラ選択" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <TextBlock Text="（任意）" FontSize="11" Foreground="#999"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedCharacterDisplay}"
+                                       FontSize="12" Foreground="#666" Margin="4,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                        <ItemsControl ItemsSource="{Binding CharacterTiles}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="7"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.SelectCharacterCommand,
+                                                      RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding Character}"
+                                            Background="{Binding BackgroundBrush}"
+                                            BorderBrush="{StaticResource AccentBrush}"
+                                            BorderThickness="{Binding BorderThickness}"
+                                            Margin="3" Padding="0" Height="60"
+                                            ToolTip="{Binding Name}" Cursor="Hand">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Initial}" FontSize="20" FontWeight="Bold"
+                                                       Foreground="{Binding ForegroundBrush}"
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Name}" FontSize="9"
+                                                       Foreground="{Binding ForegroundBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" MaxWidth="60"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <CheckBox Content="3凸レッスンボーナス込み"
+                                  IsChecked="{Binding Uncap3BonusEnabled}"
+                                  FontSize="11" Margin="0,8,0,0"
+                                  Visibility="{Binding HasUncap3Bonus, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock Text="{Binding CharacterBonusSummary}"
+                                   FontSize="11" Foreground="#666" Margin="0,4,0,0"
+                                   Visibility="{Binding HasSelectedCharacter, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
+            <!-- 持ち込みメモリー (折りたたみ式) -->
+            <Border Style="{StaticResource SectionCard}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="持ち込みメモリー" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <TextBlock Text="（最大4枚・任意）" FontSize="11" Foreground="#999"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="28"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="Vocal" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource VoBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="Dance" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource DaBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="Visual" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource ViBrush}" HorizontalAlignment="Center"/>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding MemoryBonuses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="28"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Index}" FontSize="12"
+                                                   Foreground="#666" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding VoValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
+                                                     Style="{StaticResource NumericTextBox}"
+                                                     Width="60" FontSize="12" Padding="4,3"
+                                                     HorizontalContentAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding VoType}" SelectedValuePath="Tag"
+                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
+                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
+                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding DaValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
+                                                     Style="{StaticResource NumericTextBox}"
+                                                     Width="60" FontSize="12" Padding="4,3"
+                                                     HorizontalContentAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding DaType}" SelectedValuePath="Tag"
+                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
+                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
+                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding ViValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
+                                                     Style="{StaticResource NumericTextBox}"
+                                                     Width="60" FontSize="12" Padding="4,3"
+                                                     HorizontalContentAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding ViType}" SelectedValuePath="Tag"
+                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
+                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
+                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- プリセット管理 -->
+                        <Border BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,8,0,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="プリセット" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="#666" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding MemoryPresetCountText}" FontSize="11"
+                                               Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox Grid.Column="0"
+                                              ItemsSource="{Binding MemoryPresets}"
+                                              SelectedItem="{Binding SelectedMemoryPreset}"
+                                              DisplayMemberPath="Name"
+                                              DropDownClosed="OnMemoryPresetDropDownClosed"
+                                              FontSize="12" Padding="6,4"/>
+                                    <Button Grid.Column="1" Content="削除"
+                                            Command="{Binding DeleteMemoryPresetCommand}"
+                                            Style="{StaticResource DangerButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                </Grid>
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding NewPresetName, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="12" Padding="6,4"
+                                             ToolTip="保存するプリセット名を入力（同名があれば上書き）"/>
+                                    <Button Grid.Column="1" Content="現在の設定を保存"
+                                            Command="{Binding SaveMemoryPresetCommand}"
+                                            Style="{StaticResource PrimaryButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                    <Button Grid.Column="2" Content="すべてクリア"
+                                            Command="{Binding ClearMemoryBonusesCommand}"
+                                            Style="{StaticResource SecondaryButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
+            <!-- レッスン内イベント回数 -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="レッスン内イベント回数" Style="{StaticResource SectionHeader}" Margin="0"/>
+                        <ComboBox ItemsSource="{Binding HifEventCountTemplates}"
+                                  SelectedItem="{Binding SelectedHifEventTemplate}"
+                                  FontSize="12" Padding="6,4" Width="180" Margin="16,0,0,0"
+                                  VerticalAlignment="Center">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <Expander Header="詳細を編集" IsExpanded="False" FontSize="12" Foreground="#666">
+                    <WrapPanel Margin="0,8,0,0">
+                        <!-- 列1: アイテム系 -->
+                        <StackPanel Margin="0,0,24,0">
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Pドリンク獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding PDrinkAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Pアイテム獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding PItemAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキル(SSR)獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillSsrAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="相談ドリンク交換" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ConsultationDrink, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- 列2: スキル操作系 -->
+                        <StackPanel Margin="0,0,24,0">
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキル強化" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillEnhance, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキル削除" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillDelete, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキルカスタム" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillCustom, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキルチェンジ" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillChange, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="アクティブ強化" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ActiveEnhance, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="アクティブ削除" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ActiveDelete, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="アクティブ獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ActiveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="メンタル強化" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MentalEnhance, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="メンタル削除" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MentalDelete, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- 列3: カード種別獲得 -->
+                        <StackPanel>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="メンタル獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MentalAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="好調カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding GoodConditionAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="集中カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ConcentrateAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="元気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding GenkiAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="好印象カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding GoodImpressionAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="やる気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding MotivationAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="温存カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ConserveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="全力カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding FullpowerAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="強気カード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding AggressiveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </WrapPanel>
+                    </Expander>
+                </StackPanel>
+            </Border>
+
+            <!-- 計算実行ボタン -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,12">
+                <Button Content="計算実行" Command="{Binding HifCalculateCommand}"
+                        Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"/>
+            </StackPanel>
+
+            <!-- エラーメッセージ -->
+            <TextBlock Text="{Binding HifVm.ErrorMessage}" Foreground="#EF4444" FontSize="12"
+                       Margin="0,0,0,8" HorizontalAlignment="Center"
+                       Visibility="{Binding HifVm.ErrorMessage, Converter={StaticResource BoolToVis}}"/>
+
+            <!-- 計算結果 (MainViewModel と共有) -->
+            <Border Style="{StaticResource SectionCard}"
+                    Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="計算結果" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- Vo -->
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="36"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Vocal" FontSize="14" FontWeight="Bold"
+                                   Foreground="{StaticResource VoBrush}" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Height="24" CornerRadius="12"
+                                Background="#F0F0F0" ClipToBounds="True">
+                            <Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding VoBarColumn}"/>
+                                        <ColumnDefinition Width="{Binding VoBarColumnRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource VoBrushDark}"
+                                            CornerRadius="12"/>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding VoBarColumnBase}"/>
+                                        <ColumnDefinition Width="{Binding VoBarColumnBaseRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource VoBrush}"
+                                            CornerRadius="12"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        <TextBlock Grid.Column="2" Text="{Binding ResultVo, StringFormat={}{0:#,0}}"
+                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Da -->
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="36"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Dance" FontSize="14" FontWeight="Bold"
+                                   Foreground="{StaticResource DaBrush}" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Height="24" CornerRadius="12"
+                                Background="#F0F0F0">
+                            <Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding DaBarColumn}"/>
+                                        <ColumnDefinition Width="{Binding DaBarColumnRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource DaBrushDark}"
+                                            CornerRadius="12"/>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding DaBarColumnBase}"/>
+                                        <ColumnDefinition Width="{Binding DaBarColumnBaseRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource DaBrush}"
+                                            CornerRadius="12"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        <TextBlock Grid.Column="2" Text="{Binding ResultDa, StringFormat={}{0:#,0}}"
+                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Vi -->
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="36"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Visual" FontSize="14" FontWeight="Bold"
+                                   Foreground="{StaticResource ViBrush}" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Height="24" CornerRadius="12"
+                                Background="#F0F0F0">
+                            <Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding ViBarColumn}"/>
+                                        <ColumnDefinition Width="{Binding ViBarColumnRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource ViBrushDark}"
+                                            CornerRadius="12"/>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding ViBarColumnBase}"/>
+                                        <ColumnDefinition Width="{Binding ViBarColumnBaseRemain}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="{StaticResource ViBrush}"
+                                            CornerRadius="12"/>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        <TextBlock Grid.Column="2" Text="{Binding ResultVi, StringFormat={}{0:#,0}}"
+                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- 合計 -->
+                    <Border Margin="0,8,0,0" Padding="10,6" Background="#F5F5F5" CornerRadius="6">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="合計: " FontSize="16" Foreground="#666" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ResultTotal, StringFormat={}{0:#,0}}"
+                                       FontSize="22" FontWeight="Bold" FontFamily="Consolas"
+                                       Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- 編成パターン -->
+            <Border Style="{StaticResource SectionCard}"
+                    Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="編成パターン" Style="{StaticResource SectionHeader}"/>
+                    <ItemsControl ItemsSource="{Binding PatternResults}" Margin="0,0,0,8">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Margin="0,0,6,6" Padding="10,6" Cursor="Hand"
+                                        Command="{Binding DataContext.SelectPatternCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Background" Value="White"/>
+                                            <Setter Property="Foreground" Value="#555"/>
+                                            <Setter Property="BorderBrush" Value="#CCC"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Label}" FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                        <TextBlock FontSize="10"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                   Opacity="0.7">
+                                            <Run Text="合計: "/><Run Text="{Binding Total, Mode=OneWay, StringFormat={}{0:#,0}}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 選択中デッキのカード一覧 -->
+                    <ItemsControl ItemsSource="{Binding DeckCards}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="4,5" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0" Cursor="Help">
+                                    <Border.ToolTip>
+                                        <ToolTip MaxWidth="500">
+                                            <TextBlock Text="{Binding BreakdownText}" FontFamily="Consolas" FontSize="11" TextWrapping="Wrap"/>
+                                        </ToolTip>
+                                    </Border.ToolTip>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="40"/>
+                                            <ColumnDefinition Width="30"/>
+                                            <ColumnDefinition Width="30"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="70"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Background="{Binding TypeBadgeBackground}" CornerRadius="3"
+                                                Padding="4,2" HorizontalAlignment="Left">
+                                            <TextBlock Text="{Binding CardTypeDisplay}" FontSize="11" FontWeight="Bold"
+                                                       Foreground="{Binding TypeBadgeForeground}"/>
+                                        </Border>
+                                        <TextBlock Grid.Column="1" Text="{Binding CardPlanDisplay}" FontSize="10"
+                                                   Foreground="#999" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding CardRarity}" FontSize="10"
+                                                   Foreground="#888" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <Border Grid.Column="3" Background="#E8F5E9" CornerRadius="2"
+                                                Padding="3,1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0"
+                                                Visibility="{Binding SpRateVisibility}">
+                                            <TextBlock Text="SP" FontSize="9" FontWeight="Bold" Foreground="#2E7D32"/>
+                                        </Border>
+                                        <TextBlock Grid.Column="4" Text="{Binding CardName}" FontSize="12"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{Binding CardNameForeground}" Margin="4,0,0,0"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding StatValue, StringFormat={}+{0:#,0}}"
+                                                   FontSize="13" FontWeight="SemiBold" FontFamily="Consolas"
+                                                   Foreground="{StaticResource AccentBrush}"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

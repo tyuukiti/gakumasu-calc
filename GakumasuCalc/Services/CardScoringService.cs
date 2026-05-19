@@ -52,7 +52,9 @@ public class CardScoringService
         Dictionary<string, int>? uncapLevels = null,
         List<SupportCard>? rentalPool = null,
         int freeSlots = 0,
-        List<string>? requiredCardIds = null)
+        List<string>? requiredCardIds = null,
+        Character? character = null,
+        IReadOnlyList<MemoryBonus>? memoryBonuses = null)
     {
         var statCap = plan.StatusLimit;
         var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats);
@@ -98,7 +100,22 @@ public class CardScoringService
         var usedIds = new HashSet<string>();
 
         // 現在の累積ステータス (ベース + 選択済みカード)
+        // キャラ補正を含めることで、cap-aware なカード選出が character の偏りを反映できるようにする
         int accVo = baseStats.Vo, accDa = baseStats.Da, accVi = baseStats.Vi;
+        if (character != null)
+        {
+            accVo += character.BaseStatusBonus.Vo;
+            accDa += character.BaseStatusBonus.Da;
+            accVi += character.BaseStatusBonus.Vi;
+            // para_bonus はレッスン上昇値に対する%補正 (近似)
+            accVo += (int)Math.Floor(lessonStatTotals.Vo * (character.ParaBonus.Vo / 100.0));
+            accDa += (int)Math.Floor(lessonStatTotals.Da * (character.ParaBonus.Da / 100.0));
+            accVi += (int)Math.Floor(lessonStatTotals.Vi * (character.ParaBonus.Vi / 100.0));
+        }
+        // キャラの para_bonus はカード貢献にも乗る。accumulator 更新でも同じ倍率を適用する
+        double accVoMul = 1.0 + (character?.ParaBonus.Vo ?? 0) / 100.0;
+        double accDaMul = 1.0 + (character?.ParaBonus.Da ?? 0) / 100.0;
+        double accViMul = 1.0 + (character?.ParaBonus.Vi ?? 0) / 100.0;
 
         // 属性枠・フリー枠の残数を管理するローカルコピー
         var remainingSlots = new Dictionary<string, int>(cardTypeSlots);
@@ -147,9 +164,9 @@ public class CardScoringService
                     selected.Add(contribution);
                     usedIds.Add(cardId);
                     protectedIds.Add(cardId);
-                    accVo += contribution.RawVo;
-                    accDa += contribution.RawDa;
-                    accVi += contribution.RawVi;
+                    accVo += (int)(contribution.RawVo * accVoMul);
+                    accDa += (int)(contribution.RawDa * accDaMul);
+                    accVi += (int)(contribution.RawVi * accViMul);
 
                     // スロット消費 ("as" は "all" と同等に扱う)
                     bool isAllLike = card.Type == "all" || card.Type == "as";
@@ -211,15 +228,15 @@ public class CardScoringService
 
                 for (int i = 0; i < need; i++)
                 {
-                    var best = SelectBestCard(spCandidates, usedIds, accVo, accDa, accVi, statCap);
+                    var best = SelectBestCard(spCandidates, usedIds, accVo, accDa, accVi, statCap, character);
                     if (best == null) break;
 
                     selected.Add(best);
                     usedIds.Add(best.Card.Id);
                     protectedIds.Add(best.Card.Id); // SP率カードはポスト最適化でスワップしない
-                    accVo += best.RawVo;
-                    accDa += best.RawDa;
-                    accVi += best.RawVi;
+                    accVo += (int)(best.RawVo * accVoMul);
+                    accDa += (int)(best.RawDa * accDaMul);
+                    accVi += (int)(best.RawVi * accViMul);
 
                     // SP率カードが属性枠にカウントされるか、フリー枠を消費するか判定
                     if (remainingSlots.ContainsKey(stat) && remainingSlots[stat] > 0)
@@ -251,17 +268,17 @@ public class CardScoringService
         int fillAccVo = accVo, fillAccDa = accDa, fillAccVi = accVi;
         if (requiredRentalCard != null)
         {
-            fillAccVo += requiredRentalCard.RawVo;
-            fillAccDa += requiredRentalCard.RawDa;
-            fillAccVi += requiredRentalCard.RawVi;
+            fillAccVo += (int)(requiredRentalCard.RawVo * accVoMul);
+            fillAccDa += (int)(requiredRentalCard.RawDa * accDaMul);
+            fillAccVi += (int)(requiredRentalCard.RawVi * accViMul);
         }
-        var fillResult = GreedyFillOwned(cardContributions, selected, usedIds, fillAccVo, fillAccDa, fillAccVi, remainingSlots, remainingFree, ownedSlots, statCap);
+        var fillResult = GreedyFillOwned(cardContributions, selected, usedIds, fillAccVo, fillAccDa, fillAccVi, remainingSlots, remainingFree, ownedSlots, statCap, character);
         selected = fillResult.Selected;
         usedIds = fillResult.UsedIds;
         // 事前加算分を差し引いて実際の累積ステータスを得る
-        accVo = fillResult.AccVo - (requiredRentalCard?.RawVo ?? 0);
-        accDa = fillResult.AccDa - (requiredRentalCard?.RawDa ?? 0);
-        accVi = fillResult.AccVi - (requiredRentalCard?.RawVi ?? 0);
+        accVo = fillResult.AccVo - (int)((requiredRentalCard?.RawVo ?? 0) * accVoMul);
+        accDa = fillResult.AccDa - (int)((requiredRentalCard?.RawDa ?? 0) * accDaMul);
+        accVi = fillResult.AccVi - (int)((requiredRentalCard?.RawVi ?? 0) * accViMul);
 
         // レンタル1枠: 全カードプールから4凸で最良の1枚を選択
         if (rentalPool != null && selected.Count < 6)
@@ -271,9 +288,9 @@ public class CardScoringService
                 // 必須カードがレンタル枠を使用 → Pattern A/B をスキップ
                 selected.Add(requiredRentalCard);
                 usedIds.Add(requiredRentalCard.Card.Id);
-                accVo += requiredRentalCard.RawVo;
-                accDa += requiredRentalCard.RawDa;
-                accVi += requiredRentalCard.RawVi;
+                accVo += (int)(requiredRentalCard.RawVo * accVoMul);
+                accDa += (int)(requiredRentalCard.RawDa * accDaMul);
+                accVi += (int)(requiredRentalCard.RawVi * accViMul);
             }
             else
             {
@@ -294,7 +311,7 @@ public class CardScoringService
             var unusedRentalCandidates = allRentalContributions.Values
                 .Where(cs => !usedIds.Contains(cs.Card.Id))
                 .ToList();
-            var defaultRental = SelectBestCard(unusedRentalCandidates, usedIds, accVo, accDa, accVi, statCap);
+            var defaultRental = SelectBestCard(unusedRentalCandidates, usedIds, accVo, accDa, accVi, statCap, character);
             int defaultTotal = CalculateCappedTotal(baseStats, selected, defaultRental, statCap);
 
             // 最良の結果を追跡
@@ -314,15 +331,15 @@ public class CardScoringService
                 int ownedGain = ownedCard.RawVo + ownedCard.RawDa + ownedCard.RawVi;
                 if (rentalGain <= ownedGain) continue;
 
-                int swapAccVo = accVo - ownedCard.RawVo;
-                int swapAccDa = accDa - ownedCard.RawDa;
-                int swapAccVi = accVi - ownedCard.RawVi;
+                int swapAccVo = accVo - (int)(ownedCard.RawVo * accVoMul);
+                int swapAccDa = accDa - (int)(ownedCard.RawDa * accDaMul);
+                int swapAccVi = accVi - (int)(ownedCard.RawVi * accViMul);
 
                 var swapUsedIds = new HashSet<string>(usedIds);
                 var replacementCandidates = cardContributions
                     .Where(cs => !swapUsedIds.Contains(cs.Card.Id))
                     .ToList();
-                var replacement = SelectBestCard(replacementCandidates, swapUsedIds, swapAccVo, swapAccDa, swapAccVi, statCap);
+                var replacement = SelectBestCard(replacementCandidates, swapUsedIds, swapAccVo, swapAccDa, swapAccVi, statCap, character);
 
                 if (replacement == null) continue;
 
@@ -354,9 +371,9 @@ public class CardScoringService
                 if (existingOwned != null)
                 {
                     localSelected = checkpointSelected.Where(cs => cs.Card.Id != rentalCandidate.Card.Id).ToList();
-                    localAccVo -= existingOwned.RawVo;
-                    localAccDa -= existingOwned.RawDa;
-                    localAccVi -= existingOwned.RawVi;
+                    localAccVo -= (int)(existingOwned.RawVo * accVoMul);
+                    localAccDa -= (int)(existingOwned.RawDa * accDaMul);
+                    localAccVi -= (int)(existingOwned.RawVi * accViMul);
                     localRemainingSlots = new Dictionary<string, int>(checkpointRemainingSlots);
                     if (spCardSlotStat.TryGetValue(existingOwned.Card.Id, out var slotStat))
                         localRemainingSlots[slotStat]++;
@@ -370,11 +387,11 @@ public class CardScoringService
                 // レンタルのステータスを事前加算してグリーディ選択
                 var candidateFill = GreedyFillOwned(
                     cardContributions, localSelected, excludedUsedIds,
-                    localAccVo + rentalCandidate.RawVo,
-                    localAccDa + rentalCandidate.RawDa,
-                    localAccVi + rentalCandidate.RawVi,
+                    localAccVo + (int)(rentalCandidate.RawVo * accVoMul),
+                    localAccDa + (int)(rentalCandidate.RawDa * accDaMul),
+                    localAccVi + (int)(rentalCandidate.RawVi * accViMul),
                     localRemainingSlots, localRemainingFree,
-                    ownedSlots, statCap);
+                    ownedSlots, statCap, character);
 
                 int candidateTotal = CalculateCappedTotal(baseStats, candidateFill.Selected, rentalCandidate, statCap);
 
@@ -391,8 +408,20 @@ public class CardScoringService
             {
                 selected = bestOverallSelected;
                 usedIds = new HashSet<string>(selected.Select(s => s.Card.Id));
+                // accumulator はキャラ補正込みのスケールで再構築
                 accVo = baseStats.Vo; accDa = baseStats.Da; accVi = baseStats.Vi;
-                foreach (var s in selected) { accVo += s.RawVo; accDa += s.RawDa; accVi += s.RawVi; }
+                if (character != null)
+                {
+                    accVo += character.BaseStatusBonus.Vo + (int)Math.Floor(lessonStatTotals.Vo * (character.ParaBonus.Vo / 100.0));
+                    accDa += character.BaseStatusBonus.Da + (int)Math.Floor(lessonStatTotals.Da * (character.ParaBonus.Da / 100.0));
+                    accVi += character.BaseStatusBonus.Vi + (int)Math.Floor(lessonStatTotals.Vi * (character.ParaBonus.Vi / 100.0));
+                }
+                foreach (var s in selected)
+                {
+                    accVo += (int)(s.RawVo * accVoMul);
+                    accDa += (int)(s.RawDa * accDaMul);
+                    accVi += (int)(s.RawVi * accViMul);
+                }
             }
 
             CardScore? finalRental = bestOverallRental;
@@ -401,9 +430,9 @@ public class CardScoringService
                 finalRental.IsRental = true;
                 selected.Add(finalRental);
                 usedIds.Add(finalRental.Card.Id);
-                accVo += finalRental.RawVo;
-                accDa += finalRental.RawDa;
-                accVi += finalRental.RawVi;
+                accVo += (int)(finalRental.RawVo * accVoMul);
+                accDa += (int)(finalRental.RawDa * accDaMul);
+                accVi += (int)(finalRental.RawVi * accViMul);
             }
             } // end else (requiredRentalCard == null)
         }
@@ -417,14 +446,14 @@ public class CardScoringService
 
             while (selected.Count < 6)
             {
-                var best = SelectBestCard(fallback, usedIds, accVo, accDa, accVi, statCap);
+                var best = SelectBestCard(fallback, usedIds, accVo, accDa, accVi, statCap, character);
                 if (best == null) break;
 
                 selected.Add(best);
                 usedIds.Add(best.Card.Id);
-                accVo += best.RawVo;
-                accDa += best.RawDa;
-                accVi += best.RawVi;
+                accVo += (int)(best.RawVo * accVoMul);
+                accDa += (int)(best.RawDa * accDaMul);
+                accVi += (int)(best.RawVi * accViMul);
             }
         }
 
@@ -432,7 +461,8 @@ public class CardScoringService
         if (rentalPool != null)
         {
             PostOptimize(selected, cardContributions, protectedIds,
-                plan, lessonAllocation, mainStats, uncapLevels, additionalCounts);
+                plan, lessonAllocation, mainStats, uncapLevels, additionalCounts, statCap,
+                character, memoryBonuses);
         }
 
         // キャップ適用後の実効値でTotalValueを再計算
@@ -459,17 +489,27 @@ public class CardScoringService
         Dictionary<string, int> lessonAllocation,
         List<string> mainStats,
         Dictionary<string, int>? uncapLevels,
-        AdditionalCounts? additionalCounts)
+        AdditionalCounts? additionalCounts,
+        int statCap,
+        Character? character = null,
+        IReadOnlyList<MemoryBonus>? memoryBonuses = null)
     {
         var calcService = new StatusCalculationService();
         var turnChoices = BuildTurnChoices(plan, mainStats);
 
-        int Evaluate(List<SupportCard> cards)
+        (int total, int vo, int da, int vi) EvaluateFull(List<SupportCard> cards)
         {
             var uc = new Dictionary<string, int>(uncapLevels ?? new());
             foreach (var cs in selected.Where(c => c.IsRental))
                 uc[cs.Card.Id] = 4;
-            return calcService.Calculate(plan, cards, turnChoices, uc, additionalCounts).FinalStatus.Total;
+            // 最終表示値と一致させるため、キャラ補正・メモリーボーナスを含めて評価
+            var fs = calcService.Calculate(plan, cards, turnChoices, uc, additionalCounts, character, memoryBonuses).FinalStatus;
+            int cappedVo = Math.Min(fs.Vo, statCap);
+            int cappedDa = Math.Min(fs.Da, statCap);
+            int cappedVi = Math.Min(fs.Vi, statCap);
+            // cap 超過に対して強いペナルティを与える (× 2)
+            int overflow = Math.Max(0, fs.Vo - statCap) + Math.Max(0, fs.Da - statCap) + Math.Max(0, fs.Vi - statCap);
+            return (cappedVo + cappedDa + cappedVi - overflow * 2, fs.Vo, fs.Da, fs.Vi);
         }
 
         bool improved;
@@ -477,7 +517,7 @@ public class CardScoringService
         {
             improved = false;
             var currentCards = selected.Select(c => c.Card).ToList();
-            int currentTotal = Evaluate(currentCards);
+            var currentEval = EvaluateFull(currentCards);
 
             foreach (var ownedCard in selected.Where(c => !c.IsRental).ToList())
             {
@@ -490,15 +530,28 @@ public class CardScoringService
                 // 非SPの保護カードはスキップ
                 if (ownedIsProtectedNonSp) continue;
 
+                // 所持カードの属性タイプが既にキャップを超えている場合、クロスタイプスワップを許可
+                var ownedType = ownedCard.Card.Type;
+                bool ownedStatOverCap =
+                    (ownedType == "vo" && currentEval.vo >= statCap) ||
+                    (ownedType == "da" && currentEval.da >= statCap) ||
+                    (ownedType == "vi" && currentEval.vi >= statCap);
+
                 foreach (var candidate in candidates)
                 {
                     if (selected.Any(c => c.Card.Id == candidate.Card.Id)) continue;
+
                     // タイプ分布を維持: 同じタイプ同士、または all/as タイプとの交換のみ許可
-                    bool candidateIsAllLike = candidate.Card.Type == "all" || candidate.Card.Type == "as";
-                    bool ownedIsAllLike = ownedCard.Card.Type == "all" || ownedCard.Card.Type == "as";
-                    if (candidate.Card.Type != ownedCard.Card.Type
-                        && !candidateIsAllLike
-                        && !ownedIsAllLike) continue;
+                    // ただし、所持カードの属性が既にキャップを超えている場合はクロスタイプスワップを許可
+                    if (!ownedStatOverCap)
+                    {
+                        bool candidateIsAllLike = candidate.Card.Type == "all" || candidate.Card.Type == "as";
+                        bool ownedIsAllLike = ownedType == "all" || ownedType == "as";
+                        if (candidate.Card.Type != ownedType
+                            && !candidateIsAllLike
+                            && !ownedIsAllLike) continue;
+                    }
+
                     // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
                     if (ownedIsProtectedSp
                         && !candidate.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"))
@@ -508,8 +561,8 @@ public class CardScoringService
                     int idx = testCards.IndexOf(ownedCard.Card);
                     testCards[idx] = candidate.Card;
 
-                    int testTotal = Evaluate(testCards);
-                    if (testTotal > currentTotal)
+                    var testEval = EvaluateFull(testCards);
+                    if (testEval.total > currentEval.total)
                     {
                         int selIdx = selected.IndexOf(ownedCard);
                         selected[selIdx] = candidate;
@@ -519,7 +572,7 @@ public class CardScoringService
                             protectedIds.Remove(ownedCard.Card.Id);
                             protectedIds.Add(candidate.Card.Id);
                         }
-                        currentTotal = testTotal;
+                        currentEval = testEval;
                         improved = true;
                         break;
                     }
@@ -621,25 +674,46 @@ public class CardScoringService
         List<CardScore> candidates,
         HashSet<string> usedIds,
         int currentVo, int currentDa, int currentVi,
-        int statCap = DEFAULT_STAT_CAP)
+        int statCap = DEFAULT_STAT_CAP,
+        Character? character = null)
     {
         CardScore? best = null;
         int bestGain = int.MinValue;
+
+        // キャラの para_bonus はカード貢献にも乗る (calculate 時)
+        double voMul = 1.0 + (character?.ParaBonus.Vo ?? 0) / 100.0;
+        double daMul = 1.0 + (character?.ParaBonus.Da ?? 0) / 100.0;
+        double viMul = 1.0 + (character?.ParaBonus.Vi ?? 0) / 100.0;
+
+        // 既存のオーバーフロー量
+        int overflowCurrent =
+            Math.Max(0, currentVo - statCap) +
+            Math.Max(0, currentDa - statCap) +
+            Math.Max(0, currentVi - statCap);
 
         foreach (var cs in candidates)
         {
             if (usedIds.Contains(cs.Card.Id)) continue;
 
-            // キャップ適用後の実効増分
-            int newVo = Math.Min(currentVo + cs.RawVo, statCap);
-            int newDa = Math.Min(currentDa + cs.RawDa, statCap);
-            int newVi = Math.Min(currentVi + cs.RawVi, statCap);
+            int rawNewVo = currentVo + (int)(cs.RawVo * voMul);
+            int rawNewDa = currentDa + (int)(cs.RawDa * daMul);
+            int rawNewVi = currentVi + (int)(cs.RawVi * viMul);
 
-            int cappedVo = Math.Min(currentVo, statCap);
-            int cappedDa = Math.Min(currentDa, statCap);
-            int cappedVi = Math.Min(currentVi, statCap);
+            // キャップ適用後の実効増分 (合計stat)
+            int cappedNewSum = Math.Min(rawNewVo, statCap) + Math.Min(rawNewDa, statCap) + Math.Min(rawNewVi, statCap);
+            int cappedCurrentSum = Math.Min(currentVo, statCap) + Math.Min(currentDa, statCap) + Math.Min(currentVi, statCap);
+            int capGain = cappedNewSum - cappedCurrentSum;
 
-            int gain = (newVo - cappedVo) + (newDa - cappedDa) + (newVi - cappedVi);
+            // 新規発生する cap 超過量
+            int overflowNew =
+                Math.Max(0, rawNewVo - statCap) +
+                Math.Max(0, rawNewDa - statCap) +
+                Math.Max(0, rawNewVi - statCap);
+            int newOverflow = Math.Max(0, overflowNew - overflowCurrent);
+
+            // cap 超過に対して強いペナルティを与える (× 2)。これにより、同程度の総合点なら
+            // overflow しないカードを強く優先する
+            int gain = capGain - newOverflow * 2;
 
             if (gain > bestGain)
             {
@@ -663,11 +737,15 @@ public class CardScoringService
             Dictionary<string, int> remainingSlotsInit,
             int remainingFreeInit,
             int ownedSlots,
-            int statCap)
+            int statCap,
+            Character? character = null)
     {
         var sel = new List<CardScore>(selectedInit);
         var used = new HashSet<string>(usedIdsInit);
         int aVo = accVoInit, aDa = accDaInit, aVi = accViInit;
+        double voMul = 1.0 + (character?.ParaBonus.Vo ?? 0) / 100.0;
+        double daMul = 1.0 + (character?.ParaBonus.Da ?? 0) / 100.0;
+        double viMul = 1.0 + (character?.ParaBonus.Vi ?? 0) / 100.0;
 
         // 属性枠
         foreach (var kvp in remainingSlotsInit.OrderByDescending(k => k.Value))
@@ -683,13 +761,13 @@ public class CardScoringService
 
             for (int i = 0; i < count && sel.Count < ownedSlots; i++)
             {
-                var best = SelectBestCard(candidates, used, aVo, aDa, aVi, statCap);
+                var best = SelectBestCard(candidates, used, aVo, aDa, aVi, statCap, character);
                 if (best == null) break;
                 sel.Add(best);
                 used.Add(best.Card.Id);
-                aVo += best.RawVo;
-                aDa += best.RawDa;
-                aVi += best.RawVi;
+                aVo += (int)(best.RawVo * voMul);
+                aDa += (int)(best.RawDa * daMul);
+                aVi += (int)(best.RawVi * viMul);
             }
         }
 
@@ -699,13 +777,13 @@ public class CardScoringService
             var freeCandidates = contributions
                 .Where(cs => !used.Contains(cs.Card.Id))
                 .ToList();
-            var best = SelectBestCard(freeCandidates, used, aVo, aDa, aVi, statCap);
+            var best = SelectBestCard(freeCandidates, used, aVo, aDa, aVi, statCap, character);
             if (best == null) break;
             sel.Add(best);
             used.Add(best.Card.Id);
-            aVo += best.RawVo;
-            aDa += best.RawDa;
-            aVi += best.RawVi;
+            aVo += (int)(best.RawVo * voMul);
+            aDa += (int)(best.RawDa * daMul);
+            aVi += (int)(best.RawVi * viMul);
         }
 
         // 補充
@@ -716,13 +794,13 @@ public class CardScoringService
                 .ToList();
             while (sel.Count < ownedSlots)
             {
-                var best = SelectBestCard(remaining, used, aVo, aDa, aVi, statCap);
+                var best = SelectBestCard(remaining, used, aVo, aDa, aVi, statCap, character);
                 if (best == null) break;
                 sel.Add(best);
                 used.Add(best.Card.Id);
-                aVo += best.RawVo;
-                aDa += best.RawDa;
-                aVi += best.RawVi;
+                aVo += (int)(best.RawVo * voMul);
+                aDa += (int)(best.RawDa * daMul);
+                aVi += (int)(best.RawVi * viMul);
             }
         }
 
@@ -904,6 +982,64 @@ public class CardScoringService
             var result = SelectOptimalDeck(
                 plan, allCards, lessonAllocation, cardTypeSlots,
                 mainStats, spCounts, planType, additionalCounts, uncapLevels, rentalPool, freeSlots, requiredCardIds);
+            results.Add(result);
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// HIFモード専用のパターン選出。メイン/サブの概念を捨て、
+    /// Vo/Da/Vi 各属性で「2枚 + フリー3」とオールフリー の合計4パターンを生成する。
+    /// lessonAllocation はユーザのスケジュールから集計した実際のレッスン回数を渡す。
+    /// </summary>
+    public List<DeckResult> SelectMultiplePatternsHif(
+        TrainingPlan plan,
+        List<SupportCard> allCards,
+        List<string> mainStats,
+        Dictionary<string, int> lessonAllocation,
+        Dictionary<string, int>? spCounts = null,
+        string? planType = null,
+        AdditionalCounts? additionalCounts = null,
+        Dictionary<string, int>? uncapLevels = null,
+        List<SupportCard>? rentalPool = null,
+        List<string>? requiredCardIds = null,
+        Character? character = null,
+        IReadOnlyList<MemoryBonus>? memoryBonuses = null)
+    {
+        var results = new List<DeckResult>();
+
+        // HIFパターン: 属性別2枚+フリー3 と オールフリー
+        var patterns = new List<(string? stat, int count, int free)>
+        {
+            ("vo", 2, 3),
+            ("da", 2, 3),
+            ("vi", 2, 3),
+            (null, 0, 5), // オールフリー
+        };
+
+        foreach (var (stat, count, free) in patterns)
+        {
+            var cardTypeSlots = new Dictionary<string, int>();
+            if (stat != null && count > 0)
+            {
+                cardTypeSlots[stat] = count;
+            }
+
+            // SP率カードの不足をフリー枠で吸収できるかチェック
+            int spShortage = 0;
+            foreach (var s in new[] { "vo", "da", "vi" })
+            {
+                int required = spCounts?.GetValueOrDefault(s) ?? 0;
+                int provided = cardTypeSlots.GetValueOrDefault(s);
+                spShortage += Math.Max(0, required - provided);
+            }
+            if (spShortage > free) continue;
+
+            var result = SelectOptimalDeck(
+                plan, allCards, lessonAllocation, cardTypeSlots,
+                mainStats, spCounts, planType, additionalCounts, uncapLevels, rentalPool, free, requiredCardIds,
+                character, memoryBonuses);
             results.Add(result);
         }
 

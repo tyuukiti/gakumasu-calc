@@ -34,7 +34,12 @@ const PLAN_TYPE_KEYWORDS: Record<string, string> = {
   anomaly: 'アノマリー',
 };
 
-export default function EventCountConfig() {
+interface Props {
+  /** テンプレート絞り込み用の plan_id 上書き (HIFタブでは "hif" を渡す) */
+  planIdOverride?: string;
+}
+
+export default function EventCountConfig({ planIdOverride }: Props = {}) {
   const [expanded, setExpanded] = useState(false);
   const templates = useAppStore((s) => s.templates);
   const selectedPlanId = useCalcStore((s) => s.selectedPlanId);
@@ -43,9 +48,10 @@ export default function EventCountConfig() {
   const setAdditionalCount = useCalcStore((s) => s.setAdditionalCount);
   const applyTemplate = useCalcStore((s) => s.applyTemplate);
 
+  const effectivePlanId = planIdOverride ?? selectedPlanId;
   const planTypeKeyword = PLAN_TYPE_KEYWORDS[selectedPlanType];
   const filteredTemplates = templates.filter((t) => {
-    if (t.plan_id && t.plan_id !== selectedPlanId) return false;
+    if (t.plan_id && t.plan_id !== effectivePlanId) return false;
     if (planTypeKeyword && !t.name.includes(planTypeKeyword)) return false;
     return true;
   });

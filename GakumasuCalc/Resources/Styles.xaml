@@ -17,6 +17,12 @@
     <SolidColorBrush x:Key="VoBrushDark" Color="#A64559"/>
     <SolidColorBrush x:Key="DaBrushDark" Color="#4567A6"/>
     <SolidColorBrush x:Key="ViBrushDark" Color="#A68945"/>
+
+    <!-- 属性別 薄背景ブラシ (Web版 color-xx-bg 相当、プリセットボタン等で使用) -->
+    <SolidColorBrush x:Key="VoBgBrush" Color="#FFE0EC"/>
+    <SolidColorBrush x:Key="DaBgBrush" Color="#E0EEFF"/>
+    <SolidColorBrush x:Key="ViBgBrush" Color="#FFF9E0"/>
+
     <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}"/>
     <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource CardBgColor}"/>
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
@@ -95,6 +101,34 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="#BDBDBD"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Tinted Outline Button (薄背景+ダーク文字+カラー枠線、HIFのプリセット等で使用)
+         Background / Foreground / BorderBrush をインラインで指定する -->
+    <Style x:Key="TintedOutlineButton" TargetType="Button">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Opacity" Value="0.8"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
