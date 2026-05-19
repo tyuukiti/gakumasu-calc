@@ -415,6 +415,11 @@ export const useHifStore = create<HifState>((set, get) => ({
       }
     }
     set({ scheduleChoices: newChoices });
+    trackEvent('hif_bulk_apply_used', {
+      kind: 'lesson',
+      main_stat: bulkLessonDefault.mainStat,
+      sub_stat: bulkLessonDefault.subStat,
+    });
   },
 
   applyBulkClassChoice: () => {
@@ -431,6 +436,7 @@ export const useHifStore = create<HifState>((set, get) => ({
       }
     }
     set({ scheduleChoices: newChoices });
+    trackEvent('hif_bulk_apply_used', { kind: 'class', stat: bulkClassStat });
   },
 
   applyExamAllocationPreset: (preset) => {
@@ -450,6 +456,7 @@ export const useHifStore = create<HifState>((set, get) => ({
       }
     }
     set({ examAllocations: newAllocations });
+    trackEvent('hif_exam_preset_applied', { preset });
   },
 
   saveSchedulePreset: (name) => {
@@ -482,6 +489,7 @@ export const useHifStore = create<HifState>((set, get) => ({
     }
     persistSchedulePresets(next);
     set({ schedulePresets: next });
+    trackEvent('hif_schedule_preset_saved', { preset_count: next.length });
   },
 
   loadSchedulePreset: (name) => {
@@ -498,6 +506,7 @@ export const useHifStore = create<HifState>((set, get) => ({
       allocs[Number(k)] = { ...v };
     }
     set({ scheduleChoices: choices, examAllocations: allocs });
+    trackEvent('hif_schedule_preset_loaded');
   },
 
   deleteSchedulePreset: (name) => {
@@ -506,6 +515,7 @@ export const useHifStore = create<HifState>((set, get) => ({
     if (next.length === state.schedulePresets.length) return;
     persistSchedulePresets(next);
     set({ schedulePresets: next });
+    trackEvent('hif_schedule_preset_deleted');
   },
 
   setBonusLevel: (key, level) => {
@@ -736,6 +746,16 @@ export const useHifStore = create<HifState>((set, get) => ({
           patterns_count: patterns.length,
           schedule_filled: turnChoices.length,
           lesson_allocation: `${lessonAllocation.vo}/${lessonAllocation.da}/${lessonAllocation.vi}`,
+          // HIFボーナス Lv（パネルの利用度合いを把握）
+          bonus_vo_up_lv: bl.voUpLevel,
+          bonus_da_up_lv: bl.daUpLevel,
+          bonus_vi_up_lv: bl.viUpLevel,
+          bonus_final_cap_lv: bl.finalStatLimitLevel,
+          bonus_total_lv: bl.voUpLevel + bl.daUpLevel + bl.viUpLevel,
+          // キャラ・メモリー併用の有無
+          has_character: !!calc.selectedCharacterId,
+          owned_only: calc.ownedOnly,
+          contest_mode: calc.contestMode,
         });
       } else {
         set({ errorMessage: '有効な編成パターンが見つかりませんでした' });
@@ -749,6 +769,13 @@ export const useHifStore = create<HifState>((set, get) => ({
     const state = get();
     const updates = applySelectedPatternImpl(state, index);
     set(updates as Partial<HifState>);
+    const pattern = state.deckResults[index];
+    if (pattern) {
+      trackEvent('hif_pattern_selected', {
+        pattern_label: pattern.label,
+        pattern_index: index,
+      });
+    }
   },
 }));
 

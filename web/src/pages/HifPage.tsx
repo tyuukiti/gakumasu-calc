@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useAppStore } from '../stores/appStore';
 import { useHifStore } from '../stores/hifStore';
+import { trackEvent } from '../utils/analytics';
 import ScheduleConfig from '../components/hif/ScheduleConfig';
 import HifBulkSettings from '../components/hif/HifBulkSettings';
 import HifSchedulePresets from '../components/hif/HifSchedulePresets';
@@ -19,6 +21,11 @@ import MemoryBonusInput from '../components/calculator/MemoryBonusInput';
 export default function HifPage() {
   const { plans } = useAppStore();
   const { executeCalculate, errorMessage, calculationResult, deckResults } = useHifStore();
+
+  // HIFページ訪問イベント (一般の page_view と別に HIF 専用シグナルとして送る)
+  useEffect(() => {
+    trackEvent('hif_page_viewed');
+  }, []);
 
   const hifPlan = plans.find((p) => p.id === 'hif');
 
