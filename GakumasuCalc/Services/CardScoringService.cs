@@ -990,7 +990,7 @@ public class CardScoringService
 
     /// <summary>
     /// HIFモード専用のパターン選出。メイン/サブの概念を捨て、
-    /// Vo/Da/Vi 各属性で「3枚 + フリー2」とオールフリー の合計4パターンを生成する。
+    /// Vo/Da/Vi 各属性で「2枚 + フリー3」とオールフリー の合計4パターンを生成する。
     /// lessonAllocation はユーザのスケジュールから集計した実際のレッスン回数を渡す。
     /// </summary>
     public List<DeckResult> SelectMultiplePatternsHif(
@@ -1009,12 +1009,12 @@ public class CardScoringService
     {
         var results = new List<DeckResult>();
 
-        // HIFパターン: 属性別3枚+フリー2 と オールフリー
+        // HIFパターン: 属性別2枚+フリー3 と オールフリー
         var patterns = new List<(string? stat, int count, int free)>
         {
-            ("vo", 3, 2),
-            ("da", 3, 2),
-            ("vi", 3, 2),
+            ("vo", 2, 3),
+            ("da", 2, 3),
+            ("vi", 2, 3),
             (null, 0, 5), // オールフリー
         };
 

@@ -1469,11 +1469,11 @@ export function selectMultiplePatternsHif(
 ): DeckResult[] {
   const results: DeckResult[] = [];
 
-  // HIFパターン: 属性別3枚+フリー2 と オールフリー
+  // HIFパターン: 属性別2枚+フリー3 と オールフリー
   const patterns: Array<{ stat: 'vo' | 'da' | 'vi' | null; count: number; free: number }> = [
-    { stat: 'vo', count: 3, free: 2 },
-    { stat: 'da', count: 3, free: 2 },
-    { stat: 'vi', count: 3, free: 2 },
+    { stat: 'vo', count: 2, free: 3 },
+    { stat: 'da', count: 2, free: 3 },
+    { stat: 'vi', count: 2, free: 3 },
     { stat: null, count: 0, free: 5 }, // オールフリー
   ];
 
