@@ -90,88 +90,88 @@
                 </StackPanel>
             </Border>
 
-            <!-- 属性設定 -->
+            <!-- 属性設定 (Web版と同じ薄背景カード) -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
                     <TextBlock Text="属性設定" Style="{StaticResource SectionHeader}"/>
 
-                    <!-- ヘッダー -->
-                    <Grid Margin="0,0,0,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="120"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="属性" FontSize="12" FontWeight="SemiBold" Foreground="#666"/>
-                        <TextBlock Grid.Column="1" Text="メイン/サブ" FontSize="12" FontWeight="SemiBold" Foreground="#666"/>
-                        <TextBlock Grid.Column="2" Text="SP枚数" FontSize="12" FontWeight="SemiBold" Foreground="#666"/>
-                    </Grid>
-
                     <!-- Vocal -->
-                    <Grid Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="120"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Vocal" FontSize="14" FontWeight="Bold"
-                                   Foreground="{StaticResource VoBrush}" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Column="1" ItemsSource="{Binding RoleOptions}"
-                                  SelectedItem="{Binding VoRole}"
-                                  FontSize="12" Padding="6,4" Width="85" HorizontalAlignment="Left"/>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal">
-                            <TextBox Text="{Binding VoSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                     Style="{StaticResource NumericTextBox}"
-                                     Width="50" FontSize="14" Padding="6,4"
-                                     HorizontalContentAlignment="Center"/>
-                            <TextBlock Text="枚" FontSize="12" Foreground="#666"
-                                       VerticalAlignment="Center" Margin="4,0,0,0"/>
-                        </StackPanel>
-                    </Grid>
+                    <Border Background="{StaticResource VoBgBrush}" CornerRadius="6"
+                            Padding="12,8" Margin="0,0,0,6">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Vocal" FontSize="13" FontWeight="Bold"
+                                       Foreground="{StaticResource VoBrushDark}" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding RoleOptions}"
+                                      SelectedItem="{Binding VoRole}"
+                                      FontSize="12" Padding="6,4" Width="85" HorizontalAlignment="Left"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
+                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Text="{Binding VoSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="56" FontSize="13" Padding="6,4"
+                                         HorizontalContentAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
 
                     <!-- Dance -->
-                    <Grid Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="120"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Dance" FontSize="14" FontWeight="Bold"
-                                   Foreground="{StaticResource DaBrush}" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Column="1" ItemsSource="{Binding RoleOptions}"
-                                  SelectedItem="{Binding DaRole}"
-                                  FontSize="12" Padding="6,4" Width="85" HorizontalAlignment="Left"/>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal">
-                            <TextBox Text="{Binding DaSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                     Style="{StaticResource NumericTextBox}"
-                                     Width="50" FontSize="14" Padding="6,4"
-                                     HorizontalContentAlignment="Center"/>
-                            <TextBlock Text="枚" FontSize="12" Foreground="#666"
-                                       VerticalAlignment="Center" Margin="4,0,0,0"/>
-                        </StackPanel>
-                    </Grid>
+                    <Border Background="{StaticResource DaBgBrush}" CornerRadius="6"
+                            Padding="12,8" Margin="0,0,0,6">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Dance" FontSize="13" FontWeight="Bold"
+                                       Foreground="{StaticResource DaBrushDark}" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding RoleOptions}"
+                                      SelectedItem="{Binding DaRole}"
+                                      FontSize="12" Padding="6,4" Width="85" HorizontalAlignment="Left"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
+                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Text="{Binding DaSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="56" FontSize="13" Padding="6,4"
+                                         HorizontalContentAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
 
                     <!-- Visual -->
-                    <Grid Margin="0,0,0,2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="80"/>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="120"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Visual" FontSize="14" FontWeight="Bold"
-                                   Foreground="{StaticResource ViBrush}" VerticalAlignment="Center"/>
-                        <ComboBox Grid.Column="1" ItemsSource="{Binding RoleOptions}"
-                                  SelectedItem="{Binding ViRole}"
-                                  FontSize="12" Padding="6,4" Width="85" HorizontalAlignment="Left"/>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal">
-                            <TextBox Text="{Binding ViSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                     Style="{StaticResource NumericTextBox}"
-                                     Width="50" FontSize="14" Padding="6,4"
-                                     HorizontalContentAlignment="Center"/>
-                            <TextBlock Text="枚" FontSize="12" Foreground="#666"
-                                       VerticalAlignment="Center" Margin="4,0,0,0"/>
-                        </StackPanel>
-                    </Grid>
+                    <Border Background="{StaticResource ViBgBrush}" CornerRadius="6"
+                            Padding="12,8" Margin="0,0,0,2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Visual" FontSize="13" FontWeight="Bold"
+                                       Foreground="{StaticResource ViBrushDark}" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding RoleOptions}"
+                                      SelectedItem="{Binding ViRole}"
+                                      FontSize="12" Padding="6,4" Width="85" HorizontalAlignment="Left"/>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
+                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox Text="{Binding ViSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         Width="56" FontSize="13" Padding="6,4"
+                                         HorizontalContentAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </Border>
 
