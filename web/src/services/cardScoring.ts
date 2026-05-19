@@ -6,6 +6,8 @@
   StatusValues,
   AdditionalCounts,
   TurnChoice,
+  Character,
+  MemoryBonus,
 } from '../types/models';
 import type { ActionType } from '../types/enums';
 import { additionalCountsToRecord } from '../types/models';
@@ -422,6 +424,7 @@ function greedyFillOwned(
   remainingFreeInit: number,
   ownedSlots: number,
   statCap: number,
+  character?: Character | null,
 ): {
   selected: CardScore[];
   usedIds: Set<string>;
@@ -435,6 +438,11 @@ function greedyFillOwned(
     aDa = accDaInit,
     aVi = accViInit;
 
+  // キャラの para_bonus はカード貢献にも乗るので、accumulator 更新も同じ倍率で行う
+  const voMul = 1 + (character?.para_bonus.vo ?? 0) / 100;
+  const daMul = 1 + (character?.para_bonus.da ?? 0) / 100;
+  const viMul = 1 + (character?.para_bonus.vi ?? 0) / 100;
+
   // 属性枠
   const sortedSlots = Object.entries(remainingSlotsInit).sort(
     (a, b) => b[1] - a[1],
@@ -447,13 +455,13 @@ function greedyFillOwned(
         !used.has(cs.card.id),
     );
     for (let i = 0; i < count && sel.length < ownedSlots; i++) {
-      const best = selectBestCard(candidates, used, aVo, aDa, aVi, statCap);
+      const best = selectBestCard(candidates, used, aVo, aDa, aVi, statCap, character);
       if (best == null) break;
       sel.push(best);
       used.add(best.card.id);
-      aVo += best.raw_vo;
-      aDa += best.raw_da;
-      aVi += best.raw_vi;
+      aVo += best.raw_vo * voMul;
+      aDa += best.raw_da * daMul;
+      aVi += best.raw_vi * viMul;
     }
   }
 
@@ -462,26 +470,26 @@ function greedyFillOwned(
     const freeCandidates = contributions.filter(
       (cs) => !used.has(cs.card.id),
     );
-    const best = selectBestCard(freeCandidates, used, aVo, aDa, aVi, statCap);
+    const best = selectBestCard(freeCandidates, used, aVo, aDa, aVi, statCap, character);
     if (best == null) break;
     sel.push(best);
     used.add(best.card.id);
-    aVo += best.raw_vo;
-    aDa += best.raw_da;
-    aVi += best.raw_vi;
+    aVo += best.raw_vo * voMul;
+    aDa += best.raw_da * daMul;
+    aVi += best.raw_vi * viMul;
   }
 
   // 補充
   if (sel.length < ownedSlots) {
     const remaining = contributions.filter((cs) => !used.has(cs.card.id));
     while (sel.length < ownedSlots) {
-      const best = selectBestCard(remaining, used, aVo, aDa, aVi, statCap);
+      const best = selectBestCard(remaining, used, aVo, aDa, aVi, statCap, character);
       if (best == null) break;
       sel.push(best);
       used.add(best.card.id);
-      aVo += best.raw_vo;
-      aDa += best.raw_da;
-      aVi += best.raw_vi;
+      aVo += best.raw_vo * voMul;
+      aDa += best.raw_da * daMul;
+      aVi += best.raw_vi * viMul;
     }
   }
 
@@ -498,24 +506,35 @@ function postOptimize(
   mainStats: string[],
   uncapLevels?: Record<string, number>,
   additionalCounts?: AdditionalCounts,
+  statCap?: number,
+  character?: Character | null,
+  memoryBonuses?: MemoryBonus[] | null,
 ): void {
   const turnChoices = buildTurnChoices(plan, mainStats);
+  const cap = statCap ?? plan.status_limit ?? DEFAULT_STAT_CAP;
 
-  function evaluate(cards: SupportCard[]): number {
+  function evaluateFull(cards: SupportCard[]): { total: number; vo: number; da: number; vi: number } {
     const uc: Record<string, number> = { ...(uncapLevels ?? {}) };
     for (const cs of selected) {
       if (cs.is_rental) uc[cs.card.id] = 4;
     }
-    const fs = calculate(plan, cards, turnChoices, uc, additionalCounts)
+    // 最終表示値と一致させるため、キャラ補正・メモリーボーナスを含めて評価する
+    const fs = calculate(plan, cards, turnChoices, uc, additionalCounts, character ?? null, memoryBonuses ?? null)
       .final_status;
-    return fs.vo + fs.da + fs.vi;
+    const cappedVo = Math.min(fs.vo, cap);
+    const cappedDa = Math.min(fs.da, cap);
+    const cappedVi = Math.min(fs.vi, cap);
+    // cap 超過に対して強いペナルティを与える (× 2)。これにより、同程度の総合点なら
+    // overflow しない構成を強く優先する
+    const overflow = Math.max(0, fs.vo - cap) + Math.max(0, fs.da - cap) + Math.max(0, fs.vi - cap);
+    return { total: cappedVo + cappedDa + cappedVi - overflow * 2, vo: fs.vo, da: fs.da, vi: fs.vi };
   }
 
   let improved: boolean;
   do {
     improved = false;
     const currentCards = selected.map((c) => c.card);
-    let currentTotal = evaluate(currentCards);
+    let currentEval = evaluateFull(currentCards);
 
     for (let si = 0; si < selected.length; si++) {
       const ownedCard = selected[si];
@@ -532,36 +551,46 @@ function postOptimize(
       // 非SPの保護カードはスキップ
       if (ownedIsProtectedNonSp) continue;
 
+      // 所持カードの属性タイプが既にキャップを超えている場合、クロスタイプスワップを許可
+      const ownedType = ownedCard.card.type;
+      const ownedStatOverCap =
+        (ownedType === 'vo' && currentEval.vo >= cap) ||
+        (ownedType === 'da' && currentEval.da >= cap) ||
+        (ownedType === 'vi' && currentEval.vi >= cap);
+
       for (const candidate of candidates) {
         if (selected.some((c) => c.card.id === candidate.card.id)) continue;
+
         // タイプ分布を維持: 同じタイプ同士、または all/as タイプとの交換のみ許可
-        {
+        // ただし、所持カードの属性が既にキャップを超えている場合はクロスタイプスワップを許可
+        if (!ownedStatOverCap) {
           const candidateIsAllLike =
             candidate.card.type === 'all' || candidate.card.type === 'as';
           const ownedIsAllLike =
-            ownedCard.card.type === 'all' || ownedCard.card.type === 'as';
+            ownedType === 'all' || ownedType === 'as';
           if (
-            candidate.card.type !== ownedCard.card.type &&
+            candidate.card.type !== ownedType &&
             !candidateIsAllLike &&
             !ownedIsAllLike
           )
             continue;
         }
+
         // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
         if (ownedIsProtectedSp && !hasSpRate(candidate.card)) continue;
 
         const testCards = [...currentCards];
         testCards[si] = candidate.card;
 
-        const testTotal = evaluate(testCards);
-        if (testTotal > currentTotal) {
+        const testEval = evaluateFull(testCards);
+        if (testEval.total > currentEval.total) {
           selected[si] = candidate;
           // SP率保護を新カードに引き継ぐ
           if (ownedIsProtectedSp) {
             protectedIds.delete(ownedCard.card.id);
             protectedIds.add(candidate.card.id);
           }
-          currentTotal = testTotal;
+          currentEval = testEval;
           improved = true;
           break;
         }
@@ -662,23 +691,47 @@ function selectBestCard(
   currentDa: number,
   currentVi: number,
   statCap: number = DEFAULT_STAT_CAP,
+  character?: Character | null,
 ): CardScore | undefined {
   let best: CardScore | undefined = undefined;
   let bestGain = -Infinity;
 
+  // キャラの para_bonus はカード貢献にも乗る (calculate 時)。greedy 予測でも同じ倍率を適用
+  // することで cap 判定の精度を上げる。
+  const voMul = 1 + (character?.para_bonus.vo ?? 0) / 100;
+  const daMul = 1 + (character?.para_bonus.da ?? 0) / 100;
+  const viMul = 1 + (character?.para_bonus.vi ?? 0) / 100;
+
+  // 既存のオーバーフロー (これまでに発生した cap 超過量)
+  const overflowCurrent =
+    Math.max(0, currentVo - statCap) +
+    Math.max(0, currentDa - statCap) +
+    Math.max(0, currentVi - statCap);
+
   for (const cs of candidates) {
     if (usedIds.has(cs.card.id)) continue;
 
-    // キャップ適用後の実効増分
-    const newVo = Math.min(currentVo + cs.raw_vo, statCap);
-    const newDa = Math.min(currentDa + cs.raw_da, statCap);
-    const newVi = Math.min(currentVi + cs.raw_vi, statCap);
+    const rawNewVo = currentVo + cs.raw_vo * voMul;
+    const rawNewDa = currentDa + cs.raw_da * daMul;
+    const rawNewVi = currentVi + cs.raw_vi * viMul;
 
-    const cappedVo = Math.min(currentVo, statCap);
-    const cappedDa = Math.min(currentDa, statCap);
-    const cappedVi = Math.min(currentVi, statCap);
+    // キャップ適用後の実効増分 (合計stat)
+    const cappedNewSum =
+      Math.min(rawNewVo, statCap) + Math.min(rawNewDa, statCap) + Math.min(rawNewVi, statCap);
+    const cappedCurrentSum =
+      Math.min(currentVo, statCap) + Math.min(currentDa, statCap) + Math.min(currentVi, statCap);
+    const capGain = cappedNewSum - cappedCurrentSum;
 
-    const gain = newVo - cappedVo + (newDa - cappedDa) + (newVi - cappedVi);
+    // 新規発生する cap 超過量 (このカードが追加で発生させる超過分)
+    const overflowNew =
+      Math.max(0, rawNewVo - statCap) +
+      Math.max(0, rawNewDa - statCap) +
+      Math.max(0, rawNewVi - statCap);
+    const newOverflow = Math.max(0, overflowNew - overflowCurrent);
+
+    // cap 超過に対して強いペナルティを与える (× 2)。これにより、同程度の総合点なら
+    // overflow しないカードを強く優先する
+    const gain = capGain - newOverflow * 2;
 
     if (gain > bestGain) {
       bestGain = gain;
@@ -784,6 +837,8 @@ export function selectOptimalDeck(
   rentalPool?: SupportCard[],
   freeSlots: number = 0,
   requiredCardIds?: string[],
+  character?: Character | null,
+  memoryBonuses?: MemoryBonus[] | null,
 ): DeckResult {
   const statCap = plan.status_limit;
   const triggerCounts = countTriggers(plan, lessonAllocation, mainStats);
@@ -839,9 +894,23 @@ export function selectOptimalDeck(
   let usedIds = new Set<string>();
 
   // 現在の累積ステータス (ベース + 選択済みカード)
+  // キャラ補正を含めることで、cap-aware なカード選出が character の偏りを反映できるようにする
   let accVo = baseStats.vo,
     accDa = baseStats.da,
     accVi = baseStats.vi;
+  if (character != null) {
+    accVo += character.base_status_bonus.vo;
+    accDa += character.base_status_bonus.da;
+    accVi += character.base_status_bonus.vi;
+    // para_bonus はレッスン上昇値に対する%補正 (近似)
+    accVo += lessonStatTotals.vo * (character.para_bonus.vo / 100);
+    accDa += lessonStatTotals.da * (character.para_bonus.da / 100);
+    accVi += lessonStatTotals.vi * (character.para_bonus.vi / 100);
+  }
+  // キャラの para_bonus はカード貢献にも乗る。accumulator 更新でも同じ倍率を適用する
+  const accVoMul = 1 + (character?.para_bonus.vo ?? 0) / 100;
+  const accDaMul = 1 + (character?.para_bonus.da ?? 0) / 100;
+  const accViMul = 1 + (character?.para_bonus.vi ?? 0) / 100;
 
   // 属性枠・フリー枠の残数を管理するローカルコピー
   const remainingSlots: Record<string, number> = { ...cardTypeSlots };
@@ -892,9 +961,9 @@ export function selectOptimalDeck(
         selected.push(contribution);
         usedIds.add(cardId);
         protectedIds.add(cardId);
-        accVo += contribution.raw_vo;
-        accDa += contribution.raw_da;
-        accVi += contribution.raw_vi;
+        accVo += contribution.raw_vo * accVoMul;
+        accDa += contribution.raw_da * accDaMul;
+        accVi += contribution.raw_vi * accViMul;
 
         // スロット消費 ("as" は "all" と同等に扱う)
         const isAllLike = card.type === 'all' || card.type === 'as';
@@ -960,15 +1029,16 @@ export function selectOptimalDeck(
           accDa,
           accVi,
           statCap,
+          character,
         );
         if (best == null) break;
 
         selected.push(best);
         usedIds.add(best.card.id);
         protectedIds.add(best.card.id); // SP率カードはポスト最適化でスワップしない
-        accVo += best.raw_vo;
-        accDa += best.raw_da;
-        accVi += best.raw_vi;
+        accVo += best.raw_vo * accVoMul;
+        accDa += best.raw_da * accDaMul;
+        accVi += best.raw_vi * accViMul;
 
         // SP率カードが属性枠にカウントされるか、フリー枠を消費するか判定
         if (stat in remainingSlots && remainingSlots[stat] > 0) {
@@ -1011,6 +1081,7 @@ export function selectOptimalDeck(
       remainingFree,
       ownedSlots,
       statCap,
+      character,
     );
     selected = fill.selected;
     usedIds = fill.usedIds;
@@ -1026,9 +1097,9 @@ export function selectOptimalDeck(
       // 必須カードがレンタル枠を使用 → Pattern A/B をスキップ
       selected.push(requiredRentalCard);
       usedIds.add(requiredRentalCard.card.id);
-      accVo += requiredRentalCard.raw_vo;
-      accDa += requiredRentalCard.raw_da;
-      accVi += requiredRentalCard.raw_vi;
+      accVo += requiredRentalCard.raw_vo * accVoMul;
+      accDa += requiredRentalCard.raw_da * accDaMul;
+      accVi += requiredRentalCard.raw_vi * accViMul;
     } else {
     const rentalUncap: Record<string, number> = {};
     for (const c of rentalPool) {
@@ -1070,6 +1141,7 @@ export function selectOptimalDeck(
       accDa,
       accVi,
       statCap,
+      character,
     );
     const defaultTotal = calculateCappedTotal(
       baseStats,
@@ -1096,9 +1168,9 @@ export function selectOptimalDeck(
         ownedCard.raw_vo + ownedCard.raw_da + ownedCard.raw_vi;
       if (rentalGain <= ownedGain) continue;
 
-      const swapAccVo = accVo - ownedCard.raw_vo;
-      const swapAccDa = accDa - ownedCard.raw_da;
-      const swapAccVi = accVi - ownedCard.raw_vi;
+      const swapAccVo = accVo - ownedCard.raw_vo * accVoMul;
+      const swapAccDa = accDa - ownedCard.raw_da * accDaMul;
+      const swapAccVi = accVi - ownedCard.raw_vi * accViMul;
 
       const swapUsedIds = new Set<string>(usedIds);
       const replacementCandidates = cardContributions.filter(
@@ -1111,6 +1183,7 @@ export function selectOptimalDeck(
         swapAccDa,
         swapAccVi,
         statCap,
+        character,
       );
 
       if (replacement == null) continue;
@@ -1171,13 +1244,14 @@ export function selectOptimalDeck(
         cardContributions,
         localSelected,
         excludedUsedIds,
-        localAccVo + rentalCandidate.raw_vo,
-        localAccDa + rentalCandidate.raw_da,
-        localAccVi + rentalCandidate.raw_vi,
+        localAccVo + rentalCandidate.raw_vo * accVoMul,
+        localAccDa + rentalCandidate.raw_da * accDaMul,
+        localAccVi + rentalCandidate.raw_vi * accViMul,
         localRemainingSlots,
         localRemainingFree,
         ownedSlots,
         statCap,
+        character,
       );
 
       const candidateTotal = calculateCappedTotal(
@@ -1198,13 +1272,19 @@ export function selectOptimalDeck(
     if (bestOverallSelected != null) {
       selected = bestOverallSelected;
       usedIds = new Set(selected.map((s) => s.card.id));
+      // accumulator はキャラ補正込みのスケールで再構築
       accVo = baseStats.vo;
       accDa = baseStats.da;
       accVi = baseStats.vi;
+      if (character != null) {
+        accVo += character.base_status_bonus.vo + lessonStatTotals.vo * (character.para_bonus.vo / 100);
+        accDa += character.base_status_bonus.da + lessonStatTotals.da * (character.para_bonus.da / 100);
+        accVi += character.base_status_bonus.vi + lessonStatTotals.vi * (character.para_bonus.vi / 100);
+      }
       for (const s of selected) {
-        accVo += s.raw_vo;
-        accDa += s.raw_da;
-        accVi += s.raw_vi;
+        accVo += s.raw_vo * accVoMul;
+        accDa += s.raw_da * accDaMul;
+        accVi += s.raw_vi * accViMul;
       }
     }
 
@@ -1213,9 +1293,9 @@ export function selectOptimalDeck(
       finalRental = { ...finalRental, is_rental: true };
       selected.push(finalRental);
       usedIds.add(finalRental.card.id);
-      accVo += finalRental.raw_vo;
-      accDa += finalRental.raw_da;
-      accVi += finalRental.raw_vi;
+      accVo += finalRental.raw_vo * accVoMul;
+      accDa += finalRental.raw_da * accDaMul;
+      accVi += finalRental.raw_vi * accViMul;
     }
     } // end else (requiredRentalCard == null)
   }
@@ -1234,14 +1314,15 @@ export function selectOptimalDeck(
         accDa,
         accVi,
         statCap,
+        character,
       );
       if (best == null) break;
 
       selected.push(best);
       usedIds.add(best.card.id);
-      accVo += best.raw_vo;
-      accDa += best.raw_da;
-      accVi += best.raw_vi;
+      accVo += best.raw_vo * accVoMul;
+      accDa += best.raw_da * accDaMul;
+      accVi += best.raw_vi * accViMul;
     }
   }
 
@@ -1255,6 +1336,9 @@ export function selectOptimalDeck(
       mainStats,
       uncapLevels,
       additionalCounts,
+      statCap,
+      character ?? null,
+      memoryBonuses ?? null,
     );
   }
 
@@ -1354,6 +1438,75 @@ export function selectMultiplePatterns(
       rentalPool,
       freeSlots,
       requiredCardIds,
+    );
+    results.push(result);
+  }
+
+  return results;
+}
+
+// --- HIF mode: 属性別3枚パターン + オールフリー ---
+
+/**
+ * HIFモード専用のパターン選出。メイン/サブの概念を捨て、
+ * Vo/Da/Vi 各属性で「3枚 + フリー2」と「オールフリー」の合計4パターンを生成する。
+ *
+ * lessonAllocation はユーザが選んだスケジュールから集計した実際のレッスン回数を渡す。
+ */
+export function selectMultiplePatternsHif(
+  plan: TrainingPlan,
+  allCards: SupportCard[],
+  mainStats: string[],
+  lessonAllocation: Record<string, number>,
+  spCounts?: Record<string, number>,
+  planType?: string,
+  additionalCounts?: AdditionalCounts,
+  uncapLevels?: Record<string, number>,
+  rentalPool?: SupportCard[],
+  requiredCardIds?: string[],
+  character?: Character | null,
+  memoryBonuses?: MemoryBonus[] | null,
+): DeckResult[] {
+  const results: DeckResult[] = [];
+
+  // HIFパターン: 属性別3枚+フリー2 と オールフリー
+  const patterns: Array<{ stat: 'vo' | 'da' | 'vi' | null; count: number; free: number }> = [
+    { stat: 'vo', count: 3, free: 2 },
+    { stat: 'da', count: 3, free: 2 },
+    { stat: 'vi', count: 3, free: 2 },
+    { stat: null, count: 0, free: 5 }, // オールフリー
+  ];
+
+  for (const p of patterns) {
+    const cardTypeSlots: Record<string, number> = {};
+    if (p.stat != null && p.count > 0) {
+      cardTypeSlots[p.stat] = p.count;
+    }
+
+    // SP率必要枚数の検査: フリー枠でも吸収できるかチェック
+    let spShortage = 0;
+    for (const stat of ['vo', 'da', 'vi'] as const) {
+      const required = spCounts?.[stat] ?? 0;
+      const provided = cardTypeSlots[stat] ?? 0;
+      spShortage += Math.max(0, required - provided);
+    }
+    if (spShortage > p.free) continue;
+
+    const result = selectOptimalDeck(
+      plan,
+      allCards,
+      lessonAllocation,
+      cardTypeSlots,
+      mainStats,
+      spCounts,
+      planType,
+      additionalCounts,
+      uncapLevels,
+      rentalPool,
+      p.free,
+      requiredCardIds,
+      character ?? null,
+      memoryBonuses ?? null,
     );
     results.push(result);
   }
