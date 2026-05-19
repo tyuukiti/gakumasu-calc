@@ -29,6 +29,17 @@ Data/Inventory/
 # Memory preset data (user-specific)
 Data/MemoryPresets/
 
+# Wiki sync state (auto-generated)
+Data/SupportCards/_synced.txt
+
 # Legacy directory (pre-rename)
 GakumasuTool/
+
+# Python caches
+**/__pycache__/
+
+# scripts: 開発時のログ・デバッグ生成物
+scripts/*.log
+scripts/debug_*
+scripts/event_param_report.txt
 
