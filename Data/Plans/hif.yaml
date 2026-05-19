@@ -1,0 +1,276 @@
+plan:
+  id: "hif"
+  name: "H.I.F (Hatsuboshi IDOL FESTIVAL)"
+  description: "選抜試験(20日) + 本戦(9行程) の2部構成。スケジュールはユーザが各日選択する"
+  total_weeks: 29
+  status_limit: 3000
+  base_status:
+    vo: 0
+    da: 0
+    vi: 0
+  schedule:
+    # ===== 選抜試験モード (Day 1-20) =====
+
+    # Day 1: 相談・活動支給・特別指導 (3択)
+    - week: 1
+      type: "free"
+      available_actions: ["consultation", "activity_supply", "special_training"]
+
+    # Day 2: 公開レッスン (メイン+60 / サブ+20)
+    - week: 2
+      type: "public_lesson"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 60, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 60, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 60 }
+      hif_sub_value: 20
+
+    # Day 3: 授業 (Vo/Da/Vi +120)
+    - week: 3
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 120, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 120, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 120 }
+
+    # Day 4: 公開レッスン (メイン+80 / サブ+50)
+    - week: 4
+      type: "public_lesson"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 80, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 80, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 80 }
+      hif_sub_value: 50
+
+    # Day 5: おでかけ・相談 (2択)
+    - week: 5
+      type: "free"
+      available_actions: ["outing", "consultation"]
+
+    # Day 6: 授業 (Vo/Da/Vi +120)
+    - week: 6
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 120, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 120, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 120 }
+
+    # Day 7: 選抜試験① (基礎値20 / 配分値80)
+    - week: 7
+      type: "audition"
+      event_name: "選抜試験①"
+      status_gain: { vo: 0, da: 0, vi: 0 }
+      hif_exam_base: 20
+      hif_exam_distributed: 80
+
+    # Day 8: おでかけ・活動支給 (2択)
+    - week: 8
+      type: "free"
+      available_actions: ["outing", "activity_supply"]
+
+    # Day 9: 公開レッスン (メイン+80 / サブ+50)
+    - week: 9
+      type: "public_lesson"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 80, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 80, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 80 }
+      hif_sub_value: 50
+
+    # Day 10: 授業 (Vo/Da/Vi +150)
+    - week: 10
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 150, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 150, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 150 }
+
+    # Day 11: 公開レッスン (メイン+100 / サブ+60)
+    - week: 11
+      type: "public_lesson"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 100, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 100, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 100 }
+      hif_sub_value: 60
+
+    # Day 12: 相談・特別指導 (2択)
+    - week: 12
+      type: "free"
+      available_actions: ["consultation", "special_training"]
+
+    # Day 13: 選抜試験② (基礎値80 / 配分値200)
+    - week: 13
+      type: "audition"
+      event_name: "選抜試験②"
+      status_gain: { vo: 0, da: 0, vi: 0 }
+      hif_exam_base: 80
+      hif_exam_distributed: 200
+
+    # Day 14: おでかけ・活動支給 (2択)
+    - week: 14
+      type: "free"
+      available_actions: ["outing", "activity_supply"]
+
+    # Day 15: 公開レッスン (メイン+100 / サブ+20)
+    - week: 15
+      type: "public_lesson"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 100, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 100, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 100 }
+      hif_sub_value: 20
+
+    # Day 16: おでかけ・相談・活動支給 (3択)
+    - week: 16
+      type: "free"
+      available_actions: ["outing", "consultation", "activity_supply"]
+
+    # Day 17: 授業 (Vo/Da/Vi +150)
+    - week: 17
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 150, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 150, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 150 }
+
+    # Day 18: 公開レッスン (メイン+120 / サブ+70)
+    - week: 18
+      type: "public_lesson"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 120, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 120, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 120 }
+      hif_sub_value: 70
+
+    # Day 19: 相談・特別指導 (2択)
+    - week: 19
+      type: "free"
+      available_actions: ["consultation", "special_training"]
+
+    # Day 20: 選抜試験③ (基礎値100 / 配分値220)
+    - week: 20
+      type: "audition"
+      event_name: "選抜試験③"
+      status_gain: { vo: 0, da: 0, vi: 0 }
+      hif_exam_base: 100
+      hif_exam_distributed: 220
+
+    # ===== 本戦モード (Day 21-29) =====
+
+    # Day 21: 本戦1日目 授業 (Vo/Da/Vi +180)
+    - week: 21
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 180, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 180, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 180 }
+
+    # Day 22: 本戦2日目 公開レッスン (メイン+120 / サブ+20)
+    - week: 22
+      type: "public_lesson"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 120, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 120, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 120 }
+      hif_sub_value: 20
+
+    # Day 23: 本戦3日目 おでかけ・活動支給 (2択)
+    - week: 23
+      type: "free"
+      available_actions: ["outing", "activity_supply"]
+
+    # Day 24: 本戦4日目 授業 (Vo/Da/Vi +180)
+    - week: 24
+      type: "free"
+      available_actions: ["vo_class", "da_class", "vi_class"]
+      classes:
+        - type: "vo"
+          sp_bonus: { vo: 180, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 180, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 180 }
+
+    # Day 25: 本戦5日目 公開レッスン (メイン+140 / サブ+80)
+    - week: 25
+      type: "public_lesson"
+      available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
+      lessons:
+        - type: "vo"
+          sp_bonus: { vo: 140, da: 0, vi: 0 }
+        - type: "da"
+          sp_bonus: { vo: 0, da: 140, vi: 0 }
+        - type: "vi"
+          sp_bonus: { vo: 0, da: 0, vi: 140 }
+      hif_sub_value: 80
+
+    # Day 26: 本戦6日目 相談
+    - week: 26
+      type: "free"
+      available_actions: ["consultation"]
+
+    # Day 27: 本戦当日① ラウンド1 (固定イベント)
+    - week: 27
+      type: "audition"
+      event_name: "本戦ラウンド1"
+      status_gain: { vo: 0, da: 0, vi: 0 }
+
+    # Day 28: 本戦当日② インターバル (相談+特別指導 2択)
+    - week: 28
+      type: "free"
+      available_actions: ["consultation", "special_training"]
+
+    # Day 29: 本戦当日③ ラウンド2 (固定イベント)
+    - week: 29
+      type: "audition"
+      event_name: "本戦ラウンド2"
+      status_gain: { vo: 0, da: 0, vi: 0 }

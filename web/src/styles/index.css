@@ -8,6 +8,10 @@
   --color-da-bg: #e0eeff;
   --color-vi-bg: #fff9e0;
   --color-all-bg: #e8f5e9;
+  /* 白背景でも視認可能なダーク版（テキスト用） */
+  --color-vo-text: #c2185b;
+  --color-da-text: #1565c0;
+  --color-vi-text: #b8860b;
   --color-accent: #5c6bc0;
 }
 

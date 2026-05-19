@@ -4,11 +4,15 @@
         xmlns:vm="clr-namespace:GakumasuCalc.ViewModels"
         xmlns:conv="clr-namespace:GakumasuCalc.Converters"
         xmlns:models="clr-namespace:GakumasuCalc.Models"
+        xmlns:views="clr-namespace:GakumasuCalc.Views"
         Title="学マス 育成ステータス理論値計算ツール"
         Width="780" MinWidth="700" Height="950"
         Background="{StaticResource BgBrush}"
         WindowStartupLocation="CenterScreen"
-        Icon="pack://application:,,,/favicon.ico">
+        Icon="pack://application:,,,/favicon.ico"
+        FontFamily="Yu Gothic UI"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
 
     <Window.DataContext>
         <vm:MainViewModel/>
@@ -21,8 +25,10 @@
         <conv:ActionTypeToStringConverter x:Key="ActionToStr"/>
     </Window.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
-        <StackPanel>
+    <TabControl>
+        <TabItem Header="通常モード">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                <StackPanel>
 
             <!-- Title -->
             <TextBlock Text="学マス 育成ステータス理論値計算ツール"
@@ -82,236 +88,6 @@
                                   FontSize="13" VerticalAlignment="Center" Margin="20,0,0,0"/>
                     </StackPanel>
                 </StackPanel>
-            </Border>
-
-            <!-- 必須カード選択 -->
-            <Border Style="{StaticResource SectionCard}">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource SectionHeader}">
-                        <Run Text="必須カード"/>
-                        <Run Text="（" Foreground="#999"/><Run Text="{Binding RequiredCards.Count, Mode=OneWay}" Foreground="#999"/><Run Text="/4）" Foreground="#999"/>
-                    </TextBlock>
-                    <!-- カード追加行 -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <ComboBox IsEditable="True" IsTextSearchEnabled="True"
-                                  ItemsSource="{Binding AvailableCardsForRequired}"
-                                  SelectedItem="{Binding SelectedRequiredCard}"
-                                  DisplayMemberPath="Name"
-                                  MinWidth="300" FontSize="14" Padding="8,6"/>
-                        <Button Content="追加" Command="{Binding AddRequiredCardCommand}"
-                                Style="{StaticResource MaterialDesignFlatButton}"
-                                Margin="8,0,0,0" Padding="12,6" FontSize="13"/>
-                    </StackPanel>
-                    <!-- 選択済みカード一覧 -->
-                    <ItemsControl ItemsSource="{Binding RequiredCards}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                    <TextBlock Text="{Binding Type}" FontWeight="Bold" FontSize="12" Width="30"
-                                               VerticalAlignment="Center" Foreground="#666"/>
-                                    <TextBlock Text="{Binding Rarity}" FontSize="12" Width="30"
-                                               VerticalAlignment="Center" Foreground="#999"/>
-                                    <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
-                                               MinWidth="200"/>
-                                    <Button Content="✕" FontSize="10" Padding="4,2"
-                                            Command="{Binding DataContext.RemoveRequiredCardCommand,
-                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                            CommandParameter="{Binding}"
-                                            Style="{StaticResource MaterialDesignFlatButton}"
-                                            Foreground="#999" MinWidth="0" MinHeight="0"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <!-- キャラ選択 (折りたたみ式・任意) -->
-            <Border Style="{StaticResource SectionCard}">
-                <Expander IsExpanded="False">
-                    <Expander.Header>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="キャラ選択" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="#333" VerticalAlignment="Center"/>
-                            <TextBlock Text="（任意）" FontSize="11" Foreground="#999"
-                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding SelectedCharacterDisplay}"
-                                       FontSize="12" Foreground="#666" Margin="4,0,0,0"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Expander.Header>
-                    <StackPanel Margin="0,8,0,0">
-                        <!-- キャラタイル(7列グリッド) -->
-                        <ItemsControl ItemsSource="{Binding CharacterTiles}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="7"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Button Command="{Binding DataContext.SelectCharacterCommand,
-                                                      RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                            CommandParameter="{Binding Character}"
-                                            Background="{Binding BackgroundBrush}"
-                                            BorderBrush="{StaticResource AccentBrush}"
-                                            BorderThickness="{Binding BorderThickness}"
-                                            Margin="3" Padding="0" Height="60"
-                                            ToolTip="{Binding Name}" Cursor="Hand">
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Initial}" FontSize="20" FontWeight="Bold"
-                                                       Foreground="{Binding ForegroundBrush}"
-                                                       HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding Name}" FontSize="9"
-                                                       Foreground="{Binding ForegroundBrush}"
-                                                       HorizontalAlignment="Center"
-                                                       TextTrimming="CharacterEllipsis" MaxWidth="60"/>
-                                        </StackPanel>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <!-- 3凸ボーナス切替（OFFで3凸分を減算） -->
-                        <CheckBox Content="3凸レッスンボーナス込み"
-                                  IsChecked="{Binding Uncap3BonusEnabled}"
-                                  FontSize="11" Margin="0,8,0,0"
-                                  Visibility="{Binding HasUncap3Bonus, Converter={StaticResource BoolToVis}}"/>
-                        <!-- 補正サマリ -->
-                        <TextBlock Text="{Binding CharacterBonusSummary}"
-                                   FontSize="11" Foreground="#666" Margin="0,4,0,0"
-                                   Visibility="{Binding HasSelectedCharacter, Converter={StaticResource BoolToVis}}"/>
-                    </StackPanel>
-                </Expander>
-            </Border>
-
-            <!-- 持ち込みメモリー (折りたたみ式・任意) -->
-            <Border Style="{StaticResource SectionCard}">
-                <Expander IsExpanded="False">
-                    <Expander.Header>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="持ち込みメモリー" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="#333" VerticalAlignment="Center"/>
-                            <TextBlock Text="（最大4枚・任意）" FontSize="11" Foreground="#999"
-                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Expander.Header>
-                    <StackPanel Margin="0,8,0,0">
-                        <!-- 列ヘッダ -->
-                        <Grid Margin="0,0,0,4">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="28"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="1" Text="Vocal" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource VoBrush}" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="Dance" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource DaBrush}" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="Visual" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource ViBrush}" HorizontalAlignment="Center"/>
-                        </Grid>
-                        <!-- 4スロット -->
-                        <ItemsControl ItemsSource="{Binding MemoryBonuses}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="28"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding Index}" FontSize="12"
-                                                   Foreground="#666" VerticalAlignment="Center"/>
-                                        <!-- Vocal -->
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBox Text="{Binding VoValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
-                                                     Style="{StaticResource NumericTextBox}"
-                                                     Width="60" FontSize="12" Padding="4,3"
-                                                     HorizontalContentAlignment="Center"/>
-                                            <ComboBox SelectedValue="{Binding VoType}" SelectedValuePath="Tag"
-                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
-                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
-                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
-                                            </ComboBox>
-                                        </StackPanel>
-                                        <!-- Dance -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBox Text="{Binding DaValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
-                                                     Style="{StaticResource NumericTextBox}"
-                                                     Width="60" FontSize="12" Padding="4,3"
-                                                     HorizontalContentAlignment="Center"/>
-                                            <ComboBox SelectedValue="{Binding DaType}" SelectedValuePath="Tag"
-                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
-                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
-                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
-                                            </ComboBox>
-                                        </StackPanel>
-                                        <!-- Visual -->
-                                        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBox Text="{Binding ViValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
-                                                     Style="{StaticResource NumericTextBox}"
-                                                     Width="60" FontSize="12" Padding="4,3"
-                                                     HorizontalContentAlignment="Center"/>
-                                            <ComboBox SelectedValue="{Binding ViType}" SelectedValuePath="Tag"
-                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
-                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
-                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
-                                            </ComboBox>
-                                        </StackPanel>
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <!-- プリセット管理 -->
-                        <Border BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,8,0,0">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="プリセット" FontSize="12" FontWeight="SemiBold"
-                                               Foreground="#666" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding MemoryPresetCountText}" FontSize="11"
-                                               Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                                </StackPanel>
-                                <Grid Margin="0,4,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <ComboBox Grid.Column="0"
-                                              ItemsSource="{Binding MemoryPresets}"
-                                              SelectedItem="{Binding SelectedMemoryPreset}"
-                                              DisplayMemberPath="Name"
-                                              DropDownClosed="OnMemoryPresetDropDownClosed"
-                                              FontSize="12" Padding="6,4"/>
-                                    <Button Grid.Column="1" Content="削除"
-                                            Command="{Binding DeleteMemoryPresetCommand}"
-                                            Style="{StaticResource DangerButton}"
-                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
-                                </Grid>
-                                <Grid Margin="0,4,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0"
-                                             Text="{Binding NewPresetName, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="12" Padding="6,4"
-                                             ToolTip="保存するプリセット名を入力（同名があれば上書き）"/>
-                                    <Button Grid.Column="1" Content="現在の設定を保存"
-                                            Command="{Binding SaveMemoryPresetCommand}"
-                                            Style="{StaticResource PrimaryButton}"
-                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
-                                    <Button Grid.Column="2" Content="すべてクリア"
-                                            Command="{Binding ClearMemoryBonusesCommand}"
-                                            Style="{StaticResource SecondaryButton}"
-                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </Expander>
             </Border>
 
             <!-- 属性設定 -->
@@ -653,6 +429,237 @@
                     </Expander>
                 </StackPanel>
             </Border>
+
+            <!-- 必須カード選択 -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeader}">
+                        <Run Text="必須カード"/>
+                        <Run Text="（" Foreground="#999"/><Run Text="{Binding RequiredCards.Count, Mode=OneWay}" Foreground="#999"/><Run Text="/4）" Foreground="#999"/>
+                    </TextBlock>
+                    <!-- カード追加行 -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <ComboBox IsEditable="True" IsTextSearchEnabled="True"
+                                  ItemsSource="{Binding AvailableCardsForRequired}"
+                                  SelectedItem="{Binding SelectedRequiredCard}"
+                                  DisplayMemberPath="Name"
+                                  MinWidth="300" FontSize="14" Padding="8,6"/>
+                        <Button Content="追加" Command="{Binding AddRequiredCardCommand}"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Margin="8,0,0,0" Padding="12,6" FontSize="13"/>
+                    </StackPanel>
+                    <!-- 選択済みカード一覧 -->
+                    <ItemsControl ItemsSource="{Binding RequiredCards}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="{Binding Type}" FontWeight="Bold" FontSize="12" Width="30"
+                                               VerticalAlignment="Center" Foreground="#666"/>
+                                    <TextBlock Text="{Binding Rarity}" FontSize="12" Width="30"
+                                               VerticalAlignment="Center" Foreground="#999"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
+                                               MinWidth="200"/>
+                                    <Button Content="✕" FontSize="10" Padding="4,2"
+                                            Command="{Binding DataContext.RemoveRequiredCardCommand,
+                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource MaterialDesignFlatButton}"
+                                            Foreground="#999" MinWidth="0" MinHeight="0"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- キャラ選択 (折りたたみ式・任意) -->
+            <Border Style="{StaticResource SectionCard}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="キャラ選択" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <TextBlock Text="（任意）" FontSize="11" Foreground="#999"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedCharacterDisplay}"
+                                       FontSize="12" Foreground="#666" Margin="4,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                        <!-- キャラタイル(7列グリッド) -->
+                        <ItemsControl ItemsSource="{Binding CharacterTiles}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="7"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.SelectCharacterCommand,
+                                                      RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding Character}"
+                                            Background="{Binding BackgroundBrush}"
+                                            BorderBrush="{StaticResource AccentBrush}"
+                                            BorderThickness="{Binding BorderThickness}"
+                                            Margin="3" Padding="0" Height="60"
+                                            ToolTip="{Binding Name}" Cursor="Hand">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Initial}" FontSize="20" FontWeight="Bold"
+                                                       Foreground="{Binding ForegroundBrush}"
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Name}" FontSize="9"
+                                                       Foreground="{Binding ForegroundBrush}"
+                                                       HorizontalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" MaxWidth="60"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <!-- 3凸ボーナス切替（OFFで3凸分を減算） -->
+                        <CheckBox Content="3凸レッスンボーナス込み"
+                                  IsChecked="{Binding Uncap3BonusEnabled}"
+                                  FontSize="11" Margin="0,8,0,0"
+                                  Visibility="{Binding HasUncap3Bonus, Converter={StaticResource BoolToVis}}"/>
+                        <!-- 補正サマリ -->
+                        <TextBlock Text="{Binding CharacterBonusSummary}"
+                                   FontSize="11" Foreground="#666" Margin="0,4,0,0"
+                                   Visibility="{Binding HasSelectedCharacter, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
+            <!-- 持ち込みメモリー (折りたたみ式・任意) -->
+            <Border Style="{StaticResource SectionCard}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="持ち込みメモリー" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <TextBlock Text="（最大4枚・任意）" FontSize="11" Foreground="#999"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                        <!-- 列ヘッダ -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="28"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="Vocal" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource VoBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="Dance" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource DaBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="Visual" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource ViBrush}" HorizontalAlignment="Center"/>
+                        </Grid>
+                        <!-- 4スロット -->
+                        <ItemsControl ItemsSource="{Binding MemoryBonuses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="28"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Index}" FontSize="12"
+                                                   Foreground="#666" VerticalAlignment="Center"/>
+                                        <!-- Vocal -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding VoValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
+                                                     Style="{StaticResource NumericTextBox}"
+                                                     Width="60" FontSize="12" Padding="4,3"
+                                                     HorizontalContentAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding VoType}" SelectedValuePath="Tag"
+                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
+                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
+                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <!-- Dance -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding DaValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
+                                                     Style="{StaticResource NumericTextBox}"
+                                                     Width="60" FontSize="12" Padding="4,3"
+                                                     HorizontalContentAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding DaType}" SelectedValuePath="Tag"
+                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
+                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
+                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <!-- Visual -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding ViValue, UpdateSourceTrigger=LostFocus, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
+                                                     Style="{StaticResource NumericTextBox}"
+                                                     Width="60" FontSize="12" Padding="4,3"
+                                                     HorizontalContentAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding ViType}" SelectedValuePath="Tag"
+                                                      FontSize="12" Padding="4,2" Width="46" Margin="4,0,0,0">
+                                                <ComboBoxItem Content="実" Tag="{x:Static models:MemoryBonusType.Flat}"/>
+                                                <ComboBoxItem Content="%" Tag="{x:Static models:MemoryBonusType.ParaBonus}"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <!-- プリセット管理 -->
+                        <Border BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,8,0,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="プリセット" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="#666" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding MemoryPresetCountText}" FontSize="11"
+                                               Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox Grid.Column="0"
+                                              ItemsSource="{Binding MemoryPresets}"
+                                              SelectedItem="{Binding SelectedMemoryPreset}"
+                                              DisplayMemberPath="Name"
+                                              DropDownClosed="OnMemoryPresetDropDownClosed"
+                                              FontSize="12" Padding="6,4"/>
+                                    <Button Grid.Column="1" Content="削除"
+                                            Command="{Binding DeleteMemoryPresetCommand}"
+                                            Style="{StaticResource DangerButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                </Grid>
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding NewPresetName, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="12" Padding="6,4"
+                                             ToolTip="保存するプリセット名を入力（同名があれば上書き）"/>
+                                    <Button Grid.Column="1" Content="現在の設定を保存"
+                                            Command="{Binding SaveMemoryPresetCommand}"
+                                            Style="{StaticResource PrimaryButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                    <Button Grid.Column="2" Content="すべてクリア"
+                                            Command="{Binding ClearMemoryBonusesCommand}"
+                                            Style="{StaticResource SecondaryButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
 
             <!-- ボタン -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,12">
@@ -1046,6 +1053,11 @@
                 </StackPanel>
             </Border>
 
-        </StackPanel>
-    </ScrollViewer>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        <TabItem Header="HIFモード">
+            <views:HifTabContent/>
+        </TabItem>
+    </TabControl>
 </Window>

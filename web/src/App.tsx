@@ -4,6 +4,7 @@ import { useAppStore } from './stores/appStore'
 import { useCalcStore } from './stores/calcStore'
 import CalculatorPage from './pages/CalculatorPage'
 import InventoryPage from './pages/InventoryPage'
+import HifPage from './pages/HifPage'
 import { trackEvent } from './utils/analytics'
 
 function PageViewTracker() {
@@ -22,6 +23,9 @@ function Header() {
         <NavLink to="/" end className={({ isActive }) =>
           `hover:opacity-80 ${isActive ? 'border-b-2 border-white' : 'opacity-70'}`
         }>計算ツール</NavLink>
+        <NavLink to="/hif" className={({ isActive }) =>
+          `hover:opacity-80 ${isActive ? 'border-b-2 border-white' : 'opacity-70'}`
+        }>HIF</NavLink>
         <NavLink to="/inventory" className={({ isActive }) =>
           `hover:opacity-80 ${isActive ? 'border-b-2 border-white' : 'opacity-70'}`
         }>所持管理</NavLink>
@@ -91,6 +95,7 @@ export default function App() {
       <main className="max-w-5xl mx-auto px-4 py-6">
         <Routes>
           <Route path="/" element={<CalculatorPage />} />
+          <Route path="/hif" element={<HifPage />} />
           <Route path="/inventory" element={<InventoryPage />} />
         </Routes>
       </main>
