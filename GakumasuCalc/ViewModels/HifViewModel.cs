@@ -715,8 +715,9 @@ public class HifScheduleItemViewModel : ViewModelBase
 
         if (item.ActionOptions.Count > 0)
         {
-            // その他選択日のデフォルト優先度: 活動支給 > 相談 > お出かけ > 特別指導
-            var priority = new[] { "activity_supply", "consultation", "outing", "special_training" };
+            // その他選択日のデフォルト優先度: 活動支給 > お出かけ > 相談 > 特別指導
+            // お出かけはお金不要 + カード獲得枚数を稼げるため、相談より優先
+            var priority = new[] { "activity_supply", "outing", "consultation", "special_training" };
             var picked = priority.FirstOrDefault(p => item.ActionOptions.Any(o => o.Value == p));
             item._selectedAction = picked ?? item.ActionOptions[0].Value;
         }

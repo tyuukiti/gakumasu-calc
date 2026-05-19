@@ -49,12 +49,13 @@ function weekTypeLabel(week: WeekSchedule): string {
 
 /**
  * その他選択日 (outing / consultation / activity_supply / special_training を含む日) の
- * デフォルト選択優先度: 活動支給 > 相談 > お出かけ > 特別指導
+ * デフォルト選択優先度: 活動支給 > お出かけ > 相談 > 特別指導
+ * お出かけはお金不要 + カード獲得枚数を稼げるため、相談より優先
  */
 const FREE_DAY_PRIORITY: string[] = [
   'activity_supply',
-  'consultation',
   'outing',
+  'consultation',
   'special_training',
 ];
 
