@@ -266,6 +266,15 @@ support_cards:
     max_count: 2
     condition: da>=700
     source: item
+  # Pアイテム「完全制覇でポン」: 全力獲得時 Pドリンク1個 (最大2回)
+  - trigger: equip
+    stat: da
+    values: [1, 1, 1, 1, 1]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    scales_with: fullpower_acquire
+    max_count: 2
+    description: 完全制覇でポン (全力獲得時にPドリンク1個・最大2回)
   - trigger: equip
     stat: da
     values: [50, 75, 75, 75, 100]
@@ -1649,6 +1658,15 @@ support_cards:
     stat: da
     values: [2, 2, 2, 2, 3]
     value_type: flat
+  # Pアイテム「ほっこりまんぷく」: 好調獲得時 Pドリンク1個 (最大4回)
+  - trigger: equip
+    stat: da
+    values: [1, 1, 1, 1, 1]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    scales_with: good_condition_acquire
+    max_count: 4
+    description: ほっこりまんぷく (好調獲得時にPドリンク1個・最大4回)
   - trigger: equip
     stat: da
     values: [50, 75, 75, 75, 100]
