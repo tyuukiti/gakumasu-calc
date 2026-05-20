@@ -80,12 +80,14 @@ def fetch_card_tags(html: str | None = None) -> tuple[dict[str, str], str]:
     return result, html
 
 
-def fetch_item_effects(html: str) -> dict[str, dict]:
+def fetch_item_effects(html: str) -> dict[str, list[dict]]:
     """
     能力早見表ページから produce_item カードのアイテム効果を抽出。
-    Returns: {card_name: {trigger, stat, values, value_type, ...}}
+    1つのアイテムから 複数の effect (ステータス上昇 + Pドリンク供給など) が出ることがあるため list で返す。
+
+    Returns: {card_name: [{trigger, stat, values, value_type, ...}, ...]}
     """
-    result: dict[str, dict] = {}
+    result: dict[str, list[dict]] = {}
     soup = BeautifulSoup(html, "html.parser")
 
     for row in soup.find_all("tr"):
@@ -125,39 +127,25 @@ def fetch_item_effects(html: str) -> dict[str, dict]:
     return result
 
 
-def _parse_item_effect_text(text: str) -> dict | None:
-    """アイテム効果テキストからステータス上昇効果を抽出"""
+def _parse_item_effect_text(text: str) -> list[dict]:
+    """アイテム効果テキストからステータス上昇効果と Pドリンク供給効果を抽出。
+    検出できるパターン:
+      - ステータス上昇 (例: Da+30, ボーカル上昇+15)
+      - Pドリンク獲得 (例: 「ランダムなPドリンクを獲得 (プロデュース中2回)」)
+    両方が同一アイテムに含まれる場合は両方の effect を返す。何も検出されなければ [] を返す。
+    """
     flat = text.replace('\n', '')
 
-    # ステータス上昇パターン
-    stat_match = re.search(r'(Vo|Da|Vi)\+(\d+)', flat)
-    stat_match_jp = re.search(r'(ボーカル|ダンス|ビジュアル)上昇\+(\d+)', flat)
+    effects: list[dict] = []
 
-    stat = None
-    value = None
-
-    if stat_match:
-        stat_map = {"Vo": "vo", "Da": "da", "Vi": "vi"}
-        stat = stat_map[stat_match.group(1)]
-        value = int(stat_match.group(2))
-    elif stat_match_jp:
-        stat_map_jp = {"ボーカル": "vo", "ダンス": "da", "ビジュアル": "vi"}
-        stat = stat_map_jp[stat_match_jp.group(1)]
-        value = int(stat_match_jp.group(2))
-
-    if stat is None or value is None:
-        return None
-
-    # トリガー判定
+    # トリガー判定 (両 effect で共通)
     trigger = None
     for keyword, trig in ITEM_TRIGGER_MAP:
         if keyword in flat:
             trigger = trig
             break
-    if trigger is None:
-        return None
 
-    # condition 抽出
+    # condition 抽出 (両 effect で共通)
     condition = None
     cond_match = re.search(r'(Vo|Da|Vi)(\d+)以上', flat)
     if cond_match:
@@ -173,25 +161,71 @@ def _parse_item_effect_text(text: str) -> dict | None:
             if cond_match_hp:
                 condition = f"hp>={cond_match_hp.group(1)}%"
 
-    # max_count 抽出
+    # max_count 抽出 (両 effect で共通)
     max_count = None
     mc_match = re.search(r'[（(]プロデュース中(\d+)回[）)]', flat)
     if mc_match:
         max_count = int(mc_match.group(1))
 
-    eff: dict = {
-        "trigger": trigger,
-        "stat": stat,
-        "values": [float(value)] * 5,
-        "value_type": "flat",
-        "source": "item",
-    }
-    if max_count:
-        eff["max_count"] = max_count
-    if condition:
-        eff["condition"] = condition
+    # === effect 1: ステータス上昇 (Vo+N / ボーカル上昇+N) ===
+    stat_match = re.search(r'(Vo|Da|Vi)\+(\d+)', flat)
+    stat_match_jp = re.search(r'(ボーカル|ダンス|ビジュアル)上昇\+(\d+)', flat)
 
-    return eff
+    stat = None
+    value = None
+    if stat_match:
+        stat_map = {"Vo": "vo", "Da": "da", "Vi": "vi"}
+        stat = stat_map[stat_match.group(1)]
+        value = int(stat_match.group(2))
+    elif stat_match_jp:
+        stat_map_jp = {"ボーカル": "vo", "ダンス": "da", "ビジュアル": "vi"}
+        stat = stat_map_jp[stat_match_jp.group(1)]
+        value = int(stat_match_jp.group(2))
+
+    if stat is not None and value is not None and trigger is not None:
+        stat_eff: dict = {
+            "trigger": trigger,
+            "stat": stat,
+            "values": [float(value)] * 5,
+            "value_type": "flat",
+            "source": "item",
+        }
+        if max_count:
+            stat_eff["max_count"] = max_count
+        if condition:
+            stat_eff["condition"] = condition
+        effects.append(stat_eff)
+
+    # === effect 2: Pドリンク供給 (Pポイントは除外) ===
+    # 「Pドリンク」を含み、かつ「Pポイント」を意味してない
+    if 'Pドリンク' in flat:
+        # Pドリンク 直後 (10文字以内) の「N個」「Nつ」を探す。なければデフォルト 1個
+        drink_count = 1
+        window_match = re.search(r'Pドリンク.{0,10}', flat)
+        if window_match:
+            n_match = re.search(r'(\d+)\s*[個つ]', window_match.group())
+            if n_match:
+                drink_count = int(n_match.group(1))
+
+        # trigger 必須: trigger 無しのアイテム (体ほぐしローラー等) は
+        # ユーザの additionalCounts.p_drink_acquire 入力でカバーする想定なのでスキップ
+        if trigger is not None:
+            # producer 自身が Pドリンクを stat に変換する効果は持たないため、stat はデコレ的に
+            # 「da」固定 (Pアイテム所属カードの type が大半 da/vi/vo のいずれか)
+            drink_eff: dict = {
+                "trigger": "equip",
+                "stat": "da",
+                "values": [float(drink_count)] * 5,
+                "value_type": "trigger_count_bonus",
+                "trigger_target": "p_drink_acquire",
+                "scales_with": trigger,
+                "source": "item",
+            }
+            if max_count:
+                drink_eff["max_count"] = max_count
+            effects.append(drink_eff)
+
+    return effects
 
 
 # ======== 一覧ページ解析 ========
