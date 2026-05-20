@@ -31,6 +31,10 @@ def write_yaml_with_flow_values(filepath: str, cards: list[dict]):
             val_strs = [str(int(v)) if v == int(v) else str(v) for v in vals]
             lines.append(f"    values: [{', '.join(val_strs)}]")
             lines.append(f"    value_type: {eff['value_type']}")
+            if eff.get("trigger_target"):
+                lines.append(f"    trigger_target: {eff['trigger_target']}")
+            if eff.get("scales_with"):
+                lines.append(f"    scales_with: {eff['scales_with']}")
             if eff.get("max_count") is not None:
                 lines.append(f"    max_count: {eff['max_count']}")
             if eff.get("condition"):
