@@ -991,7 +991,7 @@ public class MainViewModel : ViewModelBase
                 var suffix = cs.IsRental ? "（レンタル）" : cs.IsRequired ? "（必須）" : "";
                 var displayName = cs.Card.Name + suffix;
                 var breakdown = string.Join("\n", cs.Breakdowns
-                    .Select(b => $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
+                    .Select(b => b.Value == 0 ? $"  {b.Reason}" : $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
                 vm.Cards.Add(new DeckCardViewModel
                 {
                     CardName = displayName,
@@ -999,6 +999,10 @@ public class MainViewModel : ViewModelBase
                     CardRarity = cs.Card.Rarity,
                     CardPlan = cs.Card.Plan,
                     StatValue = cs.TotalValue,
+                    TeamBonusTotal = cs.TeamBonusTotal,
+                    TeamBonusContributors = cs.TeamBonusContributors.Select(c => (c.CardName, c.Value)).ToList(),
+                    Breakdowns = new ObservableCollection<EffectBreakdownViewModel>(
+                        cs.Breakdowns.Select(b => new EffectBreakdownViewModel { Reason = b.Reason, Stat = b.Stat, Value = b.Value })),
                     RawVo = cs.RawVo,
                     RawDa = cs.RawDa,
                     RawVi = cs.RawVi,
@@ -1075,7 +1079,7 @@ public class MainViewModel : ViewModelBase
             var suffix = cs.IsRental ? " (レンタル)" : cs.IsRequired ? " (必須)" : "";
             var displayName = cs.Card.Name + suffix;
             var breakdown = string.Join("\n", cs.Breakdowns
-                .Select(b => $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
+                .Select(b => b.Value == 0 ? $"  {b.Reason}" : $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
             DeckCards.Add(new DeckCardViewModel
             {
                 CardName = displayName,
@@ -1083,6 +1087,10 @@ public class MainViewModel : ViewModelBase
                 CardRarity = cs.Card.Rarity,
                 CardPlan = cs.Card.Plan,
                 StatValue = cs.TotalValue,
+                TeamBonusTotal = cs.TeamBonusTotal,
+                TeamBonusContributors = cs.TeamBonusContributors.Select(c => (c.CardName, c.Value)).ToList(),
+                Breakdowns = new ObservableCollection<EffectBreakdownViewModel>(
+                    cs.Breakdowns.Select(b => new EffectBreakdownViewModel { Reason = b.Reason, Stat = b.Stat, Value = b.Value })),
                 RawVo = cs.RawVo,
                 RawDa = cs.RawDa,
                 RawVi = cs.RawVi,
@@ -1236,7 +1244,8 @@ public class MainViewModel : ViewModelBase
             spCounts: spCounts, planType: SelectedPlanType, additionalCounts: additional,
             uncapLevels: uncapLevels, rentalPool: rentalPool,
             requiredCardIds: requiredCardIds.Count > 0 ? requiredCardIds : null,
-            character: hifEffectiveChar, memoryBonuses: hifMemoryBonuses);
+            character: hifEffectiveChar, memoryBonuses: hifMemoryBonuses,
+            turnChoicesOverride: turnChoices);
 
         _deckResults = patterns;
 
@@ -1268,7 +1277,7 @@ public class MainViewModel : ViewModelBase
                 var suffix = cs.IsRental ? "（レンタル）" : cs.IsRequired ? "（必須）" : "";
                 var displayName = cs.Card.Name + suffix;
                 var breakdown = string.Join("\n", cs.Breakdowns
-                    .Select(b => $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
+                    .Select(b => b.Value == 0 ? $"  {b.Reason}" : $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
                 vm.Cards.Add(new DeckCardViewModel
                 {
                     CardName = displayName,
@@ -1276,6 +1285,10 @@ public class MainViewModel : ViewModelBase
                     CardRarity = cs.Card.Rarity,
                     CardPlan = cs.Card.Plan,
                     StatValue = cs.TotalValue,
+                    TeamBonusTotal = cs.TeamBonusTotal,
+                    TeamBonusContributors = cs.TeamBonusContributors.Select(c => (c.CardName, c.Value)).ToList(),
+                    Breakdowns = new ObservableCollection<EffectBreakdownViewModel>(
+                        cs.Breakdowns.Select(b => new EffectBreakdownViewModel { Reason = b.Reason, Stat = b.Stat, Value = b.Value })),
                     RawVo = cs.RawVo,
                     RawDa = cs.RawDa,
                     RawVi = cs.RawVi,
@@ -1919,16 +1932,65 @@ public class MainViewModel : ViewModelBase
     }
 }
 
+public class EffectBreakdownViewModel
+{
+    public string Reason { get; set; } = string.Empty;
+    public string Stat { get; set; } = string.Empty;
+    public double Value { get; set; }
+
+    /// <summary>UI 表示: 0 のときは空 (ヘッダ行用)、そうでなければ「+80」「-3」</summary>
+    public string ValueDisplay =>
+        Value == 0 ? string.Empty : (Value > 0 ? $"+{Value:0.#}" : $"{Value:0.#}");
+
+    /// <summary>属性カラー (vo=赤系 / da=青系 / vi=黄系 / all=灰)</summary>
+    public System.Windows.Media.Brush StatColor => Stat switch
+    {
+        "vo" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x6B, 0x8A)),
+        "da" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6B, 0x9F, 0xFF)),
+        "vi" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xA3, 0x00)),
+        _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x66, 0x66, 0x66)),
+    };
+}
+
 public class DeckCardViewModel : ViewModelBase
 {
+    private bool _isExpanded;
+
     public string CardName { get; set; } = string.Empty;
     public string CardType { get; set; } = string.Empty;
     public string CardRarity { get; set; } = string.Empty;
     public string CardPlan { get; set; } = string.Empty;
     public int StatValue { get; set; }
+    public int TeamBonusTotal { get; set; }
+    public List<(string CardName, int Value)> TeamBonusContributors { get; set; } = new();
     public int RawVo { get; set; }
     public int RawDa { get; set; }
     public int RawVi { get; set; }
+
+    /// <summary>クリック展開で表示する内訳行</summary>
+    public ObservableCollection<EffectBreakdownViewModel> Breakdowns { get; set; } = new();
+
+    /// <summary>クリックで展開・折りたたみ</summary>
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (_isExpanded == value) return;
+            _isExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>クリック時に IsExpanded をトグル</summary>
+    public System.Windows.Input.ICommand ToggleExpandCommand =>
+        new RelayCommand(() => IsExpanded = !IsExpanded);
+
+    /// <summary>UI 表示用: 「+71」または「+107 (いつまでも+80 / おい+80 / ね。+80)」形式</summary>
+    public string StatValueDisplay =>
+        TeamBonusContributors.Count > 0
+            ? $"+{StatValue} ({string.Join(" / ", TeamBonusContributors.Select(c => $"{c.CardName}+{c.Value}"))})"
+            : $"+{StatValue}";
     public string DeckLabel { get; set; } = string.Empty;
     public string BreakdownText { get; set; } = string.Empty;
     public bool IsRental { get; set; }

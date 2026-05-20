@@ -20,9 +20,18 @@ export interface CardScore {
   raw_vo: number;
   raw_da: number;
   raw_vi: number;
+  /** trigger_count_bonus 由来で「他カードへ寄与する」推定総量 (情報表示用、total_value には含まれない場合あり) */
+  team_bonus_total: number;
+  /** trigger_count_bonus 由来の寄与内訳 (UI で全件並べる用) */
+  team_bonus_contributors: TeamBonusContributor[];
   breakdowns: EffectBreakdown[];
   is_rental: boolean;
   is_required: boolean;
+}
+
+export interface TeamBonusContributor {
+  card_name: string;
+  value: number;
 }
 
 export interface EffectBreakdown {

@@ -2310,6 +2310,14 @@ support_cards:
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  # Pアイテム「ふわふわでもこもこ」: DaSP終了ごとに Pドリンク 2個獲得
+  - trigger: equip
+    stat: da
+    values: [2, 2, 2, 2, 2]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    scales_with: da_sp_end
+    description: ふわふわでもこもこ (DaSP終了時にPドリンク2個)
 - id: SP_SR_0072
   name: パクパクもぐもぐ
   rarity: SR

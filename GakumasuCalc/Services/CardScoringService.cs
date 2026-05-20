@@ -14,12 +14,22 @@ public class CardScoringService
         public int RawVo { get; set; }
         public int RawDa { get; set; }
         public int RawVi { get; set; }
+        /// <summary>trigger_count_bonus 由来で「他カードへ寄与する」推定総量 (表示専用)</summary>
+        public int TeamBonusTotal { get; set; }
+        /// <summary>trigger_count_bonus 由来の寄与内訳 (UI で全件並べる用)</summary>
+        public List<TeamBonusContributor> TeamBonusContributors { get; set; } = new();
         /// <summary>効果別の内訳</summary>
         public List<EffectBreakdown> Breakdowns { get; set; } = new();
         /// <summary>レンタルカードかどうか</summary>
         public bool IsRental { get; set; }
         /// <summary>必須カードかどうか</summary>
         public bool IsRequired { get; set; }
+    }
+
+    public class TeamBonusContributor
+    {
+        public string CardName { get; set; } = string.Empty;
+        public int Value { get; set; }
     }
 
     public class EffectBreakdown
@@ -54,7 +64,8 @@ public class CardScoringService
         int freeSlots = 0,
         List<string>? requiredCardIds = null,
         Character? character = null,
-        IReadOnlyList<MemoryBonus>? memoryBonuses = null)
+        IReadOnlyList<MemoryBonus>? memoryBonuses = null,
+        List<TurnChoice>? turnChoicesOverride = null)
     {
         var statCap = plan.StatusLimit;
         var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats);
@@ -85,14 +96,17 @@ public class CardScoringService
         // レッスンの属性別合計SpBonusを事前計算
         var lessonStatTotals = CalculateLessonStatTotals(plan, lessonAllocation);
 
+        // trigger_count_bonus 用、対象トリガーごとの消費側カード集計
+        var triggerBonusInfo = ComputeTriggerBonusInfo(eligible, uncapLevels);
+
         // 全カードの属性別寄与を事前計算
         var cardContributions = eligible
-            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels))
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo))
             .ToList();
 
         // 全カードプール (フィルタ外も補充用に)
         var allContributions = allCards
-            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels))
+            .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo))
             .ToList();
 
         // 属性枠ごとに選択 (上限考慮)
@@ -147,7 +161,7 @@ public class CardScoringService
                 else if (!reqUncap.ContainsKey(cardId))
                     reqUncap[cardId] = 4;
 
-                var contribution = CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, reqUncap);
+                var contribution = CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, reqUncap, triggerBonusInfo);
                 contribution.IsRequired = true;
 
                 if (!isOwned && rentalPool != null)
@@ -304,7 +318,7 @@ public class CardScoringService
                             || string.IsNullOrEmpty(c.Plan)
                             || c.Plan == planType
                             || c.Plan == "free")
-                .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, rentalUncap))
+                .Select(card => CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, rentalUncap, triggerBonusInfo))
                 .ToDictionary(cs => cs.Card.Id);
 
             // パターンA: 従来通り、未使用カードからレンタルを選択
@@ -458,12 +472,13 @@ public class CardScoringService
         }
 
         // ポスト最適化: 実際の計算結果を使ってカードスワップを試行
-        if (rentalPool != null)
-        {
-            PostOptimize(selected, cardContributions, protectedIds,
-                plan, lessonAllocation, mainStats, uncapLevels, additionalCounts, statCap,
-                character, memoryBonuses);
-        }
+        // (常時実行: trigger_count_bonus のような synergy 効果を greedy 単独では拾えないため)
+        PostOptimize(selected, cardContributions, protectedIds,
+            plan, lessonAllocation, mainStats, uncapLevels, additionalCounts, statCap,
+            character, memoryBonuses, cardTypeSlots, turnChoicesOverride);
+
+        // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
+        RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
 
         // キャップ適用後の実効値でTotalValueを再計算
         RecalculateWithCap(selected, baseStats, statCap);
@@ -481,6 +496,19 @@ public class CardScoringService
     /// 実際のStatusCalculationServiceを使い、カードスワップで改善を試みるポスト最適化。
     /// 近似スコアリングでは捉えきれないパラボーナス等の相互作用を補正する。
     /// </summary>
+    private static bool MeetsTypeSlots(
+        List<SupportCard> cards,
+        Dictionary<string, int> cardTypeSlots)
+    {
+        foreach (var kvp in cardTypeSlots)
+        {
+            if (kvp.Value <= 0) continue;
+            int count = cards.Count(c => c.Type == kvp.Key || c.Type == "all" || c.Type == "as");
+            if (count < kvp.Value) return false;
+        }
+        return true;
+    }
+
     private void PostOptimize(
         List<CardScore> selected,
         List<CardScore> candidates,
@@ -492,10 +520,13 @@ public class CardScoringService
         AdditionalCounts? additionalCounts,
         int statCap,
         Character? character = null,
-        IReadOnlyList<MemoryBonus>? memoryBonuses = null)
+        IReadOnlyList<MemoryBonus>? memoryBonuses = null,
+        Dictionary<string, int>? cardTypeSlots = null,
+        List<TurnChoice>? turnChoicesOverride = null)
     {
         var calcService = new StatusCalculationService();
-        var turnChoices = BuildTurnChoices(plan, mainStats);
+        // HIFモードのようにユーザが明示的にターン選択している場合は実選択を使う
+        var turnChoices = turnChoicesOverride ?? BuildTurnChoices(plan, mainStats);
 
         (int total, int vo, int da, int vi) EvaluateFull(List<SupportCard> cards)
         {
@@ -530,27 +561,11 @@ public class CardScoringService
                 // 非SPの保護カードはスキップ
                 if (ownedIsProtectedNonSp) continue;
 
-                // 所持カードの属性タイプが既にキャップを超えている場合、クロスタイプスワップを許可
                 var ownedType = ownedCard.Card.Type;
-                bool ownedStatOverCap =
-                    (ownedType == "vo" && currentEval.vo >= statCap) ||
-                    (ownedType == "da" && currentEval.da >= statCap) ||
-                    (ownedType == "vi" && currentEval.vi >= statCap);
 
                 foreach (var candidate in candidates)
                 {
                     if (selected.Any(c => c.Card.Id == candidate.Card.Id)) continue;
-
-                    // タイプ分布を維持: 同じタイプ同士、または all/as タイプとの交換のみ許可
-                    // ただし、所持カードの属性が既にキャップを超えている場合はクロスタイプスワップを許可
-                    if (!ownedStatOverCap)
-                    {
-                        bool candidateIsAllLike = candidate.Card.Type == "all" || candidate.Card.Type == "as";
-                        bool ownedIsAllLike = ownedType == "all" || ownedType == "as";
-                        if (candidate.Card.Type != ownedType
-                            && !candidateIsAllLike
-                            && !ownedIsAllLike) continue;
-                    }
 
                     // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
                     if (ownedIsProtectedSp
@@ -560,6 +575,16 @@ public class CardScoringService
                     var testCards = new List<SupportCard>(currentCards);
                     int idx = testCards.IndexOf(ownedCard.Card);
                     testCards[idx] = candidate.Card;
+
+                    // タイプ制約: cardTypeSlots の最低要件 (例: Da 2枚以上) を満たすスワップのみ許可
+                    if (candidate.Card.Type != ownedType
+                        && candidate.Card.Type != "all" && candidate.Card.Type != "as"
+                        && ownedType != "all" && ownedType != "as"
+                        && cardTypeSlots != null
+                        && !MeetsTypeSlots(testCards, cardTypeSlots))
+                    {
+                        continue;
+                    }
 
                     var testEval = EvaluateFull(testCards);
                     if (testEval.total > currentEval.total)
@@ -1005,7 +1030,8 @@ public class CardScoringService
         List<SupportCard>? rentalPool = null,
         List<string>? requiredCardIds = null,
         Character? character = null,
-        IReadOnlyList<MemoryBonus>? memoryBonuses = null)
+        IReadOnlyList<MemoryBonus>? memoryBonuses = null,
+        List<TurnChoice>? turnChoicesOverride = null)
     {
         var results = new List<DeckResult>();
 
@@ -1039,11 +1065,90 @@ public class CardScoringService
             var result = SelectOptimalDeck(
                 plan, allCards, lessonAllocation, cardTypeSlots,
                 mainStats, spCounts, planType, additionalCounts, uncapLevels, rentalPool, free, requiredCardIds,
-                character, memoryBonuses);
+                character, memoryBonuses, turnChoicesOverride);
             results.Add(result);
         }
 
         return results;
+    }
+
+    /// <summary>trigger_count_bonus 用、消費側カード1枚分の per-fire 寄与情報</summary>
+    public class TriggerBonusContributor
+    {
+        public string CardId { get; set; } = string.Empty;
+        public string CardName { get; set; } = string.Empty;
+        public StatusValues PerFire { get; set; } = StatusValues.Zero;
+    }
+
+    /// <summary>trigger_count_bonus 用、対象トリガーごとの集計情報</summary>
+    public class TriggerBonusEntry
+    {
+        public StatusValues Total { get; set; } = StatusValues.Zero;
+        public List<TriggerBonusContributor> Contributors { get; set; } = new();
+    }
+
+    /// <summary>
+    /// trigger_count_bonus 効果の単体スコアリングのため、対象トリガーごとに
+    /// プール内全ての消費側カードの per-fire ステータスを事前計算する。
+    /// </summary>
+    private static Dictionary<string, TriggerBonusEntry> ComputeTriggerBonusInfo(
+        List<SupportCard> pool,
+        Dictionary<string, int>? uncapLevels)
+    {
+        var targets = new HashSet<string>();
+        foreach (var card in pool)
+        {
+            foreach (var effect in card.Effects)
+            {
+                if (effect.ValueType == "trigger_count_bonus" && !string.IsNullOrEmpty(effect.TriggerTarget))
+                {
+                    targets.Add(effect.TriggerTarget);
+                }
+            }
+        }
+
+        var result = new Dictionary<string, TriggerBonusEntry>();
+        foreach (var target in targets)
+        {
+            var candidates = new List<(TriggerBonusContributor c, double total)>();
+            foreach (var card in pool)
+            {
+                int uncap = StatusCalculationService.GetUncapLevel(card, uncapLevels);
+                int cVo = 0, cDa = 0, cVi = 0;
+                foreach (var effect in card.Effects)
+                {
+                    if (effect.Trigger != target || effect.ValueType != "flat") continue;
+                    int v = (int)Math.Floor(effect.GetValue(uncap));
+                    switch (effect.Stat)
+                    {
+                        case "vo": cVo += v; break;
+                        case "da": cDa += v; break;
+                        case "vi": cVi += v; break;
+                        case "all": cVo += v; cDa += v; cVi += v; break;
+                    }
+                }
+                int total = cVo + cDa + cVi;
+                if (total > 0)
+                {
+                    candidates.Add((new TriggerBonusContributor
+                    {
+                        CardId = card.Id,
+                        CardName = card.Name,
+                        PerFire = new StatusValues(cVo, cDa, cVi),
+                    }, total));
+                }
+            }
+            candidates.Sort((a, b) => b.total.CompareTo(a.total));
+            result[target] = new TriggerBonusEntry
+            {
+                Total = new StatusValues(
+                    candidates.Sum(x => x.c.PerFire.Vo),
+                    candidates.Sum(x => x.c.PerFire.Da),
+                    candidates.Sum(x => x.c.PerFire.Vi)),
+                Contributors = candidates.Select(x => x.c).ToList(),
+            };
+        }
+        return result;
     }
 
     /// <summary>
@@ -1054,16 +1159,93 @@ public class CardScoringService
         Dictionary<string, int> triggerCounts,
         Dictionary<string, int> lessonAllocation,
         StatusValues lessonStatTotals,
-        Dictionary<string, int>? uncapLevels)
+        Dictionary<string, int>? uncapLevels,
+        Dictionary<string, TriggerBonusEntry>? triggerBonusInfo = null,
+        bool skipTriggerBonusSelfContribution = false)
     {
         int uncap = StatusCalculationService.GetUncapLevel(card, uncapLevels);
         double vo = 0, da = 0, vi = 0;
+        double teamBonusTotal = 0;
+        var teamBonusContributors = new List<TeamBonusContributor>();
         var breakdowns = new List<EffectBreakdown>();
 
         foreach (var effect in card.Effects)
         {
             // SP率は突破確率であり理論値計算では不要（全SPクリア前提）
             if (effect.ValueType == "sp_rate") continue;
+
+            // trigger_count_bonus: 自カードは追加でステータスを得ないが、他カードのトリガー発火回数を増やす
+            if (effect.ValueType == "trigger_count_bonus")
+            {
+                var target = effect.TriggerTarget;
+                if (string.IsNullOrEmpty(target)) continue;
+                double perScale = effect.GetValue(uncap);
+                int scaleCount = !string.IsNullOrEmpty(effect.ScalesWith)
+                    ? triggerCounts.GetValueOrDefault(effect.ScalesWith)
+                    : 1;
+                double bonus = perScale * scaleCount;
+                if (effect.MaxCount.HasValue) bonus = Math.Min(bonus, effect.MaxCount.Value);
+                int bonusFires = (int)Math.Floor(bonus);
+                if (bonusFires <= 0) continue;
+
+                if (triggerBonusInfo == null || !triggerBonusInfo.TryGetValue(target, out var entry)) continue;
+
+                // 自カード除外で消費側カードを集計
+                double synergyVoSum = 0, synergyDaSum = 0, synergyViSum = 0;
+                var contribRows = new List<EffectBreakdown>();
+                foreach (var c in entry.Contributors)
+                {
+                    if (c.CardId == card.Id) continue;
+                    int cVo = c.PerFire.Vo * bonusFires;
+                    int cDa = c.PerFire.Da * bonusFires;
+                    int cVi = c.PerFire.Vi * bonusFires;
+                    int cTotal = cVo + cDa + cVi;
+                    if (cTotal <= 0) continue;
+                    synergyVoSum += cVo;
+                    synergyDaSum += cDa;
+                    synergyViSum += cVi;
+                    var parts = new List<string>();
+                    if (c.PerFire.Vo > 0) parts.Add($"Vo+{c.PerFire.Vo}");
+                    if (c.PerFire.Da > 0) parts.Add($"Da+{c.PerFire.Da}");
+                    if (c.PerFire.Vi > 0) parts.Add($"Vi+{c.PerFire.Vi}");
+                    var perFireDesc = string.Join("/", parts);
+                    var mainStat = (cVo >= cDa && cVo >= cVi) ? "vo" : (cDa >= cVi ? "da" : "vi");
+                    contribRows.Add(new EffectBreakdown
+                    {
+                        Reason = $"  ↳ {c.CardName} ({perFireDesc}/回)",
+                        Stat = mainStat,
+                        Value = Math.Round((double)cTotal, 1),
+                    });
+                    teamBonusContributors.Add(new TeamBonusContributor
+                    {
+                        CardName = c.CardName,
+                        Value = cTotal,
+                    });
+                }
+                if (contribRows.Count == 0) continue;
+
+                teamBonusTotal += synergyVoSum + synergyDaSum + synergyViSum;
+                if (!skipTriggerBonusSelfContribution)
+                {
+                    vo += synergyVoSum;
+                    da += synergyDaSum;
+                    vi += synergyViSum;
+                }
+
+                var targetName = TriggerDisplayName(target);
+                var formula = !string.IsNullOrEmpty(effect.ScalesWith)
+                    ? $"{TriggerDisplayName(effect.ScalesWith)}×{scaleCount} × {perScale}"
+                    : $"×{perScale}";
+                var headerSuffix = skipTriggerBonusSelfContribution ? " → 他カードへ寄与" : "";
+                breakdowns.Add(new EffectBreakdown
+                {
+                    Reason = $"[アイテム] {targetName}+{bonusFires}回 ({formula}){headerSuffix}",
+                    Stat = "all",
+                    Value = 0,
+                });
+                breakdowns.AddRange(contribRows);
+                continue;
+            }
 
             if (effect.ValueType == "para_bonus")
             {
@@ -1142,9 +1324,78 @@ public class CardScoringService
             RawVo = iVo,
             RawDa = iDa,
             RawVi = iVi,
+            TeamBonusTotal = (int)Math.Floor(teamBonusTotal),
+            TeamBonusContributors = teamBonusContributors,
             TotalValue = iVo + iDa + iVi,
             Breakdowns = breakdowns
         };
+    }
+
+    /// <summary>
+    /// デッキ確定後の deck-aware 再計算。
+    /// - producer の trigger_count_bonus 効果による消費側カードへのバフ分を triggerCounts に加算
+    /// - producer 側では trigger_count_bonus を raw_* に加算しない (二重カウント回避)
+    /// - team_bonus_total はデッキ内 consumer のみを対象に計算
+    /// </summary>
+    private void RecomputeBreakdownsDeckAware(
+        List<CardScore> selected,
+        Dictionary<string, int> baseTriggerCounts,
+        Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
+        Dictionary<string, int>? uncapLevels)
+    {
+        // 1. デッキ内 producer の trigger_count_bonus 集計
+        var deckBonuses = new Dictionary<string, int>();
+        foreach (var cs in selected)
+        {
+            int uncap = StatusCalculationService.GetUncapLevel(cs.Card, uncapLevels);
+            foreach (var effect in cs.Card.Effects)
+            {
+                if (effect.ValueType != "trigger_count_bonus") continue;
+                var target = effect.TriggerTarget;
+                if (string.IsNullOrEmpty(target)) continue;
+                double perScale = effect.GetValue(uncap);
+                int scaleCount = !string.IsNullOrEmpty(effect.ScalesWith)
+                    ? baseTriggerCounts.GetValueOrDefault(effect.ScalesWith)
+                    : 1;
+                double bonus = perScale * scaleCount;
+                if (effect.MaxCount.HasValue) bonus = Math.Min(bonus, effect.MaxCount.Value);
+                int bonusFires = (int)Math.Floor(bonus);
+                if (bonusFires > 0)
+                {
+                    deckBonuses[target] = deckBonuses.GetValueOrDefault(target) + bonusFires;
+                }
+            }
+        }
+        if (deckBonuses.Count == 0) return;
+
+        // 2. adjustedCounts = base + producer-derived bonus
+        var adjustedCounts = new Dictionary<string, int>(baseTriggerCounts);
+        foreach (var kvp in deckBonuses)
+        {
+            adjustedCounts[kvp.Key] = adjustedCounts.GetValueOrDefault(kvp.Key) + kvp.Value;
+        }
+
+        // 3. デッキ内カードのみで TriggerBonusInfo を計算
+        var deckCards = selected.Select(cs => cs.Card).ToList();
+        var deckTriggerBonusInfo = ComputeTriggerBonusInfo(deckCards, uncapLevels);
+
+        // 4. 各 selected card を再計算 (skipTriggerBonusSelfContribution=true)
+        for (int i = 0; i < selected.Count; i++)
+        {
+            var cs = selected[i];
+            var recomputed = CalculateCardContribution(
+                cs.Card,
+                adjustedCounts,
+                lessonAllocation,
+                lessonStatTotals,
+                uncapLevels,
+                deckTriggerBonusInfo,
+                skipTriggerBonusSelfContribution: true);
+            recomputed.IsRental = cs.IsRental;
+            recomputed.IsRequired = cs.IsRequired;
+            selected[i] = recomputed;
+        }
     }
 
     private static string TriggerDisplayName(string trigger) => trigger switch

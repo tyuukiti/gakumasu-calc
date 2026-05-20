@@ -34,6 +34,10 @@ export interface CardEffect {
   description?: string;
   source?: string;
   event_param?: boolean;
+  /** value_type: 'trigger_count_bonus' 用 — 加算対象のトリガー名 (例: 'p_drink_acquire') */
+  trigger_target?: string;
+  /** value_type: 'trigger_count_bonus' 用 — スケール元のトリガー名 (例: 'da_sp_end'). 省略時は絶対値扱い */
+  scales_with?: string;
 }
 
 export interface LessonBonusPercent {

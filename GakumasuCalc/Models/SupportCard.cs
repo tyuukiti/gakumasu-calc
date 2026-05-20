@@ -171,6 +171,20 @@ public class CardEffect
     /// </summary>
     [YamlMember(Alias = "event_param")]
     public bool EventParam { get; set; }
+
+    /// <summary>
+    /// value_type: "trigger_count_bonus" 用 — 加算対象のトリガー名 (例: "p_drink_acquire")。
+    /// このカードがデッキに入っている場合、他カードの該当トリガー発火回数を増やす。
+    /// </summary>
+    [YamlMember(Alias = "trigger_target")]
+    public string? TriggerTarget { get; set; }
+
+    /// <summary>
+    /// value_type: "trigger_count_bonus" 用 — スケール元のトリガー名 (例: "da_sp_end")。
+    /// 省略時は絶対値扱い。指定時は (Value × そのトリガー発火回数) が追加発火回数になる。
+    /// </summary>
+    [YamlMember(Alias = "scales_with")]
+    public string? ScalesWith { get; set; }
 }
 
 public class LessonBonusPercent

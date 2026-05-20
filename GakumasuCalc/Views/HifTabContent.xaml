@@ -1209,44 +1209,91 @@
                     <ItemsControl ItemsSource="{Binding DeckCards}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="4,5" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0" Cursor="Help">
-                                    <Border.ToolTip>
-                                        <ToolTip MaxWidth="500">
-                                            <TextBlock Text="{Binding BreakdownText}" FontFamily="Consolas" FontSize="11" TextWrapping="Wrap"/>
-                                        </ToolTip>
-                                    </Border.ToolTip>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="40"/>
-                                            <ColumnDefinition Width="30"/>
-                                            <ColumnDefinition Width="30"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="70"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Border Grid.Column="0" Background="{Binding TypeBadgeBackground}" CornerRadius="3"
-                                                Padding="4,2" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding CardTypeDisplay}" FontSize="11" FontWeight="Bold"
-                                                       Foreground="{Binding TypeBadgeForeground}"/>
-                                        </Border>
-                                        <TextBlock Grid.Column="1" Text="{Binding CardPlanDisplay}" FontSize="10"
-                                                   Foreground="#999" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding CardRarity}" FontSize="10"
-                                                   Foreground="#888" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                        <Border Grid.Column="3" Background="#E8F5E9" CornerRadius="2"
-                                                Padding="3,1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0"
-                                                Visibility="{Binding SpRateVisibility}">
-                                            <TextBlock Text="SP" FontSize="9" FontWeight="Bold" Foreground="#2E7D32"/>
-                                        </Border>
-                                        <TextBlock Grid.Column="4" Text="{Binding CardName}" FontSize="12"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="{Binding CardNameForeground}" Margin="4,0,0,0"/>
-                                        <TextBlock Grid.Column="5" Text="{Binding StatValue, StringFormat={}+{0:#,0}}"
-                                                   FontSize="13" FontWeight="SemiBold" FontFamily="Consolas"
-                                                   Foreground="{StaticResource AccentBrush}"
-                                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                                    </Grid>
-                                </Border>
+                                <StackPanel>
+                                    <Border Padding="4,5" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0"
+                                            Cursor="Hand" Background="Transparent">
+                                        <Border.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick"
+                                                          Command="{Binding ToggleExpandCommand}"/>
+                                        </Border.InputBindings>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40"/>
+                                                <ColumnDefinition Width="30"/>
+                                                <ColumnDefinition Width="30"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="{Binding TypeBadgeBackground}" CornerRadius="3"
+                                                    Padding="4,2" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding CardTypeDisplay}" FontSize="11" FontWeight="Bold"
+                                                           Foreground="{Binding TypeBadgeForeground}"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="{Binding CardPlanDisplay}" FontSize="10"
+                                                       Foreground="#999" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding CardRarity}" FontSize="10"
+                                                       Foreground="#888" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            <Border Grid.Column="3" Background="#E8F5E9" CornerRadius="2"
+                                                    Padding="3,1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0"
+                                                    Visibility="{Binding SpRateVisibility}">
+                                                <TextBlock Text="SP" FontSize="9" FontWeight="Bold" Foreground="#2E7D32"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="4" Text="{Binding CardName}" FontSize="12"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{Binding CardNameForeground}" Margin="4,0,0,0"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding StatValueDisplay}"
+                                                       FontSize="13" FontWeight="SemiBold" FontFamily="Consolas"
+                                                       Foreground="{StaticResource AccentBrush}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                       Margin="0,0,6,0"/>
+                                            <TextBlock Grid.Column="6" FontSize="10" Foreground="#AAA"
+                                                       VerticalAlignment="Center" Margin="2,0,2,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="▶"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                                <Setter Property="Text" Value="▼"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Grid>
+                                    </Border>
+                                    <Border Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}"
+                                            Background="#FAFAFA" Padding="14,4,8,8">
+                                        <StackPanel>
+                                            <TextBlock FontFamily="Consolas" FontSize="11" Foreground="#666">
+                                                <Run Text="Vo:"/><Run Text="{Binding RawVo, Mode=OneWay}"/>
+                                                <Run Text="  Da:"/><Run Text="{Binding RawDa, Mode=OneWay}"/>
+                                                <Run Text="  Vi:"/><Run Text="{Binding RawVi, Mode=OneWay}"/>
+                                            </TextBlock>
+                                            <ItemsControl ItemsSource="{Binding Breakdowns}" Margin="0,2,0,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Margin="0,1">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="{Binding Reason}"
+                                                                       FontFamily="Consolas" FontSize="11"
+                                                                       Foreground="#888"
+                                                                       TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding ValueDisplay}"
+                                                                       FontFamily="Consolas" FontSize="11"
+                                                                       Foreground="{Binding StatColor}"
+                                                                       Margin="8,0,0,0"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
