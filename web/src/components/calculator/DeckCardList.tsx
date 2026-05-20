@@ -120,9 +120,9 @@ export default function DeckCardList() {
                 {/* Stat value */}
                 <span className="text-sm font-mono font-bold text-[var(--color-accent)]">
                   +{cs.total_value}
-                  {cs.team_bonus_contributors.length > 0 && (
+                  {cs.team_bonus_total > 0 && (
                     <span className="text-xs font-normal text-gray-500 ml-1">
-                      ({cs.team_bonus_contributors.map((c) => `${c.card_name}+${c.value}`).join(' / ')})
+                      (+{cs.team_bonus_total})
                     </span>
                   )}
                 </span>

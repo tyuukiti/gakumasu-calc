@@ -1986,10 +1986,10 @@ public class DeckCardViewModel : ViewModelBase
     public System.Windows.Input.ICommand ToggleExpandCommand =>
         new RelayCommand(() => IsExpanded = !IsExpanded);
 
-    /// <summary>UI 表示用: 「+71」または「+107 (いつまでも+80 / おい+80 / ね。+80)」形式</summary>
+    /// <summary>UI 表示用: 「+71」または「+107 (+240)」形式 (詳細はクリック展開で見れる)</summary>
     public string StatValueDisplay =>
-        TeamBonusContributors.Count > 0
-            ? $"+{StatValue} ({string.Join(" / ", TeamBonusContributors.Select(c => $"{c.CardName}+{c.Value}"))})"
+        TeamBonusTotal > 0
+            ? $"+{StatValue} (+{TeamBonusTotal})"
             : $"+{StatValue}";
     public string DeckLabel { get; set; } = string.Empty;
     public string BreakdownText { get; set; } = string.Empty;
