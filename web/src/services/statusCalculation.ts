@@ -133,12 +133,40 @@ export function calculate(
     });
   }
 
-  // Step 3.5: additional trigger fires (from event count templates)
+  // Step 3.5: additional trigger fires
+  // - ユーザ指定の additionalCounts (テンプレート由来)
+  // - サポカの trigger_count_bonus 効果による動的加算 (例: ふわふわでもこもこ = DaSP終了時+ドリンク2個)
+  const mergedAdditional: Record<string, number> = additionalCounts != null
+    ? additionalCountsToRecord(additionalCounts)
+    : {};
+
+  const baseTriggerCounts = computeBaseTriggerCounts(plan, turnChoices);
+  const scalesLookup: Record<string, number> = { ...baseTriggerCounts };
+  for (const [k, v] of Object.entries(mergedAdditional)) {
+    if (v > 0) scalesLookup[k] = (scalesLookup[k] ?? 0) + v;
+  }
+
+  for (const card of selectedCards) {
+    const uncap = getUncapLevel(card, uncapLevels);
+    for (const effect of card.effects) {
+      if (effect.value_type !== 'trigger_count_bonus') continue;
+      const target = effect.trigger_target;
+      if (!target) continue;
+      const perScale = getEffectValue(effect, uncap);
+      const scaleCount = effect.scales_with ? (scalesLookup[effect.scales_with] ?? 0) : 1;
+      let bonus = perScale * scaleCount;
+      if (effect.max_count != null) bonus = Math.min(bonus, effect.max_count);
+      bonus = Math.floor(bonus);
+      if (bonus <= 0) continue;
+      mergedAdditional[target] = (mergedAdditional[target] ?? 0) + bonus;
+    }
+  }
+
   const additionalGain = fireAdditionalTriggers(
     selectedCards,
     triggerCounters,
     uncapLevels,
-    additionalCounts,
+    mergedAdditional,
   );
   if (additionalGain.vo !== 0 || additionalGain.da !== 0 || additionalGain.vi !== 0) {
     accumulated = svAdd(accumulated, additionalGain);
@@ -400,7 +428,7 @@ function calculateSpecialTrainingGain(
 }
 
 /**
- * Fire additional triggers from event count templates.
+ * Fire additional triggers from event count templates + trigger_count_bonus.
  * Each trigger in additionalCounts is fired the specified number of times,
  * respecting max_count limits already partially consumed by weekly processing.
  */
@@ -408,14 +436,12 @@ function fireAdditionalTriggers(
   cards: SupportCard[],
   triggerCounters: Record<string, number>,
   uncapLevels: Record<string, number> | undefined,
-  additionalCounts?: AdditionalCounts,
+  additionalCounts?: Record<string, number>,
 ): StatusValues {
   if (additionalCounts == null) return svZero();
 
   let gain = svZero();
-  const addRec = additionalCountsToRecord(additionalCounts);
-
-  for (const [trigger, fireCount] of Object.entries(addRec)) {
+  for (const [trigger, fireCount] of Object.entries(additionalCounts)) {
     if (fireCount <= 0) continue;
     for (let i = 0; i < fireCount; i++) {
       const triggerGain = fireTrigger(trigger, cards, triggerCounters, uncapLevels);
@@ -424,6 +450,46 @@ function fireAdditionalTriggers(
   }
 
   return gain;
+}
+
+/**
+ * turnChoices + plan のスケジュールから「グローバルなトリガー発火回数」を導出する。
+ * scales_with の参照先 (例: 'da_sp_end') を解決するために使う。
+ *
+ * cardScoring.countTriggers と仕様を揃えているが、こちらは turnChoices ベースで実際に
+ * 選ばれた行動を反映する (countTriggers は lessonAllocation 経由でほぼ同じ)。
+ */
+function computeBaseTriggerCounts(
+  plan: TrainingPlan,
+  turnChoices: TurnChoice[],
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const tc of turnChoices) {
+    const a = tc.chosen_action as string;
+    if (a === 'vo_lesson' || a === 'da_lesson' || a === 'vi_lesson') {
+      const stat = a.split('_')[0];
+      counts[`${stat}_sp_end`] = (counts[`${stat}_sp_end`] ?? 0) + 1;
+      counts[`${stat}_lesson_end`] = (counts[`${stat}_lesson_end`] ?? 0) + 1;
+      counts.sp_end = (counts.sp_end ?? 0) + 1;
+      counts.lesson_end = (counts.lesson_end ?? 0) + 1;
+    } else if (a === 'vo_class' || a === 'da_class' || a === 'vi_class') {
+      counts.class_end = (counts.class_end ?? 0) + 1;
+    } else if (a === 'outing') {
+      counts.outing_end = (counts.outing_end ?? 0) + 1;
+    } else if (a === 'consultation') {
+      counts.consultation = (counts.consultation ?? 0) + 1;
+    } else if (a === 'special_training') {
+      counts.special_training = (counts.special_training ?? 0) + 1;
+    } else if (a === 'activity_supply') {
+      counts.activity_supply = (counts.activity_supply ?? 0) + 1;
+    }
+  }
+  for (const week of plan.schedule) {
+    if (week.type === 'fixed_event' || week.type === 'exam' || week.type === 'audition') {
+      counts.exam_end = (counts.exam_end ?? 0) + 1;
+    }
+  }
+  return counts;
 }
 
 /**

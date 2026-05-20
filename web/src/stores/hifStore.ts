@@ -685,6 +685,7 @@ export const useHifStore = create<HifState>((set, get) => ({
         requiredCardIds,
         effectiveChar,
         calc.memoryBonuses,
+        turnChoices, // HIF はユーザが明示的に選んだターン選択を postOptimize でも使う
       );
 
       // パターン選出はキャラ補正込みのキャップ後合計で比較

@@ -11,7 +11,7 @@
 } from '../types/models';
 import type { ActionType } from '../types/enums';
 import { additionalCountsToRecord } from '../types/models';
-import type { CardScore, EffectBreakdown, DeckResult } from '../types/results';
+import type { CardScore, EffectBreakdown, DeckResult, TeamBonusContributor } from '../types/results';
 import { sv } from '../utils/statusValues';
 import { getUncapLevel, getEffectValue, calculate, getEventParamBoostPercent } from './statusCalculation';
 import { DEFAULT_STAT_CAP } from '../utils/constants';
@@ -297,6 +297,82 @@ export function calculateLessonStatTotals(
   return sv(vo, da, vi);
 }
 
+// --- Trigger count bonus consumer pool aggregation ---
+
+/** trigger_count_bonus の単体スコアリング用、消費側カード1枚分の per-fire 寄与情報 */
+export interface TriggerBonusContributor {
+  cardId: string;
+  cardName: string;
+  perFire: StatusValues;
+}
+
+/** trigger_count_bonus の単体スコアリング用、対象トリガーごとの集計情報 */
+export interface TriggerBonusEntry {
+  /** 全消費側カードの per-fire ステータス合計 (推定スコア計算に使う) */
+  total: StatusValues;
+  /** 消費側カード一覧 (breakdown 表示用、寄与額の降順) */
+  contributors: TriggerBonusContributor[];
+}
+
+/**
+ * trigger_count_bonus 効果の単体スコアリングのため、対象トリガーごとに
+ * プール内全ての消費側カードの per-fire ステータスを事前計算する。
+ */
+function computeTriggerBonusInfo(
+  pool: SupportCard[],
+  uncapLevels: Record<string, number> | undefined,
+): Record<string, TriggerBonusEntry> {
+  // どの trigger_target を集計すべきか抽出
+  const targets = new Set<string>();
+  for (const card of pool) {
+    for (const effect of card.effects) {
+      if (effect.value_type === 'trigger_count_bonus' && effect.trigger_target) {
+        targets.add(effect.trigger_target);
+      }
+    }
+  }
+
+  const result: Record<string, TriggerBonusEntry> = {};
+  for (const target of targets) {
+    const candidates: Array<TriggerBonusContributor & { total: number }> = [];
+    for (const card of pool) {
+      const uncap = getUncapLevel(card, uncapLevels);
+      let cVo = 0, cDa = 0, cVi = 0;
+      for (const effect of card.effects) {
+        if (effect.trigger !== target || effect.value_type !== 'flat') continue;
+        const v = Math.floor(getEffectValue(effect, uncap));
+        switch (effect.stat) {
+          case 'vo': cVo += v; break;
+          case 'da': cDa += v; break;
+          case 'vi': cVi += v; break;
+          case 'all':
+            cVo += v; cDa += v; cVi += v;
+            break;
+        }
+      }
+      const total = cVo + cDa + cVi;
+      if (total > 0) {
+        candidates.push({
+          cardId: card.id,
+          cardName: card.name,
+          perFire: { vo: cVo, da: cDa, vi: cVi },
+          total,
+        });
+      }
+    }
+    candidates.sort((a, b) => b.total - a.total);
+    result[target] = {
+      total: {
+        vo: candidates.reduce((s, c) => s + c.perFire.vo, 0),
+        da: candidates.reduce((s, c) => s + c.perFire.da, 0),
+        vi: candidates.reduce((s, c) => s + c.perFire.vi, 0),
+      },
+      contributors: candidates.map(({ cardId, cardName, perFire }) => ({ cardId, cardName, perFire })),
+    };
+  }
+  return result;
+}
+
 // --- Calculate card contribution ---
 
 export function calculateCardContribution(
@@ -305,16 +381,97 @@ export function calculateCardContribution(
   _lessonAllocation: Record<string, number>,
   lessonStatTotals: StatusValues,
   uncapLevels?: Record<string, number>,
+  triggerBonusInfo?: Record<string, TriggerBonusEntry>,
+  /**
+   * デッキ確定後の再計算で、producer 側の trigger_count_bonus を raw_* に加算しないためのフラグ。
+   * デッキ確定後は consumer 側の flat 効果が adjustedCounts 経由で実発火回数分加算されるため、
+   * producer 側でも加算すると二重カウントになる。
+   */
+  skipTriggerBonusSelfContribution: boolean = false,
 ): CardScore {
   const uncap = getUncapLevel(card, uncapLevels);
   let vo = 0,
     da = 0,
     vi = 0;
+  let teamBonusTotal = 0;
+  const teamBonusContributors: TeamBonusContributor[] = [];
   const breakdowns: EffectBreakdown[] = [];
 
   for (const effect of card.effects) {
     // SP率は突破確率であり理論値計算では不要（全SPクリア前提）
     if (effect.value_type === 'sp_rate') continue;
+
+    // trigger_count_bonus: 自カードは追加でステータスを得ないが、他カードのトリガー発火回数を増やす
+    if (effect.value_type === 'trigger_count_bonus') {
+      const target = effect.trigger_target;
+      if (!target) continue;
+      const perScale = getEffectValue(effect, uncap);
+      const scaleCount = effect.scales_with
+        ? (triggerCounts[effect.scales_with] ?? 0)
+        : 1;
+      let bonusFires = perScale * scaleCount;
+      if (effect.max_count != null) bonusFires = Math.min(bonusFires, effect.max_count);
+      bonusFires = Math.floor(bonusFires);
+      if (bonusFires <= 0) continue;
+
+      const entry = triggerBonusInfo?.[target];
+      if (entry == null) continue;
+
+      // 自カードを除外して消費側カードを集計 (producer 自身が consumer 効果を持つ場合の二重カウント防止)
+      let synergyVoSum = 0, synergyDaSum = 0, synergyViSum = 0;
+      const contribRows: EffectBreakdown[] = [];
+      for (const c of entry.contributors) {
+        if (c.cardId === card.id) continue;
+        const cVo = c.perFire.vo * bonusFires;
+        const cDa = c.perFire.da * bonusFires;
+        const cVi = c.perFire.vi * bonusFires;
+        const cTotal = cVo + cDa + cVi;
+        if (cTotal <= 0) continue;
+        synergyVoSum += cVo;
+        synergyDaSum += cDa;
+        synergyViSum += cVi;
+        const perFireDesc = [
+          c.perFire.vo > 0 ? `Vo+${c.perFire.vo}` : '',
+          c.perFire.da > 0 ? `Da+${c.perFire.da}` : '',
+          c.perFire.vi > 0 ? `Vi+${c.perFire.vi}` : '',
+        ].filter(Boolean).join('/');
+        const mainStat: 'vo' | 'da' | 'vi' =
+          cVo >= cDa && cVo >= cVi ? 'vo' : cDa >= cVi ? 'da' : 'vi';
+        contribRows.push({
+          reason: `  ↳ ${c.cardName} (${perFireDesc}/回)`,
+          stat: mainStat,
+          value: Math.round(cTotal * 10) / 10,
+        });
+        teamBonusContributors.push({
+          card_name: c.cardName,
+          value: Math.floor(cTotal),
+        });
+      }
+      if (contribRows.length === 0) continue;
+
+      teamBonusTotal += synergyVoSum + synergyDaSum + synergyViSum;
+      if (!skipTriggerBonusSelfContribution) {
+        // 単体スコアリング時: 「想定される消費側カードへの寄与」を自スコアに加算 (ヒューリスティック)
+        vo += synergyVoSum;
+        da += synergyDaSum;
+        vi += synergyViSum;
+      }
+
+      // ヘッダ行 (式のみ、値カラムは空表示)
+      const targetName = triggerDisplayName(target);
+      const scalesWith = effect.scales_with;
+      const formula = scalesWith
+        ? `${triggerDisplayName(scalesWith)}×${scaleCount} × ${perScale}`
+        : `×${perScale}`;
+      const headerSuffix = skipTriggerBonusSelfContribution ? ' → 他カードへ寄与' : '';
+      breakdowns.push({
+        reason: `[アイテム] ${targetName}+${bonusFires}回 (${formula})${headerSuffix}`,
+        stat: 'all',
+        value: 0,
+      });
+      breakdowns.push(...contribRows);
+      continue;
+    }
 
     if (effect.value_type === 'para_bonus') {
       // パラボは該当属性のレッスン上昇値にのみ適用
@@ -404,6 +561,8 @@ export function calculateCardContribution(
     raw_vo: iVo,
     raw_da: iDa,
     raw_vi: iVi,
+    team_bonus_total: Math.floor(teamBonusTotal),
+    team_bonus_contributors: teamBonusContributors,
     total_value: iVo + iDa + iVi,
     breakdowns,
     is_rental: false,
@@ -498,6 +657,20 @@ function greedyFillOwned(
 
 // --- Post-optimization using actual calculation ---
 
+function meetsTypeSlots(
+  cards: SupportCard[],
+  cardTypeSlots: Record<string, number>,
+): boolean {
+  for (const [type, required] of Object.entries(cardTypeSlots)) {
+    if (required <= 0) continue;
+    const count = cards.filter(
+      (c) => c.type === type || c.type === 'all' || c.type === 'as',
+    ).length;
+    if (count < required) return false;
+  }
+  return true;
+}
+
 function postOptimize(
   selected: CardScore[],
   candidates: CardScore[],
@@ -509,8 +682,12 @@ function postOptimize(
   statCap?: number,
   character?: Character | null,
   memoryBonuses?: MemoryBonus[] | null,
+  cardTypeSlots?: Record<string, number>,
+  turnChoicesOverride?: TurnChoice[],
 ): void {
-  const turnChoices = buildTurnChoices(plan, mainStats);
+  // HIFモードのようにユーザが明示的にターン選択している場合は、合成 turnChoices ではなく
+  // 実選択を使って評価する。これをやらないと postOptimize の評価が実際のデッキ計算と食い違う。
+  const turnChoices = turnChoicesOverride ?? buildTurnChoices(plan, mainStats);
   const cap = statCap ?? plan.status_limit ?? DEFAULT_STAT_CAP;
 
   function evaluateFull(cards: SupportCard[]): { total: number; vo: number; da: number; vi: number } {
@@ -551,36 +728,29 @@ function postOptimize(
       // 非SPの保護カードはスキップ
       if (ownedIsProtectedNonSp) continue;
 
-      // 所持カードの属性タイプが既にキャップを超えている場合、クロスタイプスワップを許可
       const ownedType = ownedCard.card.type;
-      const ownedStatOverCap =
-        (ownedType === 'vo' && currentEval.vo >= cap) ||
-        (ownedType === 'da' && currentEval.da >= cap) ||
-        (ownedType === 'vi' && currentEval.vi >= cap);
 
       for (const candidate of candidates) {
         if (selected.some((c) => c.card.id === candidate.card.id)) continue;
-
-        // タイプ分布を維持: 同じタイプ同士、または all/as タイプとの交換のみ許可
-        // ただし、所持カードの属性が既にキャップを超えている場合はクロスタイプスワップを許可
-        if (!ownedStatOverCap) {
-          const candidateIsAllLike =
-            candidate.card.type === 'all' || candidate.card.type === 'as';
-          const ownedIsAllLike =
-            ownedType === 'all' || ownedType === 'as';
-          if (
-            candidate.card.type !== ownedType &&
-            !candidateIsAllLike &&
-            !ownedIsAllLike
-          )
-            continue;
-        }
 
         // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
         if (ownedIsProtectedSp && !hasSpRate(candidate.card)) continue;
 
         const testCards = [...currentCards];
         testCards[si] = candidate.card;
+
+        // タイプ制約: cardTypeSlots の最低要件 (例: Da 2枚以上) を満たすスワップのみ許可
+        if (
+          candidate.card.type !== ownedType &&
+          candidate.card.type !== 'all' &&
+          candidate.card.type !== 'as' &&
+          ownedType !== 'all' &&
+          ownedType !== 'as' &&
+          cardTypeSlots != null &&
+          !meetsTypeSlots(testCards, cardTypeSlots)
+        ) {
+          continue;
+        }
 
         const testEval = evaluateFull(testCards);
         if (testEval.total > currentEval.total) {
@@ -768,6 +938,70 @@ function calculateCappedTotal(
 
 // --- Recalculate with cap ---
 
+/**
+ * デッキ確定後の deck-aware 再計算。
+ * - producer の trigger_count_bonus 効果による消費側カードへのバフ分を triggerCounts に加算
+ *   (consumer の flat 効果が deck で実際に発火される回数を反映)
+ * - producer 側では trigger_count_bonus を raw_* に加算しない (二重カウント回避)
+ * - team_bonus_total はデッキ内 consumer のみを対象に計算される
+ */
+function recomputeBreakdownsDeckAware(
+  selected: CardScore[],
+  baseTriggerCounts: Record<string, number>,
+  lessonAllocation: Record<string, number>,
+  lessonStatTotals: StatusValues,
+  uncapLevels: Record<string, number> | undefined,
+): void {
+  // 1. デッキ内 producer の trigger_count_bonus 集計
+  const deckBonuses: Record<string, number> = {};
+  for (const cs of selected) {
+    const uncap = getUncapLevel(cs.card, uncapLevels);
+    for (const effect of cs.card.effects) {
+      if (effect.value_type !== 'trigger_count_bonus') continue;
+      const target = effect.trigger_target;
+      if (!target) continue;
+      const perScale = getEffectValue(effect, uncap);
+      const scaleCount = effect.scales_with
+        ? (baseTriggerCounts[effect.scales_with] ?? 0)
+        : 1;
+      let bonus = perScale * scaleCount;
+      if (effect.max_count != null) bonus = Math.min(bonus, effect.max_count);
+      bonus = Math.floor(bonus);
+      if (bonus > 0) deckBonuses[target] = (deckBonuses[target] ?? 0) + bonus;
+    }
+  }
+  if (Object.keys(deckBonuses).length === 0) return;
+
+  // 2. adjustedCounts = base + producer-derived bonus
+  const adjustedCounts: Record<string, number> = { ...baseTriggerCounts };
+  for (const [k, v] of Object.entries(deckBonuses)) {
+    adjustedCounts[k] = (adjustedCounts[k] ?? 0) + v;
+  }
+
+  // 3. デッキ内カードのみで triggerBonusInfo を計算 (parens 表示が実デッキ反映に)
+  const deckCards = selected.map((cs) => cs.card);
+  const deckTriggerBonusInfo = computeTriggerBonusInfo(deckCards, uncapLevels);
+
+  // 4. 各 selected card を再計算 (skipTriggerBonusSelfContribution=true)
+  for (let i = 0; i < selected.length; i++) {
+    const cs = selected[i];
+    const recomputed = calculateCardContribution(
+      cs.card,
+      adjustedCounts,
+      lessonAllocation,
+      lessonStatTotals,
+      uncapLevels,
+      deckTriggerBonusInfo,
+      true,
+    );
+    selected[i] = {
+      ...recomputed,
+      is_rental: cs.is_rental,
+      is_required: cs.is_required,
+    };
+  }
+}
+
 function recalculateWithCap(
   selected: CardScore[],
   baseStats: StatusValues,
@@ -839,6 +1073,11 @@ export function selectOptimalDeck(
   requiredCardIds?: string[],
   character?: Character | null,
   memoryBonuses?: MemoryBonus[] | null,
+  /**
+   * HIFモードなど、ユーザが明示的にターン選択を指定している場合の override。
+   * 渡された場合 postOptimize の評価でもこの選択を使う (デフォルトの buildTurnChoices ではなく)
+   */
+  turnChoicesOverride?: TurnChoice[],
 ): DeckResult {
   const statCap = plan.status_limit;
   const triggerCounts = countTriggers(plan, lessonAllocation, mainStats);
@@ -867,6 +1106,11 @@ export function selectOptimalDeck(
   // レッスンの属性別合計SpBonusを事前計算
   const lessonStatTotals = calculateLessonStatTotals(plan, lessonAllocation);
 
+  // trigger_count_bonus 効果 (Pアイテム由来でドリンク等を追加生成する効果) の単体スコアリング用情報
+  // 「もしこのカードが選ばれた場合、追加で発火する trigger_target は他カードに何ポイント寄与するか」
+  // を見積もるため、対象トリガーを持つ消費側カードの per-fire 値を集計しておく
+  const triggerBonusInfo = computeTriggerBonusInfo(eligible, uncapLevels);
+
   // 全カードの属性別寄与を事前計算
   const cardContributions = eligible.map((card) =>
     calculateCardContribution(
@@ -875,6 +1119,7 @@ export function selectOptimalDeck(
       lessonAllocation,
       lessonStatTotals,
       uncapLevels,
+      triggerBonusInfo,
     ),
   );
 
@@ -886,6 +1131,7 @@ export function selectOptimalDeck(
       lessonAllocation,
       lessonStatTotals,
       uncapLevels,
+      triggerBonusInfo,
     ),
   );
 
@@ -947,6 +1193,7 @@ export function selectOptimalDeck(
         lessonAllocation,
         lessonStatTotals,
         reqUncap,
+        triggerBonusInfo,
       );
       contribution.is_required = true;
 
@@ -1126,6 +1373,7 @@ export function selectOptimalDeck(
         lessonAllocation,
         lessonStatTotals,
         rentalUncap,
+        triggerBonusInfo,
       );
       allRentalContributions.set(cs.card.id, cs);
     }
@@ -1327,20 +1575,32 @@ export function selectOptimalDeck(
   }
 
   // ポスト最適化: 実際の計算結果を使ってカードスワップを試行
-  if (rentalPool != null) {
-    postOptimize(
-      selected,
-      cardContributions,
-      protectedIds,
-      plan,
-      mainStats,
-      uncapLevels,
-      additionalCounts,
-      statCap,
-      character ?? null,
-      memoryBonuses ?? null,
-    );
-  }
+  // (常時実行: trigger_count_bonus のような synergy 効果を greedy 単独では拾えないため)
+  postOptimize(
+    selected,
+    cardContributions,
+    protectedIds,
+    plan,
+    mainStats,
+    uncapLevels,
+    additionalCounts,
+    statCap,
+    character ?? null,
+    memoryBonuses ?? null,
+    cardTypeSlots,
+    turnChoicesOverride,
+  );
+
+  // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
+  // - producer: trigger_count_bonus を raw_* に加算しない (consumer 側が adjustedCounts 経由で実発火数を加算するため)
+  // - consumer: triggerCounts[target] が producer の bonus 分増加 → flat 効果が正しい回数で発火
+  recomputeBreakdownsDeckAware(
+    selected,
+    triggerCounts,
+    lessonAllocation,
+    lessonStatTotals,
+    uncapLevels,
+  );
 
   // キャップ適用後の実効値でTotalValueを再計算
   recalculateWithCap(selected, baseStats, statCap);
@@ -1466,6 +1726,7 @@ export function selectMultiplePatternsHif(
   requiredCardIds?: string[],
   character?: Character | null,
   memoryBonuses?: MemoryBonus[] | null,
+  turnChoicesOverride?: TurnChoice[],
 ): DeckResult[] {
   const results: DeckResult[] = [];
 
@@ -1507,6 +1768,7 @@ export function selectMultiplePatternsHif(
       requiredCardIds,
       character ?? null,
       memoryBonuses ?? null,
+      turnChoicesOverride,
     );
     results.push(result);
   }

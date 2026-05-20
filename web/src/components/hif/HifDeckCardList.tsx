@@ -41,7 +41,7 @@ function BreakdownPanel({ cs }: { cs: CardScore }) {
         <div key={i} className="flex justify-between font-mono text-gray-500">
           <span className="truncate mr-2">{b.reason}</span>
           <span className="shrink-0" style={{ color: STAT_COLORS[b.stat] }}>
-            {b.value > 0 ? '+' : ''}{b.value}
+            {b.value === 0 ? '' : (b.value > 0 ? '+' : '') + b.value}
           </span>
         </div>
       ))}
@@ -104,6 +104,11 @@ export default function HifDeckCardList() {
 
                 <span className="text-sm font-mono font-bold text-[var(--color-accent)]">
                   +{cs.total_value}
+                  {cs.team_bonus_total > 0 && (
+                    <span className="text-xs font-normal text-gray-500 ml-1">
+                      (+{cs.team_bonus_total})
+                    </span>
+                  )}
                 </span>
 
                 <span className={`text-xs text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}>

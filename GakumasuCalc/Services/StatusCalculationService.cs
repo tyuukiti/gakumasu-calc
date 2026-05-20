@@ -46,7 +46,42 @@ public class StatusCalculationService
         }
 
         // Step 3.5: 追加イベントトリガー発火
-        var additionalGain = FireAdditionalTriggers(selectedCards, triggerCounters, uncapLevels, additionalCounts);
+        // - ユーザ指定の additionalCounts (テンプレート由来)
+        // - サポカの trigger_count_bonus 効果による動的加算 (例: ふわふわでもこもこ)
+        var mergedAdditional = additionalCounts != null
+            ? new Dictionary<string, int>(additionalCounts.ToDictionary())
+            : new Dictionary<string, int>();
+
+        var baseTriggerCounts = ComputeBaseTriggerCounts(plan, turnChoices);
+        var scalesLookup = new Dictionary<string, int>(baseTriggerCounts);
+        foreach (var kvp in mergedAdditional)
+        {
+            if (kvp.Value > 0)
+            {
+                scalesLookup[kvp.Key] = scalesLookup.GetValueOrDefault(kvp.Key) + kvp.Value;
+            }
+        }
+
+        foreach (var card in selectedCards)
+        {
+            var uncap = GetUncapLevel(card, uncapLevels);
+            foreach (var effect in card.Effects)
+            {
+                if (effect.ValueType != "trigger_count_bonus") continue;
+                if (string.IsNullOrEmpty(effect.TriggerTarget)) continue;
+                var perScale = effect.GetValue(uncap);
+                var scaleCount = !string.IsNullOrEmpty(effect.ScalesWith)
+                    ? scalesLookup.GetValueOrDefault(effect.ScalesWith)
+                    : 1;
+                double bonus = perScale * scaleCount;
+                if (effect.MaxCount.HasValue) bonus = Math.Min(bonus, effect.MaxCount.Value);
+                int bonusFires = (int)Math.Floor(bonus);
+                if (bonusFires <= 0) continue;
+                mergedAdditional[effect.TriggerTarget] = mergedAdditional.GetValueOrDefault(effect.TriggerTarget) + bonusFires;
+            }
+        }
+
+        var additionalGain = FireAdditionalTriggersFromDict(selectedCards, triggerCounters, uncapLevels, mergedAdditional);
         if (additionalGain.Vo != 0 || additionalGain.Da != 0 || additionalGain.Vi != 0)
         {
             accumulated = accumulated.Add(additionalGain);
@@ -253,19 +288,17 @@ public class StatusCalculationService
     }
 
     /// <summary>
-    /// 追加イベント回数テンプレートのトリガーを発火する。
+    /// 追加イベント回数テンプレート + trigger_count_bonus のトリガーを発火する。
     /// 週次処理で既に消費された max_count を考慮する。
     /// </summary>
-    private StatusValues FireAdditionalTriggers(
+    private StatusValues FireAdditionalTriggersFromDict(
         List<SupportCard> cards,
         Dictionary<string, int> triggerCounters,
         Dictionary<string, int>? uncapLevels,
-        AdditionalCounts? additionalCounts)
+        Dictionary<string, int> additionalCounts)
     {
-        if (additionalCounts == null) return StatusValues.Zero;
-
         var gain = StatusValues.Zero;
-        foreach (var kvp in additionalCounts.ToDictionary())
+        foreach (var kvp in additionalCounts)
         {
             if (kvp.Value <= 0) continue;
             for (int i = 0; i < kvp.Value; i++)
@@ -274,6 +307,62 @@ public class StatusCalculationService
             }
         }
         return gain;
+    }
+
+    /// <summary>
+    /// turnChoices + plan から「グローバルなトリガー発火回数」を導出する。
+    /// scales_with の参照先 (例: "da_sp_end") を解決するために使う。
+    /// </summary>
+    private static Dictionary<string, int> ComputeBaseTriggerCounts(
+        TrainingPlan plan,
+        List<TurnChoice> turnChoices)
+    {
+        var counts = new Dictionary<string, int>();
+        foreach (var tc in turnChoices)
+        {
+            var a = tc.ChosenAction;
+            if (a == ActionType.VoLesson || a == ActionType.DaLesson || a == ActionType.ViLesson)
+            {
+                var stat = a switch
+                {
+                    ActionType.VoLesson => "vo",
+                    ActionType.DaLesson => "da",
+                    _ => "vi"
+                };
+                counts[$"{stat}_sp_end"] = counts.GetValueOrDefault($"{stat}_sp_end") + 1;
+                counts[$"{stat}_lesson_end"] = counts.GetValueOrDefault($"{stat}_lesson_end") + 1;
+                counts["sp_end"] = counts.GetValueOrDefault("sp_end") + 1;
+                counts["lesson_end"] = counts.GetValueOrDefault("lesson_end") + 1;
+            }
+            else if (a == ActionType.VoClass || a == ActionType.DaClass || a == ActionType.ViClass)
+            {
+                counts["class_end"] = counts.GetValueOrDefault("class_end") + 1;
+            }
+            else if (a == ActionType.Outing)
+            {
+                counts["outing_end"] = counts.GetValueOrDefault("outing_end") + 1;
+            }
+            else if (a == ActionType.Consultation)
+            {
+                counts["consultation"] = counts.GetValueOrDefault("consultation") + 1;
+            }
+            else if (a == ActionType.SpecialTraining)
+            {
+                counts["special_training"] = counts.GetValueOrDefault("special_training") + 1;
+            }
+            else if (a == ActionType.ActivitySupply)
+            {
+                counts["activity_supply"] = counts.GetValueOrDefault("activity_supply") + 1;
+            }
+        }
+        foreach (var week in plan.Schedule)
+        {
+            if (week.IsFixedEvent)
+            {
+                counts["exam_end"] = counts.GetValueOrDefault("exam_end") + 1;
+            }
+        }
+        return counts;
     }
 
     /// <summary>

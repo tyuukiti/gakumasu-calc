@@ -145,11 +145,26 @@ def _update_item_effects_only(args):
             for card in cards:
                 name_to_info[card["name"]] = {"card": card, "file": filepath}
 
-    # 3. アイテム効果の比較・更新
+    # 3. アイテム効果の比較・更新 (1アイテム = 複数 effect の場合あり: stat上昇 + Pドリンク等)
     update_count = 0
     modified_files = set()
 
-    for card_name, item_eff in item_effects_map.items():
+    def _eff_key(e: dict) -> tuple:
+        """item effect 同一性判定キー。同 trigger かつ同 value_type かつ同 trigger_target なら同じ effect 扱い"""
+        return (
+            e.get("trigger"),
+            e.get("value_type"),
+            e.get("trigger_target"),  # trigger_count_bonus を区別
+        )
+
+    def _eff_label(e: dict) -> str:
+        """ログ用のラベル"""
+        v = e.get("values", [0])[-1]
+        if e.get("value_type") == "trigger_count_bonus":
+            return f"{e.get('value_type')} target={e.get('trigger_target')} scales={e.get('scales_with')} x{int(v)}"
+        return f"{e.get('trigger')} {e.get('stat')}+{int(v)}"
+
+    for card_name, item_effs in item_effects_map.items():
         norm_name = normalize_name(card_name)
         info = None
         for name, i in name_to_info.items():
@@ -159,23 +174,32 @@ def _update_item_effects_only(args):
         if info is None:
             continue
 
-        existing_item_effs = [
+        # trigger_count_bonus は常にアイテム由来なので source 属性が未設定でもマッチさせる
+        existing_item_relevant = [
             e for e in info["card"]["effects"]
-            if e.get("source") == "item"
+            if e.get("source") == "item" or e.get("value_type") == "trigger_count_bonus"
         ]
+        existing_by_key = {_eff_key(e): e for e in existing_item_relevant}
+        new_by_key = {_eff_key(e): e for e in item_effs}
 
-        if not existing_item_effs:
-            # 新規追加
-            info["card"]["effects"].append(item_eff)
+        # 追加: Wiki にあって既存に無い effect
+        for k, new_eff in new_by_key.items():
+            if k in existing_by_key:
+                continue
+            info["card"]["effects"].append(new_eff)
             modified_files.add(info["file"])
             update_count += 1
-            print(f"  + {info['card']['name']}: {item_eff['trigger']} {item_eff['stat']}+{int(item_eff['values'][0])}")
-        else:
-            # 既存アイテム効果の更新チェック
-            old = existing_item_effs[0]
+            print(f"  + {info['card']['name']}: {_eff_label(new_eff)}")
+
+        # 更新: 同 key の既存 effect の値が変わっていれば反映
+        for k, new_eff in new_by_key.items():
+            old = existing_by_key.get(k)
+            if old is None:
+                continue
             item_changed = False
-            for key in ("trigger", "stat", "values", "value_type", "condition", "max_count"):
-                new_val = item_eff.get(key)
+            for key in ("trigger", "stat", "values", "value_type", "condition", "max_count",
+                        "trigger_target", "scales_with"):
+                new_val = new_eff.get(key)
                 old_val = old.get(key)
                 if new_val != old_val:
                     if new_val is not None:
@@ -186,7 +210,7 @@ def _update_item_effects_only(args):
             if item_changed:
                 modified_files.add(info["file"])
                 update_count += 1
-                print(f"  ✓ {info['card']['name']}: {old['trigger']} {old['stat']}+{int(old['values'][0])}")
+                print(f"  ✓ {info['card']['name']}: {_eff_label(old)}")
 
     if update_count == 0:
         print("  変更なし")
@@ -348,11 +372,15 @@ def main():
                 card_tag = card_tag_map.get(normalize_name(entry.name), "none")
                 card = build_new_card(card_id, entry, detail, detail.get("abilities", []), tag=card_tag, debug=args.debug)
 
-                # アイテム効果をマージ
-                item_eff = item_effects_map.get(normalize_name(entry.name))
-                if item_eff:
+                # アイテム効果をマージ (複数 effect の場合あり)
+                item_effs = item_effects_map.get(normalize_name(entry.name), [])
+                for item_eff in item_effs:
                     card["effects"].append(item_eff)
-                    print(f"  + アイテム効果: {item_eff['trigger']} {item_eff['stat']}+{int(item_eff['values'][0])}")
+                    v = item_eff.get("values", [0])[-1]
+                    if item_eff.get("value_type") == "trigger_count_bonus":
+                        print(f"  + アイテム効果: {item_eff['value_type']} target={item_eff.get('trigger_target')} scales={item_eff.get('scales_with')} x{int(v)}")
+                    else:
+                        print(f"  + アイテム効果: {item_eff['trigger']} {item_eff['stat']}+{int(v)}")
 
                 if not card["effects"]:
                     print(f"  ⚠ effects が空です (アビリティ取得失敗)")
@@ -402,37 +430,52 @@ def main():
                 else:
                     print("  - テーブルなし")
 
-                # アイテム効果をマージ (source: item が未登録なら追加、既存なら更新)
-                item_eff = item_effects_map.get(normalize_name(entry.name))
-                if item_eff:
-                    existing_item_effs = [
+                # アイテム効果をマージ (1アイテム = 複数 effect の場合あり)
+                item_effs = item_effects_map.get(normalize_name(entry.name), [])
+                if item_effs:
+                    def _eff_key2(e: dict) -> tuple:
+                        return (e.get("trigger"), e.get("value_type"), e.get("trigger_target"))
+
+                    def _eff_label2(e: dict) -> str:
+                        v = e.get("values", [0])[-1]
+                        if e.get("value_type") == "trigger_count_bonus":
+                            return f"{e.get('value_type')} target={e.get('trigger_target')} scales={e.get('scales_with')} x{int(v)}"
+                        return f"{e.get('trigger')} {e.get('stat')}+{int(v)}"
+
+                    # trigger_count_bonus は常にアイテム由来なので source 属性が未設定でもマッチさせる
+                    existing_item_relevant = [
                         e for e in info["card"]["effects"]
-                        if e.get("source") == "item"
+                        if e.get("source") == "item" or e.get("value_type") == "trigger_count_bonus"
                     ]
-                    if not existing_item_effs:
-                        info["card"]["effects"].append(item_eff)
-                        modified_files.add(info["file"])
-                        print(f"  + アイテム効果: {item_eff['trigger']} {item_eff['stat']}+{int(item_eff['values'][0])}")
-                        if not value_updated:
-                            update_count += 1
-                    else:
-                        # 既存アイテム効果のトリガーや値が変わっていたら更新
-                        old = existing_item_effs[0]
-                        item_changed = False
-                        for key in ("trigger", "stat", "values", "value_type", "condition", "max_count"):
-                            new_val = item_eff.get(key)
-                            old_val = old.get(key)
-                            if new_val != old_val:
-                                if new_val is not None:
-                                    old[key] = new_val
-                                elif key in old:
-                                    del old[key]
-                                item_changed = True
-                        if item_changed:
+                    existing_by_key = {_eff_key2(e): e for e in existing_item_relevant}
+
+                    any_change = False
+                    for new_eff in item_effs:
+                        k = _eff_key2(new_eff)
+                        old = existing_by_key.get(k)
+                        if old is None:
+                            info["card"]["effects"].append(new_eff)
                             modified_files.add(info["file"])
-                            print(f"  ✓ アイテム効果更新: {old['trigger']} {old['stat']}+{int(old['values'][0])}")
-                            if not value_updated:
-                                update_count += 1
+                            print(f"  + アイテム効果: {_eff_label2(new_eff)}")
+                            any_change = True
+                        else:
+                            changed = False
+                            for key in ("trigger", "stat", "values", "value_type", "condition", "max_count",
+                                        "trigger_target", "scales_with"):
+                                new_val = new_eff.get(key)
+                                old_val = old.get(key)
+                                if new_val != old_val:
+                                    if new_val is not None:
+                                        old[key] = new_val
+                                    elif key in old:
+                                        del old[key]
+                                    changed = True
+                            if changed:
+                                modified_files.add(info["file"])
+                                print(f"  ✓ アイテム効果更新: {_eff_label2(old)}")
+                                any_change = True
+                    if any_change and not value_updated:
+                        update_count += 1
 
                 # 画像が未取得なら取得
                 if detail.get("image_url") and not _image_already_downloaded(entry.name, norm_image_mapping):

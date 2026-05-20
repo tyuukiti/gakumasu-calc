@@ -191,6 +191,14 @@ support_cards:
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: equip
+    stat: da
+    values: [1, 1, 1, 1, 1]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    scales_with: conserve_acquire
+    max_count: 2
+    source: item
 - id: SP_SR_0064
   name: ぐつぐつ、いいにおい♪
   rarity: SR
@@ -473,6 +481,14 @@ support_cards:
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: equip
+    stat: da
+    values: [1, 1, 1, 1, 1]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    scales_with: good_condition_acquire
+    max_count: 2
+    source: item
 - id: SP_SR_0056
   name: 腹筋で背筋で体幹キープ！
   rarity: SR
@@ -1107,6 +1123,14 @@ support_cards:
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: equip
+    stat: da
+    values: [1, 1, 1, 1, 1]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    scales_with: da_sp_end
+    max_count: 2
+    source: item
 - id: SP_SR_0037
   name: まだまだのばしてー
   rarity: SR
@@ -1135,6 +1159,14 @@ support_cards:
     stat: vi
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: equip
+    stat: da
+    values: [1, 1, 1, 1, 1]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    scales_with: vi_sp_end
+    max_count: 2
+    source: item
 - id: SP_SR_0036
   name: 基礎＞応用
   rarity: SR
@@ -1159,6 +1191,14 @@ support_cards:
     stat: vo
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: equip
+    stat: da
+    values: [1, 1, 1, 1, 1]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    scales_with: vo_sp_end
+    max_count: 2
+    source: item
 - id: SP_SR_0035
   name: カロリー/2でハッピー×2
   rarity: SR
@@ -2310,6 +2350,13 @@ support_cards:
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: equip
+    stat: da
+    values: [2, 2, 2, 2, 2]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    scales_with: da_sp_end
+    description: ふわふわでもこもこ (DaSP終了時にPドリンク2個)
 - id: SP_SR_0072
   name: パクパクもぐもぐ
   rarity: SR
