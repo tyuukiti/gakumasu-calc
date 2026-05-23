@@ -84,7 +84,7 @@ plan:
       type: "free"
       available_actions: ["outing", "activity_supply"]
 
-    # Day 9: 公開レッスン (メイン+80 / サブ+50)
+    # Day 9: 公開レッスン (メイン+80 / サブ+20)
     - week: 9
       type: "public_lesson"
       available_actions: ["vo_lesson", "da_lesson", "vi_lesson"]
@@ -95,7 +95,7 @@ plan:
           sp_bonus: { vo: 0, da: 80, vi: 0 }
         - type: "vi"
           sp_bonus: { vo: 0, da: 0, vi: 80 }
-      hif_sub_value: 50
+      hif_sub_value: 20
 
     # Day 10: 授業 (Vo/Da/Vi +150)
     - week: 10
