@@ -3,7 +3,7 @@ import { useAppStore } from '../stores/appStore';
 import { saveInventory, initializeFromCards, exportInventoryJson, importInventoryJson } from '../services/inventory';
 import { trackEvent, setUserProperties } from '../utils/analytics';
 import type { CardInventoryEntry } from '../types/inventory';
-import InventoryFilters from '../components/inventory/InventoryFilters';
+import InventoryFilters, { type InventorySortMode } from '../components/inventory/InventoryFilters';
 import CardTile from '../components/inventory/CardTile';
 import ImportExportPanel from '../components/inventory/ImportExportPanel';
 
@@ -21,6 +21,8 @@ export default function InventoryPage() {
   const [filterRarity, setFilterRarity] = useState('すべて');
   const [filterType, setFilterType] = useState('すべて');
   const [filterOwned, setFilterOwned] = useState('すべて');
+  const [sortMode, setSortMode] = useState<InventorySortMode>('default');
+  const [unownedLast, setUnownedLast] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
   // Initialize inventory from cards if needed
@@ -44,13 +46,30 @@ export default function InventoryPage() {
         return true;
       })
       .sort((a, b) => {
-        const r = (RARITY_ORDER[a.rarity] ?? 3) - (RARITY_ORDER[b.rarity] ?? 3);
-        if (r !== 0) return r;
-        const t = (TYPE_ORDER[a.type] ?? 3) - (TYPE_ORDER[b.type] ?? 3);
-        if (t !== 0) return t;
+        if (unownedLast) {
+          const oa = entryMap.get(a.id)?.owned ? 0 : 1;
+          const ob = entryMap.get(b.id)?.owned ? 0 : 1;
+          if (oa !== ob) return oa - ob;
+        }
+        const ra = RARITY_ORDER[a.rarity] ?? 3;
+        const rb = RARITY_ORDER[b.rarity] ?? 3;
+        const ua = entryMap.get(a.id)?.uncap ?? 4;
+        const ub = entryMap.get(b.id)?.uncap ?? 4;
+        if (sortMode === 'uncap') {
+          if (ua !== ub) return ub - ua;
+          if (ra !== rb) return ra - rb;
+        } else if (sortMode === 'rarity') {
+          if (ra !== rb) return ra - rb;
+          if (ua !== ub) return ub - ua;
+        } else {
+          if (ra !== rb) return ra - rb;
+          const ta = TYPE_ORDER[a.type] ?? 3;
+          const tb = TYPE_ORDER[b.type] ?? 3;
+          if (ta !== tb) return ta - tb;
+        }
         return cardIdNumber(b.id) - cardIdNumber(a.id);
       });
-  }, [cards, filterText, filterRarity, filterType, filterOwned, entryMap]);
+  }, [cards, filterText, filterRarity, filterType, filterOwned, entryMap, sortMode, unownedLast]);
 
   const syncUserProperties = useCallback((updated: CardInventoryEntry[]) => {
     const owned = updated.filter(e => e.owned);
@@ -138,6 +157,8 @@ export default function InventoryPage() {
         filterRarity={filterRarity} setFilterRarity={setFilterRarity}
         filterType={filterType} setFilterType={setFilterType}
         filterOwned={filterOwned} setFilterOwned={setFilterOwned}
+        sortMode={sortMode} setSortMode={setSortMode}
+        unownedLast={unownedLast} setUnownedLast={setUnownedLast}
       />
 
       <div className="flex items-center justify-between mb-3">

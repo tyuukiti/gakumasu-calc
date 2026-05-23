@@ -1,3 +1,5 @@
+export type InventorySortMode = 'default' | 'rarity' | 'uncap';
+
 interface Props {
   filterText: string;
   setFilterText: (v: string) => void;
@@ -7,6 +9,10 @@ interface Props {
   setFilterType: (v: string) => void;
   filterOwned: string;
   setFilterOwned: (v: string) => void;
+  sortMode: InventorySortMode;
+  setSortMode: (v: InventorySortMode) => void;
+  unownedLast: boolean;
+  setUnownedLast: (v: boolean) => void;
 }
 
 export default function InventoryFilters({
@@ -14,6 +20,8 @@ export default function InventoryFilters({
   filterRarity, setFilterRarity,
   filterType, setFilterType,
   filterOwned, setFilterOwned,
+  sortMode, setSortMode,
+  unownedLast, setUnownedLast,
 }: Props) {
   const selectClass = 'border rounded px-2 py-1 text-sm';
   return (
@@ -49,6 +57,23 @@ export default function InventoryFilters({
           <option value="所持">所持</option>
           <option value="未所持">未所持</option>
         </select>
+      </label>
+      <label className="flex items-center gap-1 text-sm text-gray-500">
+        並び順
+        <select value={sortMode} onChange={e => setSortMode(e.target.value as InventorySortMode)} className={selectClass}>
+          <option value="default">デフォルト</option>
+          <option value="rarity">レアリティ</option>
+          <option value="uncap">上限解放数</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-1 text-sm text-gray-500">
+        <input
+          type="checkbox"
+          checked={unownedLast}
+          onChange={e => setUnownedLast(e.target.checked)}
+          className="w-4 h-4"
+        />
+        未所持を後ろに
       </label>
     </div>
   );
