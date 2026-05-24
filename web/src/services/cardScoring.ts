@@ -149,6 +149,7 @@ export function countTriggers(
   plan: TrainingPlan,
   lessonAllocation: Record<string, number>,
   _mainStats: string[],
+  turnChoices?: TurnChoice[],
 ): Record<string, number> {
   const counts: Record<string, number> = {};
 
@@ -170,12 +171,37 @@ export function countTriggers(
     counts[`${key}_lesson_end`] = value;
   }
 
+  // 試験イベント数はスケジュールから確定
   for (const week of plan.schedule) {
     if (isFixedEvent(week)) {
       counts['exam_end'] = (counts['exam_end'] ?? 0) + 1;
-      continue;
     }
+  }
 
+  // HIFモード等、ユーザがターン選択を明示している場合は実選択ベースで集計する。
+  // available_actions の優先度ベースだと「Day を 活動支給→お出かけ に変えても活動支給回数が減らない」
+  // という不整合が起きるため。
+  if (turnChoices != null) {
+    for (const tc of turnChoices) {
+      const a = tc.chosen_action as string;
+      if (a === 'vo_lesson' || a === 'da_lesson' || a === 'vi_lesson') continue;
+      if (a === 'vo_class' || a === 'da_class' || a === 'vi_class') {
+        counts['class_end'] = (counts['class_end'] ?? 0) + 1;
+      } else if (a === 'outing') {
+        counts['outing_end'] = (counts['outing_end'] ?? 0) + 1;
+      } else if (a === 'consultation') {
+        counts['consultation'] = (counts['consultation'] ?? 0) + 1;
+      } else if (a === 'activity_supply') {
+        counts['activity_supply'] = (counts['activity_supply'] ?? 0) + 1;
+      } else if (a === 'special_training') {
+        counts['special_training'] = (counts['special_training'] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }
+
+  for (const week of plan.schedule) {
+    if (isFixedEvent(week)) continue;
     if (week.lessons.length > 0) continue;
 
     const actions = week.available_actions;
@@ -1080,7 +1106,7 @@ export function selectOptimalDeck(
   turnChoicesOverride?: TurnChoice[],
 ): DeckResult {
   const statCap = plan.status_limit;
-  const triggerCounts = countTriggers(plan, lessonAllocation, mainStats);
+  const triggerCounts = countTriggers(plan, lessonAllocation, mainStats, turnChoicesOverride);
 
   if (additionalCounts != null) {
     const addRec = additionalCountsToRecord(additionalCounts);

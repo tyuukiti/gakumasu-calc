@@ -68,7 +68,7 @@ public class CardScoringService
         List<TurnChoice>? turnChoicesOverride = null)
     {
         var statCap = plan.StatusLimit;
-        var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats);
+        var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats, turnChoicesOverride);
 
         if (additionalCounts != null)
         {
@@ -1482,7 +1482,8 @@ public class CardScoringService
     private Dictionary<string, int> CountTriggers(
         TrainingPlan plan,
         Dictionary<string, int> lessonAllocation,
-        List<string> mainStats)
+        List<string> mainStats,
+        List<TurnChoice>? turnChoices = null)
     {
         var counts = new Dictionary<string, int>();
 
@@ -1503,16 +1504,52 @@ public class CardScoringService
             counts[$"{kvp.Key}_lesson_end"] = kvp.Value;    // vo_lesson_end, da_lesson_end, vi_lesson_end
         }
 
+        // 試験イベント数はスケジュールから確定
         foreach (var week in plan.Schedule)
         {
             if (week.IsFixedEvent)
-            {
                 counts["exam_end"] = counts.GetValueOrDefault("exam_end") + 1;
-                continue;
-            }
+        }
 
-            if (week.Lessons.Count > 0)
-                continue;
+        // HIFモード等、ユーザがターン選択を明示している場合は実選択ベースで集計する。
+        // available_actions の優先度ベースだと「Day を 活動支給→お出かけ に変えても活動支給回数が減らない」
+        // という不整合が起きるため。
+        if (turnChoices != null)
+        {
+            foreach (var tc in turnChoices)
+            {
+                switch (tc.ChosenAction)
+                {
+                    case ActionType.VoLesson:
+                    case ActionType.DaLesson:
+                    case ActionType.ViLesson:
+                        break;
+                    case ActionType.VoClass:
+                    case ActionType.DaClass:
+                    case ActionType.ViClass:
+                        counts["class_end"] = counts.GetValueOrDefault("class_end") + 1;
+                        break;
+                    case ActionType.Outing:
+                        counts["outing_end"] = counts.GetValueOrDefault("outing_end") + 1;
+                        break;
+                    case ActionType.Consultation:
+                        counts["consultation"] = counts.GetValueOrDefault("consultation") + 1;
+                        break;
+                    case ActionType.ActivitySupply:
+                        counts["activity_supply"] = counts.GetValueOrDefault("activity_supply") + 1;
+                        break;
+                    case ActionType.SpecialTraining:
+                        counts["special_training"] = counts.GetValueOrDefault("special_training") + 1;
+                        break;
+                }
+            }
+            return counts;
+        }
+
+        foreach (var week in plan.Schedule)
+        {
+            if (week.IsFixedEvent) continue;
+            if (week.Lessons.Count > 0) continue;
 
             var actions = week.AvailableActions;
             if (actions.Contains("activity_supply"))
