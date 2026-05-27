@@ -8,9 +8,9 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>学マス育成計算ツール</AssemblyName>
     <ApplicationIcon>..\favicon.ico</ApplicationIcon>
-    <Version>2.2.1</Version>
-    <AssemblyVersion>2.2.1.0</AssemblyVersion>
-    <FileVersion>2.2.1.0</FileVersion>
+    <Version>2.2.2</Version>
+    <AssemblyVersion>2.2.2.0</AssemblyVersion>
+    <FileVersion>2.2.2.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
