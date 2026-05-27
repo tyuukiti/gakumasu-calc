@@ -331,7 +331,10 @@ def parse_detail_page(url: str, debug: bool = False) -> dict | None:
     for i, line in enumerate(lines):
         if line == "タイプ" or line == "レッスンサポート":
             for j in range(i + 1, min(i + 4, len(lines))):
-                if "ボーカル" in lines[j]:
+                if "アシスト" in lines[j]:
+                    result["type"] = "as"
+                    break
+                elif "ボーカル" in lines[j]:
                     result["type"] = "vo"
                     break
                 elif "ダンス" in lines[j]:

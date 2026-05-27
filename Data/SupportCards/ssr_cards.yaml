@@ -3099,12 +3099,12 @@ support_cards:
 - id: SP_SSR_0100
   name: 私たちも成長していくぞ！
   rarity: SSR
-  type: vo
+  type: as
   plan: free
   tag: produce_item
   effects:
   - trigger: equip
-    stat: vo
+    stat: all
     values: [22.5, 24, 25, 26.5, 28]
     value_type: sp_rate
   - trigger: activity_supply

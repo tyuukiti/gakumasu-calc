@@ -34,10 +34,15 @@ def classify_ability(name: str) -> tuple[str | None, str]:
 
 
 def detect_stat(name: str, default: str) -> str:
-    """アビリティ名からステータス種別を判定"""
-    for s, kw in [("vo", "ボーカル"), ("da", "ダンス"), ("vi", "ビジュアル")]:
-        if kw in name:
-            return s
+    """アビリティ名からステータス種別を判定。
+    「ボーカル・ダンス・ビジュアルすべて」のように複数属性を含むか
+    「すべて」「全て」が現れる場合は "all" を返す。
+    """
+    found = [s for s, kw in [("vo", "ボーカル"), ("da", "ダンス"), ("vi", "ビジュアル")] if kw in name]
+    if len(found) >= 3 or (found and ("すべて" in name or "全て" in name)):
+        return "all"
+    if found:
+        return found[0]
     return default
 
 
@@ -153,11 +158,8 @@ def classify_and_match(
         if values is None:
             continue
 
-        stat = None
-        for s, kw in [("vo", "ボーカル"), ("da", "ダンス"), ("vi", "ビジュアル")]:
-            if kw in name:
-                stat = s
-                break
+        detected = detect_stat(name, "")
+        stat = detected or None
 
         target_trigger, target_vtype = classify_ability(name)
         if target_trigger is None:
