@@ -58,12 +58,37 @@ jobs:
         shell: pwsh
         run: .\build-release.ps1 -Version ${{ steps.meta.outputs.version }}
 
+      - name: Compose Release body (append Download section)
+        id: body
+        shell: pwsh
+        run: |
+          $version  = "${{ steps.meta.outputs.version }}"
+          $repo     = "${{ github.repository }}"
+          $owner    = "${{ github.repository_owner }}"
+          $repoName = ($repo -split '/')[-1]
+
+          $body = Get-Content "${{ steps.meta.outputs.notes }}" -Raw
+          $download = @(
+            "",
+            "## Download",
+            "",
+            "| | ファイル | 備考 |",
+            "|---|---|---|",
+            "| 📦 | [GakumasuCalc-v$version-dotnet-required.zip](https://github.com/$repo/releases/download/$version/GakumasuCalc-v$version-dotnet-required.zip) | .NET 10.0 ランタイムが必要 |",
+            "| 📦 | [GakumasuCalc-v$version-win-x64.zip](https://github.com/$repo/releases/download/$version/GakumasuCalc-v$version-win-x64.zip) | ランタイム同梱（インストール不要） |",
+            "| 🌐 | [Web版](https://$owner.github.io/$repoName/) | ブラウザで利用可能 |"
+          ) -join "`n"
+
+          $out = "release_body.md"
+          ($body.TrimEnd() + "`n" + $download + "`n") | Set-Content -Path $out -Encoding UTF8
+          "path=$out" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.version }}
           name: ${{ steps.meta.outputs.version }}
-          body_path: ${{ steps.meta.outputs.notes }}
+          body_path: ${{ steps.body.outputs.path }}
           draft: ${{ github.event_name == 'workflow_dispatch' }}
           files: |
             ${{ steps.meta.outputs.sc_zip }}
