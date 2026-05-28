@@ -1,0 +1,70 @@
+name: Build and Publish Release
+
+on:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'バージョン (例: 2.2.4)。releases/release_vXXX.md を読み込む。常に draft Release として作成。'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version and release notes path
+        id: meta
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
+            $version = "${{ inputs.version }}"
+          } else {
+            $version = "${{ github.ref_name }}"
+          }
+          if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+            Write-Error "Invalid version format: $version (expected: X.Y.Z)"
+            exit 1
+          }
+          $compact = $version -replace '\.', ''
+          $notes = "releases/release_v$compact.md"
+          if (-not (Test-Path $notes)) {
+            Write-Error "Release notes file not found: $notes"
+            exit 1
+          }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "notes=$notes"     | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "sc_zip=release/GakumasuCalc-v$version-win-x64.zip"          | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "fd_zip=release/GakumasuCalc-v$version-dotnet-required.zip"  | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Build release ZIPs
+        shell: pwsh
+        run: .\build-release.ps1 -Version ${{ steps.meta.outputs.version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.version }}
+          name: ${{ steps.meta.outputs.version }}
+          body_path: ${{ steps.meta.outputs.notes }}
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          files: |
+            ${{ steps.meta.outputs.sc_zip }}
+            ${{ steps.meta.outputs.fd_zip }}
