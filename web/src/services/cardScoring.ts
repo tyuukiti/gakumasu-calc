@@ -320,6 +320,20 @@ export function calculateLessonStatTotals(
     }
   }
 
+  // HIFモードの選抜試験 (基礎値+配分値) もパラボ対象になるので加算する。
+  // buildPlanAndChoices で audition の status_gain には既に base+alloc が反映されている。
+  for (const w of plan.schedule) {
+    if (
+      w.type === 'audition' &&
+      (w.hif_exam_base != null || w.hif_exam_distributed != null) &&
+      w.status_gain != null
+    ) {
+      vo += w.status_gain.vo;
+      da += w.status_gain.da;
+      vi += w.status_gain.vi;
+    }
+  }
+
   return sv(vo, da, vi);
 }
 

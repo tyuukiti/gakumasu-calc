@@ -219,7 +219,14 @@ function calculateWeekGain(
     week.type === 'fixed_event' || week.type === 'exam' || week.type === 'audition';
 
   if (isFixedEvent) {
-    const fixedGain = week.status_gain ? svClone(week.status_gain) : svZero();
+    let fixedGain = week.status_gain ? svClone(week.status_gain) : svZero();
+    // HIFモードの選抜試験(基礎値+配分値)はゲーム内挙動と同じくパラメータボーナスを適用する
+    const isHifExam =
+      week.type === 'audition' &&
+      (week.hif_exam_base != null || week.hif_exam_distributed != null);
+    if (isHifExam) {
+      fixedGain = applyParaBonus(fixedGain, cards, uncapLevels, character, memoryBonuses);
+    }
     const examTriggerGain = fireTrigger('exam_end', cards, triggerCounters, uncapLevels);
     return svAdd(fixedGain, examTriggerGain);
   }
@@ -256,6 +263,78 @@ function calculateWeekGain(
   }
 }
 
+/**
+ * サポカ/キャラ/持ち込みメモリーの para_bonus% を Vo/Da/Vi 別に合算して返す。
+ */
+function sumParaBonusPercent(
+  cards: SupportCard[],
+  uncapLevels: Record<string, number> | undefined,
+  character: Character | null | undefined,
+  memoryBonuses: MemoryBonus[] | null | undefined,
+): StatusValues {
+  let vo = 0,
+    da = 0,
+    vi = 0;
+
+  for (const card of cards) {
+    const uncap = getUncapLevel(card, uncapLevels);
+    for (const e of card.effects) {
+      if (e.trigger === 'equip' && e.value_type === 'para_bonus') {
+        const val = getEffectValue(e, uncap);
+        switch (e.stat) {
+          case 'vo':
+            vo += val;
+            break;
+          case 'da':
+            da += val;
+            break;
+          case 'vi':
+            vi += val;
+            break;
+          case 'all':
+            vo += val;
+            da += val;
+            vi += val;
+            break;
+        }
+      }
+    }
+  }
+
+  if (character != null) {
+    vo += character.para_bonus.vo;
+    da += character.para_bonus.da;
+    vi += character.para_bonus.vi;
+  }
+
+  if (memoryBonuses != null) {
+    const memPara = sumMemoryParaBonus(memoryBonuses);
+    vo += memPara.vo;
+    da += memPara.da;
+    vi += memPara.vi;
+  }
+
+  return { vo, da, vi };
+}
+
+/**
+ * 獲得パラメータ raw に para_bonus% を適用 (Math.floor 切り捨て)。
+ */
+function applyParaBonus(
+  raw: StatusValues,
+  cards: SupportCard[],
+  uncapLevels: Record<string, number> | undefined,
+  character: Character | null | undefined,
+  memoryBonuses: MemoryBonus[] | null | undefined,
+): StatusValues {
+  const p = sumParaBonusPercent(cards, uncapLevels, character, memoryBonuses);
+  return {
+    vo: Math.floor(raw.vo * (1.0 + p.vo / 100.0)),
+    da: Math.floor(raw.da * (1.0 + p.da / 100.0)),
+    vi: Math.floor(raw.vi * (1.0 + p.vi / 100.0)),
+  };
+}
+
 function calculateLessonGain(
   week: WeekSchedule,
   lessonType: string,
@@ -270,59 +349,13 @@ function calculateLessonGain(
     return svZero();
   }
 
-  const raw = lesson.sp_bonus;
-
-  // Collect para_bonus% per stat
-  let paraBonusVo = 0,
-    paraBonusDa = 0,
-    paraBonusVi = 0;
-
-  for (const card of cards) {
-    const uncap = getUncapLevel(card, uncapLevels);
-    for (const e of card.effects) {
-      if (e.trigger === 'equip' && e.value_type === 'para_bonus') {
-        const val = getEffectValue(e, uncap);
-        switch (e.stat) {
-          case 'vo':
-            paraBonusVo += val;
-            break;
-          case 'da':
-            paraBonusDa += val;
-            break;
-          case 'vi':
-            paraBonusVi += val;
-            break;
-          case 'all':
-            paraBonusVo += val;
-            paraBonusDa += val;
-            paraBonusVi += val;
-            break;
-        }
-      }
-    }
-  }
-
-  // Add character para_bonus on the same level as support cards
-  if (character != null) {
-    paraBonusVo += character.para_bonus.vo;
-    paraBonusDa += character.para_bonus.da;
-    paraBonusVi += character.para_bonus.vi;
-  }
-
-  // 持ち込みメモリーの para_bonus 種別もサポカ・キャラと同列に加算
-  if (memoryBonuses != null) {
-    const memPara = sumMemoryParaBonus(memoryBonuses);
-    paraBonusVo += memPara.vo;
-    paraBonusDa += memPara.da;
-    paraBonusVi += memPara.vi;
-  }
-
-  // Apply para bonus to each stat
-  const vo = Math.floor(raw.vo * (1.0 + paraBonusVo / 100.0));
-  const da = Math.floor(raw.da * (1.0 + paraBonusDa / 100.0));
-  const vi = Math.floor(raw.vi * (1.0 + paraBonusVi / 100.0));
-
-  let result: StatusValues = { vo, da, vi };
+  let result: StatusValues = applyParaBonus(
+    lesson.sp_bonus,
+    cards,
+    uncapLevels,
+    character,
+    memoryBonuses,
+  );
 
   // SP end trigger (generic)
   const spEndGain = fireTrigger('sp_end', cards, triggerCounters, uncapLevels);

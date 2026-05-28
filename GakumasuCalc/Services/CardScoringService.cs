@@ -1618,6 +1618,20 @@ public class CardScoringService
             }
         }
 
+        // HIFモードの選抜試験 (基礎値+配分値) もパラボ対象になるので加算する。
+        // BuildPlanAndChoices で audition の StatusGain には既に base+alloc が反映されている。
+        foreach (var w in plan.Schedule)
+        {
+            if (w.Type == "audition"
+                && (w.HifExamBase != null || w.HifExamDistributed != null)
+                && w.StatusGain != null)
+            {
+                vo += w.StatusGain.Vo;
+                da += w.StatusGain.Da;
+                vi += w.StatusGain.Vi;
+            }
+        }
+
         return new StatusValues(vo, da, vi);
     }
 

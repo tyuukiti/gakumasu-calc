@@ -130,6 +130,13 @@ public class StatusCalculationService
         if (week.IsFixedEvent)
         {
             var fixedGain = week.StatusGain?.Clone() ?? StatusValues.Zero;
+            // HIFモードの選抜試験(基礎値+配分値)はゲーム内挙動と同じくパラメータボーナスを適用する
+            bool isHifExam = week.Type == "audition"
+                && (week.HifExamBase != null || week.HifExamDistributed != null);
+            if (isHifExam)
+            {
+                fixedGain = ApplyParaBonus(fixedGain, cards, uncapLevels, character, memoryBonuses);
+            }
             // 試験・オーディション終了時トリガー
             var examTriggerGain = FireTrigger("exam_end", cards, triggerCounters, uncapLevels);
             return fixedGain.Add(examTriggerGain);
@@ -157,6 +164,68 @@ public class StatusCalculationService
         return gain;
     }
 
+    /// <summary>
+    /// サポカ/キャラ/持ち込みメモリーの para_bonus% を Vo/Da/Vi 別に合算して返す。
+    /// </summary>
+    private (double Vo, double Da, double Vi) SumParaBonusPercent(
+        List<SupportCard> cards,
+        Dictionary<string, int>? uncapLevels,
+        Character? character,
+        IReadOnlyList<MemoryBonus>? memoryBonuses)
+    {
+        double vo = 0, da = 0, vi = 0;
+        foreach (var card in cards)
+        {
+            var uncap = GetUncapLevel(card, uncapLevels);
+            foreach (var e in card.Effects.Where(e => e.Trigger == "equip" && e.ValueType == "para_bonus"))
+            {
+                var val = e.GetValue(uncap);
+                switch (e.Stat)
+                {
+                    case "vo": vo += val; break;
+                    case "da": da += val; break;
+                    case "vi": vi += val; break;
+                    case "all":
+                        vo += val;
+                        da += val;
+                        vi += val;
+                        break;
+                }
+            }
+        }
+        if (character != null)
+        {
+            vo += character.ParaBonus.Vo;
+            da += character.ParaBonus.Da;
+            vi += character.ParaBonus.Vi;
+        }
+        if (memoryBonuses != null)
+        {
+            var memPara = MemoryBonus.SumParaBonus(memoryBonuses);
+            vo += memPara.Vo;
+            da += memPara.Da;
+            vi += memPara.Vi;
+        }
+        return (vo, da, vi);
+    }
+
+    /// <summary>
+    /// 獲得パラメータ raw に para_bonus% を適用 (Math.Floor 切り捨て)。
+    /// </summary>
+    private StatusValues ApplyParaBonus(
+        StatusValues raw,
+        List<SupportCard> cards,
+        Dictionary<string, int>? uncapLevels,
+        Character? character,
+        IReadOnlyList<MemoryBonus>? memoryBonuses)
+    {
+        var (pVo, pDa, pVi) = SumParaBonusPercent(cards, uncapLevels, character, memoryBonuses);
+        return new StatusValues(
+            (int)Math.Floor(raw.Vo * (1.0 + pVo / 100.0)),
+            (int)Math.Floor(raw.Da * (1.0 + pDa / 100.0)),
+            (int)Math.Floor(raw.Vi * (1.0 + pVi / 100.0)));
+    }
+
     private StatusValues CalculateLessonGain(
         WeekSchedule week, string lessonType, List<SupportCard> cards,
         Dictionary<string, int> triggerCounters, Dictionary<string, int>? uncapLevels,
@@ -166,53 +235,8 @@ public class StatusCalculationService
         if (lesson == null)
             return StatusValues.Zero;
 
-        var raw = lesson.SpBonus;
-
-        // パラメータボーナス% を属性別に集計
-        double paraBonusVo = 0, paraBonusDa = 0, paraBonusVi = 0;
-        foreach (var card in cards)
-        {
-            var uncap = GetUncapLevel(card, uncapLevels);
-            foreach (var e in card.Effects.Where(e => e.Trigger == "equip" && e.ValueType == "para_bonus"))
-            {
-                var val = e.GetValue(uncap);
-                switch (e.Stat)
-                {
-                    case "vo": paraBonusVo += val; break;
-                    case "da": paraBonusDa += val; break;
-                    case "vi": paraBonusVi += val; break;
-                    case "all":
-                        paraBonusVo += val;
-                        paraBonusDa += val;
-                        paraBonusVi += val;
-                        break;
-                }
-            }
-        }
-
-        // キャラ固有パラボもサポカと同列に加算
-        if (character != null)
-        {
-            paraBonusVo += character.ParaBonus.Vo;
-            paraBonusDa += character.ParaBonus.Da;
-            paraBonusVi += character.ParaBonus.Vi;
-        }
-
-        // 持ち込みメモリーの para_bonus 種別もサポカ・キャラと同列に加算
-        if (memoryBonuses != null)
-        {
-            var memPara = MemoryBonus.SumParaBonus(memoryBonuses);
-            paraBonusVo += memPara.Vo;
-            paraBonusDa += memPara.Da;
-            paraBonusVi += memPara.Vi;
-        }
-
         // 各属性のパラボは該当属性のレッスン上昇値にのみ適用
-        int vo = (int)Math.Floor(raw.Vo * (1.0 + paraBonusVo / 100.0));
-        int da = (int)Math.Floor(raw.Da * (1.0 + paraBonusDa / 100.0));
-        int vi = (int)Math.Floor(raw.Vi * (1.0 + paraBonusVi / 100.0));
-
-        var result = new StatusValues(vo, da, vi);
+        var result = ApplyParaBonus(lesson.SpBonus, cards, uncapLevels, character, memoryBonuses);
 
         // SP終了時トリガー (汎用)
         var spEndGain = FireTrigger("sp_end", cards, triggerCounters, uncapLevels);
