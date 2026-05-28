@@ -86,7 +86,8 @@ function Reorganize-Runtime($StageDir) {
 
     # Pythonスクリプトでdeps.json/runtimeconfig.jsonをパッチ
     $patchScript = Join-Path $RepoRoot "scripts\patch-deps-json.py"
-    python3 $patchScript $StageDir
+    $pythonCmd = if (Get-Command python3 -ErrorAction SilentlyContinue) { 'python3' } else { 'python' }
+    & $pythonCmd $patchScript $StageDir
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Failed to patch JSON files" -ForegroundColor Red
         exit 1
