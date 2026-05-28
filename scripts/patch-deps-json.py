@@ -4,6 +4,9 @@ import glob
 import os
 import sys
 
+# CI ランナー等で stdout が cp1252 等になっていても日本語ファイル名を print できるようにする
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 stage_dir = sys.argv[1]
 
 # deps.json をパッチ
