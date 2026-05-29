@@ -992,10 +992,16 @@ function recomputeBreakdownsDeckAware(
   lessonStatTotals: StatusValues,
   uncapLevels: Record<string, number> | undefined,
 ): void {
+  // レンタル枠は所持凸数に依らず常に4凸として評価する
+  const effectiveUncapLevels: Record<string, number> = { ...(uncapLevels ?? {}) };
+  for (const cs of selected) {
+    if (cs.is_rental) effectiveUncapLevels[cs.card.id] = 4;
+  }
+
   // 1. デッキ内 producer の trigger_count_bonus 集計
   const deckBonuses: Record<string, number> = {};
   for (const cs of selected) {
-    const uncap = getUncapLevel(cs.card, uncapLevels);
+    const uncap = getUncapLevel(cs.card, effectiveUncapLevels);
     for (const effect of cs.card.effects) {
       if (effect.value_type !== 'trigger_count_bonus') continue;
       const target = effect.trigger_target;
@@ -1020,7 +1026,7 @@ function recomputeBreakdownsDeckAware(
 
   // 3. デッキ内カードのみで triggerBonusInfo を計算 (parens 表示が実デッキ反映に)
   const deckCards = selected.map((cs) => cs.card);
-  const deckTriggerBonusInfo = computeTriggerBonusInfo(deckCards, uncapLevels);
+  const deckTriggerBonusInfo = computeTriggerBonusInfo(deckCards, effectiveUncapLevels);
 
   // 4. 各 selected card を再計算 (skipTriggerBonusSelfContribution=true)
   for (let i = 0; i < selected.length; i++) {
@@ -1030,7 +1036,7 @@ function recomputeBreakdownsDeckAware(
       adjustedCounts,
       lessonAllocation,
       lessonStatTotals,
-      uncapLevels,
+      effectiveUncapLevels,
       deckTriggerBonusInfo,
       true,
     );
