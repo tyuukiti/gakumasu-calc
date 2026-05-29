@@ -562,15 +562,22 @@ public class CardScoringService
                 if (ownedIsProtectedNonSp) continue;
 
                 var ownedType = ownedCard.Card.Type;
+                string? ownedSpStat = ownedIsProtectedSp
+                    ? ownedCard.Card.Effects.FirstOrDefault(e => e.Trigger == "equip" && e.ValueType == "sp_rate")?.Stat
+                    : null;
 
                 foreach (var candidate in candidates)
                 {
                     if (selected.Any(c => c.Card.Id == candidate.Card.Id)) continue;
 
-                    // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
-                    if (ownedIsProtectedSp
-                        && !candidate.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"))
-                        continue;
+                    // SP率で保護されたカードは、同じ属性のSP率を持つ候補とのみ交換可能
+                    // (ユーザ指定の spCounts 分布を PostOptimize で崩さないため)
+                    if (ownedIsProtectedSp)
+                    {
+                        var candStat = candidate.Card.Effects.FirstOrDefault(
+                            e => e.Trigger == "equip" && e.ValueType == "sp_rate")?.Stat;
+                        if (candStat == null || candStat != ownedSpStat) continue;
+                    }
 
                     var testCards = new List<SupportCard>(currentCards);
                     int idx = testCards.IndexOf(ownedCard.Card);
