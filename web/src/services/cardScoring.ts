@@ -761,6 +761,8 @@ function postOptimize(
 
       const hasSpRate = (card: SupportCard) =>
         card.effects.some((e) => e.trigger === 'equip' && e.value_type === 'sp_rate');
+      const getSpRateStat = (card: SupportCard): string | undefined =>
+        card.effects.find((e) => e.trigger === 'equip' && e.value_type === 'sp_rate')?.stat;
       const ownedIsProtectedSp =
         protectedIds.has(ownedCard.card.id) && hasSpRate(ownedCard.card);
       const ownedIsProtectedNonSp =
@@ -769,12 +771,17 @@ function postOptimize(
       if (ownedIsProtectedNonSp) continue;
 
       const ownedType = ownedCard.card.type;
+      const ownedSpStat = ownedIsProtectedSp ? getSpRateStat(ownedCard.card) : undefined;
 
       for (const candidate of candidates) {
         if (selected.some((c) => c.card.id === candidate.card.id)) continue;
 
-        // SP率で保護されたカードは、SP率持ちの候補とのみ交換可能
-        if (ownedIsProtectedSp && !hasSpRate(candidate.card)) continue;
+        // SP率で保護されたカードは、同じ属性のSP率を持つ候補とのみ交換可能
+        // (ユーザ指定の spCounts 分布を postOptimize で崩さないため)
+        if (ownedIsProtectedSp) {
+          const candStat = getSpRateStat(candidate.card);
+          if (candStat == null || candStat !== ownedSpStat) continue;
+        }
 
         const testCards = [...currentCards];
         testCards[si] = candidate.card;
