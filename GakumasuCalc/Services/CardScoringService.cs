@@ -1344,11 +1344,20 @@ public class CardScoringService
         StatusValues lessonStatTotals,
         Dictionary<string, int>? uncapLevels)
     {
+        // レンタル枠は所持凸数に依らず常に4凸として評価する
+        var effectiveUncapLevels = uncapLevels != null
+            ? new Dictionary<string, int>(uncapLevels)
+            : new Dictionary<string, int>();
+        foreach (var cs in selected)
+        {
+            if (cs.IsRental) effectiveUncapLevels[cs.Card.Id] = 4;
+        }
+
         // 1. デッキ内 producer の trigger_count_bonus 集計
         var deckBonuses = new Dictionary<string, int>();
         foreach (var cs in selected)
         {
-            int uncap = StatusCalculationService.GetUncapLevel(cs.Card, uncapLevels);
+            int uncap = StatusCalculationService.GetUncapLevel(cs.Card, effectiveUncapLevels);
             foreach (var effect in cs.Card.Effects)
             {
                 if (effect.ValueType != "trigger_count_bonus") continue;
@@ -1378,7 +1387,7 @@ public class CardScoringService
 
         // 3. デッキ内カードのみで TriggerBonusInfo を計算
         var deckCards = selected.Select(cs => cs.Card).ToList();
-        var deckTriggerBonusInfo = ComputeTriggerBonusInfo(deckCards, uncapLevels);
+        var deckTriggerBonusInfo = ComputeTriggerBonusInfo(deckCards, effectiveUncapLevels);
 
         // 4. 各 selected card を再計算 (skipTriggerBonusSelfContribution=true)
         for (int i = 0; i < selected.Count; i++)
@@ -1389,7 +1398,7 @@ public class CardScoringService
                 adjustedCounts,
                 lessonAllocation,
                 lessonStatTotals,
-                uncapLevels,
+                effectiveUncapLevels,
                 deckTriggerBonusInfo,
                 skipTriggerBonusSelfContribution: true);
             recomputed.IsRental = cs.IsRental;
