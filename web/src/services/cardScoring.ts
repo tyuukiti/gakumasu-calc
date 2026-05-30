@@ -16,6 +16,15 @@ import { sv } from '../utils/statusValues';
 import { getUncapLevel, getEffectValue, calculate, getEventParamBoostPercent } from './statusCalculation';
 import { DEFAULT_STAT_CAP } from '../utils/constants';
 
+/**
+ * overflow罰則オプション。指定された場合、合計overflow が threshold を超えた時のみ
+ * × 2 罰則を適用 (cap を大幅に超過するピックを抑制し、別属性カードへの差し替えを誘導)。
+ * undefined の場合は罰則無し。
+ */
+export interface OverflowPenaltyConfig {
+  threshold: number;
+}
+
 // --- Helper: WeekSchedule utilities ---
 
 function isFixedEvent(w: WeekSchedule): boolean {
@@ -624,6 +633,7 @@ function greedyFillOwned(
   ownedSlots: number,
   statCap: number,
   character?: Character | null,
+  overflowPenalty?: OverflowPenaltyConfig,
 ): {
   selected: CardScore[];
   usedIds: Set<string>;
@@ -654,7 +664,7 @@ function greedyFillOwned(
         !used.has(cs.card.id),
     );
     for (let i = 0; i < count && sel.length < ownedSlots; i++) {
-      const best = selectBestCard(candidates, used, aVo, aDa, aVi, statCap, character);
+      const best = selectBestCard(candidates, used, aVo, aDa, aVi, statCap, character, overflowPenalty);
       if (best == null) break;
       sel.push(best);
       used.add(best.card.id);
@@ -669,7 +679,7 @@ function greedyFillOwned(
     const freeCandidates = contributions.filter(
       (cs) => !used.has(cs.card.id),
     );
-    const best = selectBestCard(freeCandidates, used, aVo, aDa, aVi, statCap, character);
+    const best = selectBestCard(freeCandidates, used, aVo, aDa, aVi, statCap, character, overflowPenalty);
     if (best == null) break;
     sel.push(best);
     used.add(best.card.id);
@@ -682,7 +692,7 @@ function greedyFillOwned(
   if (sel.length < ownedSlots) {
     const remaining = contributions.filter((cs) => !used.has(cs.card.id));
     while (sel.length < ownedSlots) {
-      const best = selectBestCard(remaining, used, aVo, aDa, aVi, statCap, character);
+      const best = selectBestCard(remaining, used, aVo, aDa, aVi, statCap, character, overflowPenalty);
       if (best == null) break;
       sel.push(best);
       used.add(best.card.id);
@@ -711,6 +721,53 @@ function meetsTypeSlots(
   return true;
 }
 
+/**
+ * deck 確定後に SP カードが spCounts 設定を超過していたら、余剰分の保護を外す。
+ * (step 1 ではレンタル枠が SP かどうか不明のため、ここで rental 込みで再評価)
+ *
+ * 保護が外れたカードは postOptimize で「同属性 SP のみ」のスワップ制限から解放され、
+ * 非SPカード (例: いつまでも続けばいいのに) との差し替え候補になる。
+ */
+function unprotectExcessSpCards(
+  selected: CardScore[],
+  protectedIds: Set<string>,
+  spCounts: Record<string, number> | undefined,
+): void {
+  if (spCounts == null) return;
+
+  const coversStat = (card: SupportCard, stat: string): boolean =>
+    card.effects.some(
+      (e) =>
+        e.trigger === 'equip' &&
+        e.value_type === 'sp_rate' &&
+        (e.stat === stat || e.stat === 'all'),
+    );
+
+  for (const stat of ['vo', 'da', 'vi']) {
+    const need = spCounts[stat] ?? 0;
+    if (need <= 0) continue;
+
+    const spCardsForStat = selected.filter((cs) => coversStat(cs.card, stat));
+    if (spCardsForStat.length <= need) continue;
+    const excess = spCardsForStat.length - need;
+
+    // 余剰分: 弱い順 (raw 総和の昇順) に保護を外す。
+    // ただし rental・必須カード・既に保護されていないカードは対象外。
+    const trimCandidates = spCardsForStat
+      .filter(
+        (cs) => !cs.is_rental && !cs.is_required && protectedIds.has(cs.card.id),
+      )
+      .sort(
+        (a, b) =>
+          a.raw_vo + a.raw_da + a.raw_vi - (b.raw_vo + b.raw_da + b.raw_vi),
+      );
+
+    for (let i = 0; i < Math.min(excess, trimCandidates.length); i++) {
+      protectedIds.delete(trimCandidates[i].card.id);
+    }
+  }
+}
+
 function postOptimize(
   selected: CardScore[],
   candidates: CardScore[],
@@ -724,6 +781,7 @@ function postOptimize(
   memoryBonuses?: MemoryBonus[] | null,
   cardTypeSlots?: Record<string, number>,
   turnChoicesOverride?: TurnChoice[],
+  overflowPenalty?: OverflowPenaltyConfig,
 ): void {
   // HIFモードのようにユーザが明示的にターン選択している場合は、合成 turnChoices ではなく
   // 実選択を使って評価する。これをやらないと postOptimize の評価が実際のデッキ計算と食い違う。
@@ -741,10 +799,15 @@ function postOptimize(
     const cappedVo = Math.min(fs.vo, cap);
     const cappedDa = Math.min(fs.da, cap);
     const cappedVi = Math.min(fs.vi, cap);
-    // cap 超過に対して強いペナルティを与える (× 2)。これにより、同程度の総合点なら
-    // overflow しない構成を強く優先する
-    const overflow = Math.max(0, fs.vo - cap) + Math.max(0, fs.da - cap) + Math.max(0, fs.vi - cap);
-    return { total: cappedVo + cappedDa + cappedVi - overflow * 2, vo: fs.vo, da: fs.da, vi: fs.vi };
+    let total = cappedVo + cappedDa + cappedVi;
+    // overflow罰則: 合計overflowが閾値超過時のみ × 2 罰則を適用
+    if (overflowPenalty) {
+      const overflow = Math.max(0, fs.vo - cap) + Math.max(0, fs.da - cap) + Math.max(0, fs.vi - cap);
+      if (overflow > overflowPenalty.threshold) {
+        total -= overflow * 2;
+      }
+    }
+    return { total, vo: fs.vo, da: fs.da, vi: fs.vi };
   }
 
   let improved: boolean;
@@ -800,7 +863,14 @@ function postOptimize(
         }
 
         const testEval = evaluateFull(testCards);
-        if (testEval.total > currentEval.total) {
+        // 合計値が同点の場合、raw_total (キャップ前の素の寄与) が大きいカードを優先。
+        // 両方がキャップを張り付かせる場合に「より強いSSR」を採用するためのタイブレーカ。
+        const candRawTotal = candidate.raw_vo + candidate.raw_da + candidate.raw_vi;
+        const ownedRawTotal = ownedCard.raw_vo + ownedCard.raw_da + ownedCard.raw_vi;
+        const isImprovement =
+          testEval.total > currentEval.total ||
+          (testEval.total === currentEval.total && candRawTotal > ownedRawTotal);
+        if (isImprovement) {
           selected[si] = candidate;
           // SP率保護を新カードに引き継ぐ
           if (ownedIsProtectedSp) {
@@ -909,21 +979,20 @@ function selectBestCard(
   currentVi: number,
   statCap: number = DEFAULT_STAT_CAP,
   character?: Character | null,
+  overflowPenalty?: OverflowPenaltyConfig,
 ): CardScore | undefined {
   let best: CardScore | undefined = undefined;
   let bestGain = -Infinity;
 
-  // キャラの para_bonus はカード貢献にも乗る (calculate 時)。greedy 予測でも同じ倍率を適用
-  // することで cap 判定の精度を上げる。
+  // キャラの para_bonus はカード貢献にも乗る (calculate 時)。greedy 予測でも同じ倍率を適用する。
   const voMul = 1 + (character?.para_bonus.vo ?? 0) / 100;
   const daMul = 1 + (character?.para_bonus.da ?? 0) / 100;
   const viMul = 1 + (character?.para_bonus.vi ?? 0) / 100;
 
-  // 既存のオーバーフロー (これまでに発生した cap 超過量)
-  const overflowCurrent =
-    Math.max(0, currentVo - statCap) +
-    Math.max(0, currentDa - statCap) +
-    Math.max(0, currentVi - statCap);
+  // overflow罰則を適用するなら現在の overflow を計算
+  const overflowCurrent = overflowPenalty
+    ? Math.max(0, currentVo - statCap) + Math.max(0, currentDa - statCap) + Math.max(0, currentVi - statCap)
+    : 0;
 
   for (const cs of candidates) {
     if (usedIds.has(cs.card.id)) continue;
@@ -937,18 +1006,17 @@ function selectBestCard(
       Math.min(rawNewVo, statCap) + Math.min(rawNewDa, statCap) + Math.min(rawNewVi, statCap);
     const cappedCurrentSum =
       Math.min(currentVo, statCap) + Math.min(currentDa, statCap) + Math.min(currentVi, statCap);
-    const capGain = cappedNewSum - cappedCurrentSum;
+    let gain = cappedNewSum - cappedCurrentSum;
 
-    // 新規発生する cap 超過量 (このカードが追加で発生させる超過分)
-    const overflowNew =
-      Math.max(0, rawNewVo - statCap) +
-      Math.max(0, rawNewDa - statCap) +
-      Math.max(0, rawNewVi - statCap);
-    const newOverflow = Math.max(0, overflowNew - overflowCurrent);
-
-    // cap 超過に対して強いペナルティを与える (× 2)。これにより、同程度の総合点なら
-    // overflow しないカードを強く優先する
-    const gain = capGain - newOverflow * 2;
+    // overflow罰則: ピック後の合計overflowが閾値を超える場合のみ、追加overflow分を× 2 罰則
+    if (overflowPenalty) {
+      const overflowNew =
+        Math.max(0, rawNewVo - statCap) + Math.max(0, rawNewDa - statCap) + Math.max(0, rawNewVi - statCap);
+      if (overflowNew > overflowPenalty.threshold) {
+        const newOverflow = Math.max(0, overflowNew - overflowCurrent);
+        gain -= newOverflow * 2;
+      }
+    }
 
     if (gain > bestGain) {
       bestGain = gain;
@@ -1131,6 +1199,11 @@ export function selectOptimalDeck(
    * 渡された場合 postOptimize の評価でもこの選択を使う (デフォルトの buildTurnChoices ではなく)
    */
   turnChoicesOverride?: TurnChoice[],
+  /**
+   * HIFモードでMAX大幅超過時のみ再抽選を促す optional オプション。
+   * 渡された場合、selectBestCard / postOptimize の評価で × 2 overflow罰則が条件付きで適用される。
+   */
+  overflowPenalty?: OverflowPenaltyConfig,
 ): DeckResult {
   const statCap = plan.status_limit;
   const triggerCounts = countTriggers(plan, lessonAllocation, mainStats, turnChoicesOverride);
@@ -1330,6 +1403,7 @@ export function selectOptimalDeck(
           accVi,
           statCap,
           character,
+          overflowPenalty,
         );
         if (best == null) break;
 
@@ -1382,6 +1456,7 @@ export function selectOptimalDeck(
       ownedSlots,
       statCap,
       character,
+      overflowPenalty,
     );
     selected = fill.selected;
     usedIds = fill.usedIds;
@@ -1418,8 +1493,19 @@ export function selectOptimalDeck(
           )
         : rentalPool;
 
+    // ユーザが4凸所持のカードはレンタル枠に置いても upgrade 恩恵がゼロ
+    // (owned 4凸 = rental 4凸 で同値)。レンタル枠は本来「未所持/低凸カードを4凸として
+    // 借りる」用途なので、4凸所持カードを意図的に rental に置くのは枠の浪費。→ 除外。
+    // ただし全候補が4凸所持で空になる場合はフォールバックで除外しない。
+    const isUserOwned4Star = (cardId: string): boolean =>
+      (uncapLevels?.[cardId] ?? 0) >= 4;
+    const rentalPoolForCandidates = (() => {
+      const filtered = filteredRentalPool.filter((c) => !isUserOwned4Star(c.id));
+      return filtered.length > 0 ? filtered : filteredRentalPool;
+    })();
+
     const allRentalContributions = new Map<string, CardScore>();
-    for (const card of filteredRentalPool) {
+    for (const card of rentalPoolForCandidates) {
       const cs = calculateCardContribution(
         card,
         triggerCounts,
@@ -1443,6 +1529,7 @@ export function selectOptimalDeck(
       accVi,
       statCap,
       character,
+      overflowPenalty,
     );
     const defaultTotal = calculateCappedTotal(
       baseStats,
@@ -1485,6 +1572,7 @@ export function selectOptimalDeck(
         swapAccVi,
         statCap,
         character,
+        overflowPenalty,
       );
 
       if (replacement == null) continue;
@@ -1553,6 +1641,7 @@ export function selectOptimalDeck(
         ownedSlots,
         statCap,
         character,
+        overflowPenalty,
       );
 
       const candidateTotal = calculateCappedTotal(
@@ -1616,6 +1705,7 @@ export function selectOptimalDeck(
         accVi,
         statCap,
         character,
+        overflowPenalty,
       );
       if (best == null) break;
 
@@ -1626,6 +1716,11 @@ export function selectOptimalDeck(
       accVi += best.raw_vi * accViMul;
     }
   }
+
+  // レンタル含む deck 確定後、SP カードが spCounts 設定を超過しているなら
+  // 余剰分の保護を外す → postOptimize で非SPカードへの差し替えを許可する。
+  // (step 1 でレンタルが SP かどうかは未確定のため、ここで補正)
+  unprotectExcessSpCards(selected, protectedIds, spCounts);
 
   // ポスト最適化: 実際の計算結果を使ってカードスワップを試行
   // (常時実行: trigger_count_bonus のような synergy 効果を greedy 単独では拾えないため)
@@ -1642,6 +1737,7 @@ export function selectOptimalDeck(
     memoryBonuses ?? null,
     cardTypeSlots,
     turnChoicesOverride,
+    overflowPenalty,
   );
 
   // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
@@ -1780,6 +1876,7 @@ export function selectMultiplePatternsHif(
   character?: Character | null,
   memoryBonuses?: MemoryBonus[] | null,
   turnChoicesOverride?: TurnChoice[],
+  overflowPenalty?: OverflowPenaltyConfig,
 ): DeckResult[] {
   const results: DeckResult[] = [];
 
@@ -1822,6 +1919,7 @@ export function selectMultiplePatternsHif(
       character ?? null,
       memoryBonuses ?? null,
       turnChoicesOverride,
+      overflowPenalty,
     );
     results.push(result);
   }

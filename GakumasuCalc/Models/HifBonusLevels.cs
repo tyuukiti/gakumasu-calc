@@ -23,6 +23,23 @@ public class HifBonusLevels
     public int FinalPpLevel { get; set; } = 6;
     /// <summary>相談スキルカード割引 (Lv1-6) (計算非関与)</summary>
     public int ConsultationDiscountLevel { get; set; } = 6;
+
+    /// <summary>
+    /// MAX大幅超過時のカード再抽選オプション。
+    /// true の場合、合計overflow が OverflowPenaltyThreshold を超えた時のみ × 2 罰則を適用。
+    /// </summary>
+    public bool OverflowPenaltyEnabled { get; set; } = false;
+
+    /// <summary>overflow罰則の閾値 (Vo+Da+Vi のキャップ超過量合計)</summary>
+    public int OverflowPenaltyThreshold { get; set; } = HifOverflowPenaltyConstants.Default;
+}
+
+/// <summary>overflow罰則の閾値定数。Web版と数値を揃える。</summary>
+public static class HifOverflowPenaltyConstants
+{
+    public const int Min = 50;
+    public const int Max = 500;
+    public const int Default = 100;
 }
 
 public class HifBonusLevelsFile

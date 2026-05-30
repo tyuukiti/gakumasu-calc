@@ -6,6 +6,7 @@ import ScheduleConfig from '../components/hif/ScheduleConfig';
 import HifBulkSettings from '../components/hif/HifBulkSettings';
 import HifSchedulePresets from '../components/hif/HifSchedulePresets';
 import HifBonusConfig from '../components/hif/HifBonusConfig';
+import HifOverflowPenaltyToggle from '../components/hif/HifOverflowPenaltyToggle';
 import SpCountConfig from '../components/hif/SpCountConfig';
 import HifResultDisplay from '../components/hif/HifResultDisplay';
 import HifPatternResultList from '../components/hif/HifPatternResultList';
@@ -77,9 +78,10 @@ export default function HifPage() {
         {/* 持ち込みメモリー */}
         <MemoryBonusInput />
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <OwnedOnlyToggle />
           <ContestModeToggle />
+          <HifOverflowPenaltyToggle />
           <button
             onClick={executeCalculate}
             className="px-6 py-2 bg-[var(--color-accent)] text-white rounded font-bold hover:opacity-90 cursor-pointer"

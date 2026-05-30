@@ -711,7 +711,8 @@
                         <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <TextBlock Text="{Binding ResultVo, StringFormat={}{0:#,0}}"
                                        FontSize="14" FontWeight="Bold" FontFamily="Consolas"
-                                       HorizontalAlignment="Right">
+                                       HorizontalAlignment="Right"
+                                       ToolTip="実ゲーム表示値 (cap 適用後)">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Style.Triggers>
@@ -724,6 +725,9 @@
                             </TextBlock>
                             <TextBlock Text="{Binding ResultVoDeltaText}" FontSize="10" FontFamily="Consolas"
                                        Foreground="#888" HorizontalAlignment="Right"/>
+                            <TextBlock Text="{Binding ResultVoOverflowText}" FontSize="10" FontFamily="Consolas"
+                                       Foreground="#999" HorizontalAlignment="Right"
+                                       ToolTip="cap 前の生数値 (差分は実ゲームで打ち止め)"/>
                         </StackPanel>
                         <TextBlock Grid.Column="3" Text="MAX" FontSize="10" FontWeight="Bold"
                                    Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
@@ -764,7 +768,8 @@
                         <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <TextBlock Text="{Binding ResultDa, StringFormat={}{0:#,0}}"
                                        FontSize="14" FontWeight="Bold" FontFamily="Consolas"
-                                       HorizontalAlignment="Right">
+                                       HorizontalAlignment="Right"
+                                       ToolTip="実ゲーム表示値 (cap 適用後)">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Style.Triggers>
@@ -777,6 +782,9 @@
                             </TextBlock>
                             <TextBlock Text="{Binding ResultDaDeltaText}" FontSize="10" FontFamily="Consolas"
                                        Foreground="#888" HorizontalAlignment="Right"/>
+                            <TextBlock Text="{Binding ResultDaOverflowText}" FontSize="10" FontFamily="Consolas"
+                                       Foreground="#999" HorizontalAlignment="Right"
+                                       ToolTip="cap 前の生数値 (差分は実ゲームで打ち止め)"/>
                         </StackPanel>
                         <TextBlock Grid.Column="3" Text="MAX" FontSize="10" FontWeight="Bold"
                                    Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
@@ -817,7 +825,8 @@
                         <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <TextBlock Text="{Binding ResultVi, StringFormat={}{0:#,0}}"
                                        FontSize="14" FontWeight="Bold" FontFamily="Consolas"
-                                       HorizontalAlignment="Right">
+                                       HorizontalAlignment="Right"
+                                       ToolTip="実ゲーム表示値 (cap 適用後)">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Style.Triggers>
@@ -830,6 +839,9 @@
                             </TextBlock>
                             <TextBlock Text="{Binding ResultViDeltaText}" FontSize="10" FontFamily="Consolas"
                                        Foreground="#888" HorizontalAlignment="Right"/>
+                            <TextBlock Text="{Binding ResultViOverflowText}" FontSize="10" FontFamily="Consolas"
+                                       Foreground="#999" HorizontalAlignment="Right"
+                                       ToolTip="cap 前の生数値 (差分は実ゲームで打ち止め)"/>
                         </StackPanel>
                         <TextBlock Grid.Column="3" Text="MAX" FontSize="10" FontWeight="Bold"
                                    Foreground="#EF4444" VerticalAlignment="Center" Margin="4,0,0,0"
@@ -846,7 +858,11 @@
                                 <TextBlock Text="{Binding ResultTotal, StringFormat={}{0:#,0}}"
                                            FontSize="22" FontWeight="Bold" FontFamily="Consolas"
                                            Foreground="{StaticResource AccentBrush}"
-                                           VerticalAlignment="Center"/>
+                                           VerticalAlignment="Center"
+                                           ToolTip="各属性の上限超過分は実ゲームでは捨てられるため、合計には含めません"/>
+                                <TextBlock Text="{Binding ResultTotalOverflowText}" FontSize="11" FontFamily="Consolas"
+                                           Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"
+                                           ToolTip="各属性の上限を超えた分の合計 (合計値からは差し引いています)"/>
                                 <TextBlock Text="{Binding ResultTotalBaseText}" FontSize="11" FontFamily="Consolas"
                                            Foreground="#888" Margin="10,0,0,0" VerticalAlignment="Center"
                                            Visibility="{Binding HasCharacterBonus, Converter={StaticResource BoolToVis}}"/>
