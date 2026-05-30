@@ -231,6 +231,16 @@
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="55"/>
                                 </Grid.ColumnDefinitions>
+                                <TextBlock Text="スキルカード獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding SkillAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
                                 <TextBlock Text="相談ドリンク交換" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1" Text="{Binding ConsultationDrink, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
                                          Style="{StaticResource NumericTextBox}"

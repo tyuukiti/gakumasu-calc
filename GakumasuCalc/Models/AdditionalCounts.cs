@@ -9,6 +9,7 @@ public class AdditionalCounts
     // レッスン内イベント
     public int PDrinkAcquire { get; set; }
     public int PItemAcquire { get; set; }
+    public int SkillAcquire { get; set; }
     public int SkillSsrAcquire { get; set; }
     public int SkillEnhance { get; set; }
     public int SkillDelete { get; set; }
@@ -42,6 +43,7 @@ public class AdditionalCounts
         {
             ["p_drink_acquire"] = PDrinkAcquire,
             ["p_item_acquire"] = PItemAcquire,
+            ["skill_acquire"] = SkillAcquire,
             ["skill_ssr_acquire"] = SkillSsrAcquire,
             ["skill_enhance"] = SkillEnhance,
             ["skill_delete"] = SkillDelete,

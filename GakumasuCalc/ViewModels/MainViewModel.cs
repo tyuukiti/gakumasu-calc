@@ -45,6 +45,7 @@ public class MainViewModel : ViewModelBase
     // 追加カウント
     private int _pDrinkAcquire;
     private int _pItemAcquire;
+    private int _skillAcquire;
     private int _skillSsrAcquire;
     private int _skillEnhance;
     private int _skillDelete;
@@ -558,6 +559,7 @@ public class MainViewModel : ViewModelBase
     // 追加カウントプロパティ
     public int PDrinkAcquire { get => _pDrinkAcquire; set => SetProperty(ref _pDrinkAcquire, value); }
     public int PItemAcquire { get => _pItemAcquire; set => SetProperty(ref _pItemAcquire, value); }
+    public int SkillAcquire { get => _skillAcquire; set => SetProperty(ref _skillAcquire, value); }
     public int SkillSsrAcquire { get => _skillSsrAcquire; set => SetProperty(ref _skillSsrAcquire, value); }
     public int SkillEnhance { get => _skillEnhance; set => SetProperty(ref _skillEnhance, value); }
     public int SkillDelete { get => _skillDelete; set => SetProperty(ref _skillDelete, value); }
@@ -1755,6 +1757,7 @@ public class MainViewModel : ViewModelBase
         {
             PDrinkAcquire = PDrinkAcquire,
             PItemAcquire = PItemAcquire,
+            SkillAcquire = SkillAcquire,
             SkillSsrAcquire = SkillSsrAcquire,
             SkillEnhance = SkillEnhance,
             SkillDelete = SkillDelete,
@@ -1783,6 +1786,7 @@ public class MainViewModel : ViewModelBase
         var c = template.Counts;
         PDrinkAcquire = c.PDrinkAcquire;
         PItemAcquire = c.PItemAcquire;
+        SkillAcquire = c.SkillAcquire;
         SkillSsrAcquire = c.SkillSsrAcquire;
         SkillEnhance = c.SkillEnhance;
         SkillDelete = c.SkillDelete;
@@ -1932,7 +1936,7 @@ public class MainViewModel : ViewModelBase
     {
         VoRole = "サブ"; DaRole = "サブ"; ViRole = "サブ";
         VoSpCount = 0; DaSpCount = 0; ViSpCount = 0;
-        PDrinkAcquire = 0; PItemAcquire = 0; SkillSsrAcquire = 0;
+        PDrinkAcquire = 0; PItemAcquire = 0; SkillAcquire = 0; SkillSsrAcquire = 0;
         SkillEnhance = 0; SkillDelete = 0; SkillCustom = 0; SkillChange = 0;
         ActiveEnhance = 0; ActiveDelete = 0;
         MentalAcquire = 0; MentalEnhance = 0; MentalDelete = 0; ActiveAcquire = 0;

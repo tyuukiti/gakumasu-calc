@@ -33,6 +33,9 @@ TRIGGER_MAP = [
     ("メンタルスキルカード強化", "mental_enhance"),
     ("メンタルスキルカード削除", "mental_delete"),
     ("メンタルスキルカード獲得", "mental_acquire"),
+    # 汎用「スキルカード獲得」: SSR/アクティブ/メンタル等の特殊系の後ろに置き、
+    # specific patterns に取られなかった場合のフォールバックとしてマッチさせる
+    ("スキルカード獲得", "skill_acquire"),
     ("スキルカード強化", "skill_enhance"),
     ("スキルカード削除", "skill_delete"),
     ("スキルカードカスタマイズ", "skill_custom"),
@@ -76,6 +79,9 @@ TRIGGER_MAP = [
     ("根気効果", "conserve_acquire"),
     ("メンタルスキルカード獲得", "mental_acquire"),
     ("メンタル獲得", "mental_acquire"), ("メンタル強化", "mental_enhance"),
+    # 「スキル獲得」 (旧表記/短縮表記) 用の fallback。
+    # ※「スキルカード獲得」を含むアビリティはこの行に到達する前に上記の汎用 skill_acquire でマッチする。
+    ("スキル獲得", "skill_acquire"),
 ]
 
 # アイテム効果用トリガーマッピング
@@ -125,11 +131,26 @@ def parse_value(s: str) -> float | None:
 
 
 def parse_uncap_values(raw_values: list[str]) -> list[float] | None:
-    """凸別値リストをパース。空セルは直前の有効値で補完。全0ならNone"""
+    """凸別値リストをパース。
+    - 全要素が空 → None
+    - 中間・末尾の空セル → 直前の有効値で補完
+    - 先頭の連続空セル → 後ろにある最初の有効値で補完
+      (Wiki が完凸値のみ書いて他凸を空欄にしているアビリティで、
+       0凸時点で既に取得・発動するものを 0 にしないため)
+    """
     values = [parse_value(v) for v in raw_values]
+    # 先頭の連続 None を後ろの最初の有効値で埋める
+    first_valid = next((v for v in values if v is not None), None)
+    if first_valid is None:
+        return None
+    for idx in range(len(values)):
+        if values[idx] is not None:
+            break
+        values[idx] = first_valid
+    # 中間・末尾の None は直前の値で補完
     for idx in range(len(values)):
         if values[idx] is None:
-            values[idx] = values[idx - 1] if idx > 0 and values[idx - 1] is not None else 0.0
+            values[idx] = values[idx - 1]
     if all(v == 0.0 for v in values):
         return None
     return [float(v) for v in values]

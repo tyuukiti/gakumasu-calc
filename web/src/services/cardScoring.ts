@@ -48,6 +48,7 @@ function triggerDisplayName(trigger: string): string {
     activity_supply: '活動支給',
     exam_end: '試験終了',
     special_training: '特別指導',
+    skill_acquire: 'スキル獲得',
     skill_ssr_acquire: 'スキル(SSR)獲得',
     skill_enhance: 'スキル強化',
     skill_delete: 'スキル削除',
