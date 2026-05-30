@@ -1199,6 +1199,10 @@ support_cards:
     scales_with: vo_sp_end
     max_count: 2
     source: item
+  - trigger: skill_acquire
+    stat: vo
+    values: [1, 1, 1, 2, 2]
+    value_type: flat
 - id: SP_SR_0035
   name: カロリー/2でハッピー×2
   rarity: SR
@@ -2417,3 +2421,7 @@ support_cards:
     stat: vi
     values: [0, 0, 0, 0, 100]
     value_type: event_param_boost
+  - trigger: skill_acquire
+    stat: vi
+    values: [0, 0, 0, 0, 2]
+    value_type: flat
