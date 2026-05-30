@@ -33,6 +33,9 @@ TRIGGER_MAP = [
     ("メンタルスキルカード強化", "mental_enhance"),
     ("メンタルスキルカード削除", "mental_delete"),
     ("メンタルスキルカード獲得", "mental_acquire"),
+    # 汎用「スキルカード獲得」: SSR/アクティブ/メンタル等の特殊系の後ろに置き、
+    # specific patterns に取られなかった場合のフォールバックとしてマッチさせる
+    ("スキルカード獲得", "skill_acquire"),
     ("スキルカード強化", "skill_enhance"),
     ("スキルカード削除", "skill_delete"),
     ("スキルカードカスタマイズ", "skill_custom"),
@@ -76,6 +79,9 @@ TRIGGER_MAP = [
     ("根気効果", "conserve_acquire"),
     ("メンタルスキルカード獲得", "mental_acquire"),
     ("メンタル獲得", "mental_acquire"), ("メンタル強化", "mental_enhance"),
+    # 「スキル獲得」 (旧表記/短縮表記) 用の fallback。
+    # ※「スキルカード獲得」を含むアビリティはこの行に到達する前に上記の汎用 skill_acquire でマッチする。
+    ("スキル獲得", "skill_acquire"),
 ]
 
 # アイテム効果用トリガーマッピング
