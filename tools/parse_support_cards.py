@@ -56,6 +56,7 @@ TRIGGER_PATTERNS = [
     (r"特別指導開始時.*?(Vo|Da|Vi)\+(\d+)", "special_training"),
     # Skill (SSR) acquire
     (r"スキル（SSR）獲得時.*?(Vo|Da|Vi)\+(\d+)", "skill_ssr_acquire"),
+    (r"スキル\(SSR\)獲得時.*?(Vo|Da|Vi)\+(\d+)", "skill_ssr_acquire"),
     # Skill enhance
     (r"スキル強化時.*?(Vo|Da|Vi)\+(\d+)", "skill_enhance"),
     # Active enhance
@@ -102,6 +103,8 @@ TRIGGER_PATTERNS = [
     (r"アクティブ獲得時.*?(Vo|Da|Vi)\+(\d+)", "active_acquire"),
     # Normal lesson end (Vo通常終了時 etc)
     (r"(Vo|Da|Vi)通常終了時.*?(Vo|Da|Vi)\+(\d+)", "normal_lesson_end"),
+    # 汎用スキルカード獲得 (SSR/アクティブ/メンタル/属性別 specific patterns の後ろに置く)
+    (r"スキルカード?獲得時.*?(Vo|Da|Vi)\+(\d+)", "skill_acquire"),
     # Generic stat bonus: just Vo+N / Da+N / Vi+N (as equip bonus)
     # This is a fallback - only matches if nothing else did
 ]

@@ -221,6 +221,10 @@ def match_and_update(card: dict, wiki_abilities: list[dict]) -> tuple[bool, list
                 ("集中効果", "good_condition_acquire"),
                 ("やる気効果", "good_impression_acquire"),
                 ("根気効果", "conserve_acquire"),
+                # 汎用「スキルカード獲得」: SSR/アクティブ/メンタル等の特殊系の後ろに置き、
+                # 修飾子付きで先に分類されなかったケースの fallback として動作させる
+                ("スキルカード獲得", "skill_acquire"),
+                ("スキル獲得", "skill_acquire"),
             ]
             for keyword, trig in trigger_map:
                 if keyword in name:

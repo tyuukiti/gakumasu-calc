@@ -112,6 +112,7 @@ export interface TurnChoice {
 export interface AdditionalCounts extends Record<string, number> {
   p_drink_acquire: number;
   p_item_acquire: number;
+  skill_acquire: number;
   skill_ssr_acquire: number;
   skill_enhance: number;
   skill_delete: number;
@@ -137,6 +138,7 @@ export interface AdditionalCounts extends Record<string, number> {
 export function emptyAdditionalCounts(): AdditionalCounts {
   return {
     p_drink_acquire: 0, p_item_acquire: 0,
+    skill_acquire: 0,
     skill_ssr_acquire: 0, skill_enhance: 0, skill_delete: 0,
     skill_custom: 0, skill_change: 0,
     active_enhance: 0, active_delete: 0,

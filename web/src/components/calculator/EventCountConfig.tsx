@@ -6,6 +6,7 @@ import { trackEvent, trackFunnelStep } from '../../utils/analytics';
 const COUNT_LABELS: { key: string; label: string }[] = [
   { key: 'p_drink_acquire', label: 'Pドリンク獲得' },
   { key: 'p_item_acquire', label: 'Pアイテム獲得' },
+  { key: 'skill_acquire', label: 'スキルカード獲得' },
   { key: 'skill_ssr_acquire', label: 'スキル(SSR)獲得' },
   { key: 'skill_enhance', label: 'スキル強化' },
   { key: 'skill_delete', label: 'スキル削除' },
