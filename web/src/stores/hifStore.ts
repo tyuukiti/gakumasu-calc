@@ -62,6 +62,48 @@ const HIF_SCHEDULE_PRESETS_KEY = 'hifSchedulePresets';
 export const MAX_HIF_SCHEDULE_PRESETS = 10;
 
 const HIF_BONUS_LEVELS_KEY = 'hifBonusLevels';
+const HIF_OVERFLOW_PENALTY_KEY = 'hifOverflowPenalty';
+
+/** overflow罰則の閾値の許容範囲 */
+export const HIF_OVERFLOW_PENALTY_THRESHOLD_MIN = 50;
+export const HIF_OVERFLOW_PENALTY_THRESHOLD_MAX = 500;
+export const HIF_OVERFLOW_PENALTY_THRESHOLD_DEFAULT = 100;
+
+interface HifOverflowPenaltySettings {
+  enabled: boolean;
+  threshold: number;
+}
+
+function defaultOverflowPenaltySettings(): HifOverflowPenaltySettings {
+  return { enabled: false, threshold: HIF_OVERFLOW_PENALTY_THRESHOLD_DEFAULT };
+}
+
+function loadOverflowPenaltyFromStorage(): HifOverflowPenaltySettings {
+  if (typeof window === 'undefined') return defaultOverflowPenaltySettings();
+  try {
+    const raw = localStorage.getItem(HIF_OVERFLOW_PENALTY_KEY);
+    if (!raw) return defaultOverflowPenaltySettings();
+    const parsed = JSON.parse(raw);
+    const def = defaultOverflowPenaltySettings();
+    const enabled = typeof parsed.enabled === 'boolean' ? parsed.enabled : def.enabled;
+    const rawTh = Number(parsed.threshold);
+    const threshold = Number.isFinite(rawTh)
+      ? Math.min(HIF_OVERFLOW_PENALTY_THRESHOLD_MAX, Math.max(HIF_OVERFLOW_PENALTY_THRESHOLD_MIN, Math.floor(rawTh)))
+      : def.threshold;
+    return { enabled, threshold };
+  } catch {
+    return defaultOverflowPenaltySettings();
+  }
+}
+
+function persistOverflowPenalty(s: HifOverflowPenaltySettings) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(HIF_OVERFLOW_PENALTY_KEY, JSON.stringify(s));
+  } catch (e) {
+    console.warn('HIF overflow罰則設定 保存失敗:', e);
+  }
+}
 
 function loadBonusLevelsFromStorage(): HifBonusLevels {
   if (typeof window === 'undefined') return defaultHifBonusLevels();
@@ -131,6 +173,9 @@ interface HifState {
   /** HIFボーナス (パネル方式の永続強化) のレベル設定 */
   bonusLevels: HifBonusLevels;
 
+  /** MAX大幅超過時の再抽選 (× 2 overflow罰則) */
+  overflowPenalty: HifOverflowPenaltySettings;
+
   setScheduleChoice: (week: number, choice: HifChoice) => void;
   setExamAllocation: (week: number, stat: 'vo' | 'da' | 'vi', value: number) => void;
   setBulkLessonDefault: (def: BulkLessonDefault) => void;
@@ -151,6 +196,10 @@ interface HifState {
   setBonusLevel: (key: keyof HifBonusLevels, level: number) => void;
   /** HIFボーナスレベルを一括リセット (全パネル MAX) */
   resetBonusLevels: () => void;
+  /** overflow罰則オプションのON/OFF切替 */
+  setOverflowPenaltyEnabled: (enabled: boolean) => void;
+  /** overflow罰則の閾値を更新 */
+  setOverflowPenaltyThreshold: (threshold: number) => void;
   resetScheduleChoices: () => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
@@ -380,6 +429,7 @@ export const useHifStore = create<HifState>((set, get) => ({
   bulkClassStat: 'vo',
   schedulePresets: loadSchedulePresetsFromStorage(),
   bonusLevels: loadBonusLevelsFromStorage(),
+  overflowPenalty: loadOverflowPenaltyFromStorage(),
   deckResults: [],
   selectedPatternIndex: 0,
   calculationResult: null,
@@ -531,6 +581,24 @@ export const useHifStore = create<HifState>((set, get) => ({
     set({ bonusLevels: next });
   },
 
+  setOverflowPenaltyEnabled: (enabled) => {
+    const state = get();
+    const next = { ...state.overflowPenalty, enabled };
+    persistOverflowPenalty(next);
+    set({ overflowPenalty: next });
+  },
+
+  setOverflowPenaltyThreshold: (threshold) => {
+    const state = get();
+    const clamped = Math.min(
+      HIF_OVERFLOW_PENALTY_THRESHOLD_MAX,
+      Math.max(HIF_OVERFLOW_PENALTY_THRESHOLD_MIN, Math.floor(threshold)),
+    );
+    const next = { ...state.overflowPenalty, threshold: clamped };
+    persistOverflowPenalty(next);
+    set({ overflowPenalty: next });
+  },
+
   resetScheduleChoices: () => set({ scheduleChoices: {}, examAllocations: {} }),
 
   executeCalculate: () => {
@@ -672,6 +740,11 @@ export const useHifStore = create<HifState>((set, get) => ({
         plan = { ...plan, status_limit: plan.status_limit + finalCapBonus };
       }
 
+      // MAX大幅超過時の再抽選オプション (ON のときだけ × 2 overflow罰則を有効化)
+      const overflowPenaltyConfig = state.overflowPenalty.enabled
+        ? { threshold: state.overflowPenalty.threshold }
+        : undefined;
+
       const patterns = selectMultiplePatternsHif(
         plan,
         candidateCards,
@@ -686,6 +759,7 @@ export const useHifStore = create<HifState>((set, get) => ({
         effectiveChar,
         calc.memoryBonuses,
         turnChoices, // HIF はユーザが明示的に選んだターン選択を postOptimize でも使う
+        overflowPenaltyConfig,
       );
 
       // パターン選出はキャラ補正込みのキャップ後合計で比較
@@ -710,11 +784,16 @@ export const useHifStore = create<HifState>((set, get) => ({
           calc.memoryBonuses,
         ).final_status;
         const cappedTotal = Math.min(fs.vo, cap) + Math.min(fs.da, cap) + Math.min(fs.vi, cap);
-        // cap 超過に対して強いペナルティを与える (× 2)
-        const overflow = Math.max(0, fs.vo - cap) + Math.max(0, fs.da - cap) + Math.max(0, fs.vi - cap);
-        const effectiveScore = cappedTotal - overflow * 2;
         // ベースのフォールバック表示には total_value も更新しておく (cap 後合計)
         p.total_value = cappedTotal;
+        // overflow罰則: 合計overflowが閾値超過時のみ × 2 罰則をパターン選択にも適用
+        let effectiveScore = cappedTotal;
+        if (overflowPenaltyConfig) {
+          const overflow = Math.max(0, fs.vo - cap) + Math.max(0, fs.da - cap) + Math.max(0, fs.vi - cap);
+          if (overflow > overflowPenaltyConfig.threshold) {
+            effectiveScore -= overflow * 2;
+          }
+        }
         if (effectiveScore > bestEffectiveTotal) {
           bestEffectiveTotal = effectiveScore;
           bestIndex = i;

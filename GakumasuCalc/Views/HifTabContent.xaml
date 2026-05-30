@@ -42,6 +42,16 @@
                         <CheckBox Content="コンテストモード" IsChecked="{Binding ContestMode}"
                                   ToolTip="スキルカード・コンテストアイテムのサポカを除外"
                                   FontSize="13" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                        <CheckBox Content="MAX大幅超過時に再抽選"
+                                  IsChecked="{Binding HifVm.OverflowPenaltyEnabled}"
+                                  ToolTip="合計overflow (Vo+Da+Vi のキャップ超過量) が閾値超過時のみ × 2 罰則を適用"
+                                  FontSize="13" VerticalAlignment="Center" Margin="20,0,0,0"/>
+                        <TextBox Text="{Binding HifVm.OverflowPenaltyThreshold, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource NumericTextBox}"
+                                 IsEnabled="{Binding HifVm.OverflowPenaltyEnabled}"
+                                 Width="55" FontSize="12" Padding="4,2" Margin="6,0,0,0"
+                                 HorizontalContentAlignment="Center" VerticalAlignment="Center"
+                                 ToolTip="閾値 (Vo+Da+Vi 合計のキャップ超過量)"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -1059,9 +1069,15 @@
                                 </Grid>
                             </Grid>
                         </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding ResultVo, StringFormat={}{0:#,0}}"
-                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ResultVo, StringFormat={}{0:#,0}}"
+                                       FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                       HorizontalAlignment="Right"
+                                       ToolTip="実ゲーム表示値 (cap 適用後)"/>
+                            <TextBlock Text="{Binding ResultVoOverflowText}" FontSize="10" FontFamily="Consolas"
+                                       Foreground="#999" HorizontalAlignment="Right"
+                                       ToolTip="cap 前の生数値 (差分は実ゲームで打ち止め)"/>
+                        </StackPanel>
                     </Grid>
 
                     <!-- Da -->
@@ -1095,9 +1111,15 @@
                                 </Grid>
                             </Grid>
                         </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding ResultDa, StringFormat={}{0:#,0}}"
-                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ResultDa, StringFormat={}{0:#,0}}"
+                                       FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                       HorizontalAlignment="Right"
+                                       ToolTip="実ゲーム表示値 (cap 適用後)"/>
+                            <TextBlock Text="{Binding ResultDaOverflowText}" FontSize="10" FontFamily="Consolas"
+                                       Foreground="#999" HorizontalAlignment="Right"
+                                       ToolTip="cap 前の生数値 (差分は実ゲームで打ち止め)"/>
+                        </StackPanel>
                     </Grid>
 
                     <!-- Vi -->
@@ -1131,9 +1153,15 @@
                                 </Grid>
                             </Grid>
                         </Border>
-                        <TextBlock Grid.Column="2" Text="{Binding ResultVi, StringFormat={}{0:#,0}}"
-                                   FontSize="14" FontWeight="Bold" FontFamily="Consolas"
-                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ResultVi, StringFormat={}{0:#,0}}"
+                                       FontSize="14" FontWeight="Bold" FontFamily="Consolas"
+                                       HorizontalAlignment="Right"
+                                       ToolTip="実ゲーム表示値 (cap 適用後)"/>
+                            <TextBlock Text="{Binding ResultViOverflowText}" FontSize="10" FontFamily="Consolas"
+                                       Foreground="#999" HorizontalAlignment="Right"
+                                       ToolTip="cap 前の生数値 (差分は実ゲームで打ち止め)"/>
+                        </StackPanel>
                     </Grid>
 
                     <!-- 合計 -->
@@ -1142,7 +1170,11 @@
                             <TextBlock Text="合計: " FontSize="16" Foreground="#666" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding ResultTotal, StringFormat={}{0:#,0}}"
                                        FontSize="22" FontWeight="Bold" FontFamily="Consolas"
-                                       Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                                       Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"
+                                       ToolTip="各属性の上限超過分は実ゲームでは捨てられるため、合計には含めません"/>
+                            <TextBlock Text="{Binding ResultTotalOverflowText}" FontSize="11" FontFamily="Consolas"
+                                       Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       ToolTip="各属性の上限を超えた分の合計 (合計値からは差し引いています)"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

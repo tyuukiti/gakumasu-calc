@@ -49,6 +49,8 @@ public class HifViewModel : ViewModelBase
             OnPropertyChanged(nameof(PreExamPpLevel));
             OnPropertyChanged(nameof(FinalPpLevel));
             OnPropertyChanged(nameof(ConsultationDiscountLevel));
+            OnPropertyChanged(nameof(OverflowPenaltyEnabled));
+            OnPropertyChanged(nameof(OverflowPenaltyThreshold));
         }
         catch (Exception ex)
         {
@@ -109,6 +111,32 @@ public class HifViewModel : ViewModelBase
         set { if (BonusLevels.ConsultationDiscountLevel != value) { BonusLevels.ConsultationDiscountLevel = Math.Clamp(value, 0, 6); SaveBonusLevels(); OnPropertyChanged(); OnPropertyChanged(nameof(ConsultationDiscountEffectText)); } }
     }
 
+    /// <summary>MAX大幅超過時の再抽選オプションのON/OFF</summary>
+    public bool OverflowPenaltyEnabled
+    {
+        get => BonusLevels.OverflowPenaltyEnabled;
+        set { if (BonusLevels.OverflowPenaltyEnabled != value) { BonusLevels.OverflowPenaltyEnabled = value; SaveBonusLevels(); OnPropertyChanged(); } }
+    }
+
+    /// <summary>overflow罰則の閾値 (Vo+Da+Vi 合計のキャップ超過量)</summary>
+    public int OverflowPenaltyThreshold
+    {
+        get => BonusLevels.OverflowPenaltyThreshold;
+        set
+        {
+            var clamped = Math.Clamp(value, HifOverflowPenaltyConstants.Min, HifOverflowPenaltyConstants.Max);
+            if (BonusLevels.OverflowPenaltyThreshold != clamped)
+            {
+                BonusLevels.OverflowPenaltyThreshold = clamped;
+                SaveBonusLevels();
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public int OverflowPenaltyThresholdMin => HifOverflowPenaltyConstants.Min;
+    public int OverflowPenaltyThresholdMax => HifOverflowPenaltyConstants.Max;
+
     public string VoUpEffectText => VoUpLevel > 0 ? $"+{HifBonusTables.StatUpFlat[VoUpLevel]} / +{HifBonusTables.StatUpPara[VoUpLevel]}%" : "未解放";
     public string DaUpEffectText => DaUpLevel > 0 ? $"+{HifBonusTables.StatUpFlat[DaUpLevel]} / +{HifBonusTables.StatUpPara[DaUpLevel]}%" : "未解放";
     public string ViUpEffectText => ViUpLevel > 0 ? $"+{HifBonusTables.StatUpFlat[ViUpLevel]} / +{HifBonusTables.StatUpPara[ViUpLevel]}%" : "未解放";
@@ -134,6 +162,8 @@ public class HifViewModel : ViewModelBase
         OnPropertyChanged(nameof(FinalStatLimitEffectText));
         OnPropertyChanged(nameof(PreExamPpEffectText)); OnPropertyChanged(nameof(FinalPpEffectText));
         OnPropertyChanged(nameof(ConsultationDiscountEffectText));
+        OnPropertyChanged(nameof(OverflowPenaltyEnabled));
+        OnPropertyChanged(nameof(OverflowPenaltyThreshold));
     }
 
     public int MaxSchedulePresets => HifSchedulePresetService.MaxPresets;
