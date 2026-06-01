@@ -9,6 +9,7 @@ import MemoryBonusInput from '../components/calculator/MemoryBonusInput';
 import OwnedOnlyToggle from '../components/calculator/OwnedOnlyToggle';
 import ContestModeToggle from '../components/calculator/ContestModeToggle';
 import ResultDisplay from '../components/calculator/ResultDisplay';
+import DiagnosticCopyButton from '../components/calculator/DiagnosticCopyButton';
 import PatternResultList from '../components/calculator/PatternResultList';
 import DeckCardList from '../components/calculator/DeckCardList';
 import WeekBreakdownTable from '../components/calculator/WeekBreakdownTable';
@@ -55,7 +56,14 @@ export default function CalculatorPage() {
       {/* 結果セクション */}
       {calculationResult && (
         <div className="space-y-4">
-          <ResultDisplay />
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <ResultDisplay />
+              </div>
+              <DiagnosticCopyButton />
+            </div>
+          </div>
 
           {deckResults.length > 0 && (
             <div className="bg-white rounded-lg p-4 shadow-sm">
