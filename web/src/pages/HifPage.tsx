@@ -9,6 +9,7 @@ import HifBonusConfig from '../components/hif/HifBonusConfig';
 import HifOverflowPenaltyToggle from '../components/hif/HifOverflowPenaltyToggle';
 import SpCountConfig from '../components/hif/SpCountConfig';
 import HifResultDisplay from '../components/hif/HifResultDisplay';
+import DiagnosticCopyButton from '../components/calculator/DiagnosticCopyButton';
 import HifPatternResultList from '../components/hif/HifPatternResultList';
 import HifDeckCardList from '../components/hif/HifDeckCardList';
 import PlanTypeSelector from '../components/calculator/PlanTypeSelector';
@@ -99,7 +100,12 @@ export default function HifPage() {
       {calculationResult && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg p-4 shadow-sm">
-            <HifResultDisplay />
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <HifResultDisplay />
+              </div>
+              <DiagnosticCopyButton mode="hif" />
+            </div>
           </div>
 
           {deckResults.length > 0 && (

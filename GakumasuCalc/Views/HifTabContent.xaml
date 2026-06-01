@@ -1176,16 +1176,24 @@
 
                     <!-- 合計 -->
                     <Border Margin="0,8,0,0" Padding="10,6" Background="#F5F5F5" CornerRadius="6">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock Text="合計: " FontSize="16" Foreground="#666" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding ResultTotal, StringFormat={}{0:#,0}}"
-                                       FontSize="22" FontWeight="Bold" FontFamily="Consolas"
-                                       Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"
-                                       ToolTip="各属性の上限超過分は実ゲームでは捨てられるため、合計には含めません"/>
-                            <TextBlock Text="{Binding ResultTotalOverflowText}" FontSize="11" FontFamily="Consolas"
-                                       Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"
-                                       ToolTip="各属性の上限を超えた分の合計 (合計値からは差し引いています)"/>
-                        </StackPanel>
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="合計: " FontSize="16" Foreground="#666" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ResultTotal, StringFormat={}{0:#,0}}"
+                                           FontSize="22" FontWeight="Bold" FontFamily="Consolas"
+                                           Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"
+                                           ToolTip="各属性の上限超過分は実ゲームでは捨てられるため、合計には含めません"/>
+                                <TextBlock Text="{Binding ResultTotalOverflowText}" FontSize="11" FontFamily="Consolas"
+                                           Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"
+                                           ToolTip="各属性の上限を超えた分の合計 (合計値からは差し引いています)"/>
+                            </StackPanel>
+                            <Button Content="📋 診断情報をコピー" Command="{Binding CopyHifDiagnosticCommand}"
+                                    ToolTip="現在の設定・HIFスケジュール・編成・計算結果をまとめてコピーします（問題報告用）"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    FontSize="11" Padding="8,4" Cursor="Hand"
+                                    Background="#78909C" Foreground="White" BorderThickness="0"/>
+                        </Grid>
                     </Border>
                 </StackPanel>
             </Border>

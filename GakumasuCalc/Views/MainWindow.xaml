@@ -877,10 +877,16 @@
                                            Foreground="#888" Margin="10,0,0,0" VerticalAlignment="Center"
                                            Visibility="{Binding HasCharacterBonus, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
-                            <Button Content="コピー" Command="{Binding CopyResultCommand}"
-                                    HorizontalAlignment="Right" VerticalAlignment="Center"
-                                    FontSize="11" Padding="8,4" Cursor="Hand"
-                                    Background="#5C6BC0" Foreground="White" BorderThickness="0"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                        VerticalAlignment="Center">
+                                <Button Content="📋 診断情報をコピー" Command="{Binding CopyDiagnosticCommand}"
+                                        ToolTip="現在の設定・編成・計算結果をまとめてコピーします（問題報告用）"
+                                        FontSize="11" Padding="8,4" Margin="0,0,6,0" Cursor="Hand"
+                                        Background="#78909C" Foreground="White" BorderThickness="0"/>
+                                <Button Content="コピー" Command="{Binding CopyResultCommand}"
+                                        FontSize="11" Padding="8,4" Cursor="Hand"
+                                        Background="#5C6BC0" Foreground="White" BorderThickness="0"/>
+                            </StackPanel>
                         </Grid>
                     </Border>
                 </StackPanel>
