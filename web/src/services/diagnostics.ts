@@ -226,7 +226,8 @@ export function buildHifDiagnosticReport(
     const schedLines: string[] = [];
     for (const w of hifPlan.schedule) {
       const choice = hif.scheduleChoices[w.week];
-      if (choice) {
+      // 選択肢なしの日 (本戦インターバル等) の stale choice は計算対象外なのでダンプしない
+      if (choice && w.available_actions.length > 0) {
         const actLabel = ACTION_TYPE_DISPLAY[choice.action] ?? choice.action;
         const subStr =
           'sub_stat' in choice ? `（サブ${choice.sub_stat.toUpperCase()}）` : '';

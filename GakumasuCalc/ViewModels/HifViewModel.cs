@@ -512,6 +512,10 @@ public class HifScheduleItemViewModel : ViewModelBase
     public bool IsFixed { get; init; }
     public bool IsPublicLesson { get; init; }
     public bool IsSingleOption { get; init; }
+    /// <summary>本戦インターバル等、選択肢を持たない日。相談/特別指導はサポート効果が発動しないため計算対象外。</summary>
+    public bool IsInterval { get; init; }
+    /// <summary>選択UIの代わりにラベルのみ表示する日（単一選択肢 or インターバル）。</summary>
+    public bool ShowPlainLabel => IsSingleOption || IsInterval;
     /// <summary>試験日（配分入力UIを表示するかどうか）。基礎値か配分値のいずれかが正なら true。</summary>
     public bool IsExam { get; init; }
     /// <summary>試験日の基礎値（3属性すべてに同値加算される）。</summary>
@@ -695,6 +699,7 @@ public class HifScheduleItemViewModel : ViewModelBase
             IsFixed = isFixed,
             IsPublicLesson = isPublic,
             IsSingleOption = !isFixed && !isPublic && week.AvailableActions.Count == 1,
+            IsInterval = !isFixed && !isPublic && week.AvailableActions.Count == 0,
             HifSubValue = week.HifSubValue ?? 0,
             IsExam = isExam,
             ExamBase = examBase,
@@ -771,6 +776,8 @@ public class HifScheduleItemViewModel : ViewModelBase
     {
         if (week.Type == "audition") return "固定イベント";
         if (week.Type == "public_lesson") return "公開レッスン";
+        // 選択肢なし (本戦インターバル等): サポート発動なしの固定日
+        if (week.AvailableActions.Count == 0) return "インターバル";
         if (week.AvailableActions.Any(a => a.EndsWith("_class"))) return "授業";
         if (week.AvailableActions.Count == 1) return ActionLabel(week.AvailableActions[0]);
         return string.Join(" / ", week.AvailableActions.Select(ActionLabel));

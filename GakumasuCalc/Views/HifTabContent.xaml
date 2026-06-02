@@ -270,6 +270,11 @@
                                                                VerticalAlignment="Center"
                                                                Visibility="{Binding IsSingleOption, Converter={StaticResource BoolToVis}}"/>
 
+                                                    <!-- 本戦インターバル等 選択肢なし: サポート発動なし表示 -->
+                                                    <TextBlock Text="サポート発動なし" FontSize="12" FontStyle="Italic" Foreground="#999"
+                                                               VerticalAlignment="Center"
+                                                               Visibility="{Binding IsInterval, Converter={StaticResource BoolToVis}}"/>
+
                                                     <!-- 複数選択肢: ComboBox -->
                                                     <ComboBox ItemsSource="{Binding ActionOptions}"
                                                               SelectedValue="{Binding SelectedAction}"
@@ -287,6 +292,9 @@
                                                                         <Setter Property="Visibility" Value="Collapsed"/>
                                                                     </DataTrigger>
                                                                     <DataTrigger Binding="{Binding IsSingleOption}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsInterval}" Value="True">
                                                                         <Setter Property="Visibility" Value="Collapsed"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
