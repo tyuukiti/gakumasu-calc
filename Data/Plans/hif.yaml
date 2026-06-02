@@ -264,10 +264,13 @@ plan:
       event_name: "本戦ラウンド1"
       status_gain: { vo: 0, da: 0, vi: 0 }
 
-    # Day 28: 本戦当日② インターバル (相談+特別指導 2択)
+    # Day 28: 本戦当日② インターバル
+    # 相談/特別指導はユーザ操作で行われマスを踏んだ扱いにならず、サポートカード効果が発動しないため
+    # 選択肢を持たない (計算対象外)。
     - week: 28
       type: "free"
-      available_actions: ["consultation", "special_training"]
+      event_name: "本戦インターバル"
+      available_actions: []
 
     # Day 29: 本戦当日③ ラウンド2 (固定イベント)
     - week: 29

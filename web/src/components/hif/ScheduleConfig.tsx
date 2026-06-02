@@ -42,6 +42,8 @@ function weekTypeLabel(week: WeekSchedule): string {
   if (week.type === 'audition') return '固定イベント';
   if (week.type === 'public_lesson') return '公開レッスン';
   const acts = week.available_actions;
+  // 選択肢なし (本戦インターバル等): サポート発動なしの固定日
+  if (acts.length === 0) return 'インターバル';
   if (acts.some((a) => a.endsWith('_class'))) return '授業';
   if (acts.length === 1) return ACTION_LABEL[acts[0]] ?? acts[0];
   return acts.map((a) => ACTION_LABEL[a] ?? a).join(' / ');
@@ -268,6 +270,11 @@ function SingleActionChoice({
 }) {
   const action = (choice && 'action' in choice ? choice.action : week.available_actions[0]) ?? '';
   const acts = week.available_actions;
+
+  // 選択肢なし (本戦インターバル等): 相談/特別指導はサポート効果が発動しないため計算対象外
+  if (acts.length === 0) {
+    return <span className="text-gray-500 italic">サポート発動なし</span>;
+  }
 
   // 授業日: type別の sp_bonus を併記表示
   const isClass = acts.length > 0 && acts.every((a) => a.endsWith('_class'));

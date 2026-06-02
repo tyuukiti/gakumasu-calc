@@ -1515,6 +1515,9 @@ public class MainViewModel : ViewModelBase
         foreach (var w in newSchedule)
         {
             if (w.IsFixedEvent) continue;
+            // 選択肢なしの日 (本戦インターバル等) は計算対象外。
+            // 相談/特別指導はユーザ操作でありサポート効果が発動しないため。
+            if (w.AvailableActions.Count == 0) continue;
             if (!itemsByWeek.TryGetValue(w.Week, out var item)) continue;
             if (string.IsNullOrEmpty(item.SelectedAction)) continue;
             var actionType = ParseActionType(item.SelectedAction);

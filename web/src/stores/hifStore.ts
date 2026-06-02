@@ -272,6 +272,9 @@ function buildPlanAndChoices(
   const turnChoices: TurnChoice[] = [];
   for (const w of newSchedule) {
     if (w.type === 'audition' || w.type === 'fixed_event' || w.type === 'exam') continue;
+    // 選択肢なしの日 (本戦インターバル等) は計算対象外。
+    // 過去に永続化された choice が残っていても発動させない。
+    if (w.available_actions.length === 0) continue;
     const choice = choices[w.week];
     if (!choice) continue;
     turnChoices.push({ week: w.week, chosen_action: choice.action as ActionType });
