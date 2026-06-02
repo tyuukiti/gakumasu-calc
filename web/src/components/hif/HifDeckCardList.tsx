@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useHifStore } from '../../stores/hifStore';
+import { useCalcStore } from '../../stores/calcStore';
 import type { CardScore } from '../../types/results';
+import { trackEvent } from '../../utils/analytics';
 
 const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   vo: { bg: 'var(--color-vo-bg)', text: 'var(--color-vo)' },
@@ -52,6 +54,8 @@ function BreakdownPanel({ cs }: { cs: CardScore }) {
 export default function HifDeckCardList() {
   const deckResults = useHifStore((s) => s.deckResults);
   const selectedPatternIndex = useHifStore((s) => s.selectedPatternIndex);
+  const executeCalculate = useHifStore((s) => s.executeCalculate);
+  const addExcludedCard = useCalcStore((s) => s.addExcludedCard);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   if (deckResults.length === 0 || selectedPatternIndex >= deckResults.length) {
@@ -110,6 +114,27 @@ export default function HifDeckCardList() {
                     </span>
                   )}
                 </span>
+
+                {/* 除外ボタン (必須カードを除く) */}
+                {!cs.is_required && (
+                  <button
+                    type="button"
+                    title="このカードを除外して再計算"
+                    className="text-xs px-1.5 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 cursor-pointer shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      trackEvent('deck_card_excluded', {
+                        card_id: cs.card.id,
+                        card_name: cs.card.name,
+                        mode: 'hif',
+                      });
+                      addExcludedCard(cs.card.id);
+                      executeCalculate();
+                    }}
+                  >
+                    除外
+                  </button>
+                )}
 
                 <span className={`text-xs text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
                   &#9654;

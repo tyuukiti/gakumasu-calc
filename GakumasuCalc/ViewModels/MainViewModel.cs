@@ -31,6 +31,9 @@ public class MainViewModel : ViewModelBase
     // 必須カード
     private SupportCard? _selectedRequiredCard;
 
+    // 除外カード
+    private SupportCard? _selectedExcludedCard;
+
     // 育成タイプ
     private string _selectedPlanType = "sense";
 
@@ -526,6 +529,20 @@ public class MainViewModel : ViewModelBase
     public ICommand AddRequiredCardCommand { get; private set; } = null!;
     public ICommand RemoveRequiredCardCommand { get; private set; } = null!;
 
+    // 除外カード（編成候補から外す。枚数制限なし）
+    public ObservableCollection<SupportCard> ExcludedCards { get; } = new();
+    public List<SupportCard> AvailableCardsForExcluded => _allCards;
+
+    public SupportCard? SelectedExcludedCard
+    {
+        get => _selectedExcludedCard;
+        set => SetProperty(ref _selectedExcludedCard, value);
+    }
+
+    public ICommand AddExcludedCardCommand { get; private set; } = null!;
+    public ICommand RemoveExcludedCardCommand { get; private set; } = null!;
+    public ICommand ExcludeCardCommand { get; private set; } = null!;
+
     public string SelectedPlanType
     {
         get => _selectedPlanType;
@@ -802,6 +819,9 @@ public class MainViewModel : ViewModelBase
         ResetCommand = new RelayCommand(ExecuteReset);
         AddRequiredCardCommand = new RelayCommand(ExecuteAddRequiredCard);
         RemoveRequiredCardCommand = new RelayCommand(ExecuteRemoveRequiredCard);
+        AddExcludedCardCommand = new RelayCommand(ExecuteAddExcludedCard);
+        RemoveExcludedCardCommand = new RelayCommand(ExecuteRemoveExcludedCard);
+        ExcludeCardCommand = new RelayCommand(ExecuteExcludeCard);
         SelectPatternCommand = new RelayCommand(o =>
         {
             if (o is PatternResultViewModel pattern)
@@ -944,6 +964,15 @@ public class MainViewModel : ViewModelBase
             rentalPool = ContestMode
                 ? _allCards.Where(c => c.Tag is not ("skill" or "exam_item")).ToList()
                 : _allCards;
+        }
+
+        // 除外カードを候補・レンタルプールから除去（必須カードは相互排他のため除外集合に含まれない）
+        if (ExcludedCards.Count > 0)
+        {
+            var excludedIdSet = ExcludedCards.Select(c => c.Id).ToHashSet();
+            candidateCards = candidateCards.Where(c => !excludedIdSet.Contains(c.Id)).ToList();
+            if (rentalPool != null)
+                rentalPool = rentalPool.Where(c => !excludedIdSet.Contains(c.Id)).ToList();
         }
 
         // 必須カード
@@ -1122,6 +1151,7 @@ public class MainViewModel : ViewModelBase
                 .Select(b => b.Value == 0 ? $"  {b.Reason}" : $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
             DeckCards.Add(new DeckCardViewModel
             {
+                CardId = cs.Card.Id,
                 CardName = displayName,
                 CardType = cs.Card.Type,
                 CardRarity = cs.Card.Rarity,
@@ -1184,6 +1214,15 @@ public class MainViewModel : ViewModelBase
             rentalPool = ContestMode
                 ? _allCards.Where(c => c.Tag is not ("skill" or "exam_item")).ToList()
                 : _allCards;
+        }
+
+        // 除外カードを候補・レンタルプールから除去（必須カードは相互排他のため除外集合に含まれない）
+        if (ExcludedCards.Count > 0)
+        {
+            var excludedIdSet = ExcludedCards.Select(c => c.Id).ToHashSet();
+            candidateCards = candidateCards.Where(c => !excludedIdSet.Contains(c.Id)).ToList();
+            if (rentalPool != null)
+                rentalPool = rentalPool.Where(c => !excludedIdSet.Contains(c.Id)).ToList();
         }
 
         var requiredCardIds = RequiredCards.Select(c => c.Id).ToList();
@@ -1922,6 +1961,9 @@ public class MainViewModel : ViewModelBase
     {
         if (SelectedRequiredCard == null || RequiredCards.Count >= 4) return;
         if (RequiredCards.Any(c => c.Id == SelectedRequiredCard.Id)) return;
+        // 必須と除外は相互排他: 必須に追加したら除外から外す
+        var dup = ExcludedCards.FirstOrDefault(c => c.Id == SelectedRequiredCard.Id);
+        if (dup != null) ExcludedCards.Remove(dup);
         RequiredCards.Add(SelectedRequiredCard);
         SelectedRequiredCard = null;
         OnPropertyChanged(nameof(CanAddRequiredCard));
@@ -1934,6 +1976,49 @@ public class MainViewModel : ViewModelBase
             RequiredCards.Remove(card);
             OnPropertyChanged(nameof(CanAddRequiredCard));
         }
+    }
+
+    private void ExecuteAddExcludedCard()
+    {
+        if (SelectedExcludedCard == null) return;
+        if (ExcludedCards.Any(c => c.Id == SelectedExcludedCard.Id)) return;
+        // 必須と除外は相互排他: 除外に追加したら必須から外す
+        var dup = RequiredCards.FirstOrDefault(c => c.Id == SelectedExcludedCard.Id);
+        if (dup != null)
+        {
+            RequiredCards.Remove(dup);
+            OnPropertyChanged(nameof(CanAddRequiredCard));
+        }
+        ExcludedCards.Add(SelectedExcludedCard);
+        SelectedExcludedCard = null;
+    }
+
+    private void ExecuteRemoveExcludedCard(object? parameter)
+    {
+        if (parameter is SupportCard card)
+            ExcludedCards.Remove(card);
+    }
+
+    /// <summary>選択デッキのカードをワンクリックで除外し、再計算する</summary>
+    private void ExecuteExcludeCard(object? parameter)
+    {
+        if (parameter is not string cardId || string.IsNullOrEmpty(cardId)) return;
+        var card = _allCards.FirstOrDefault(c => c.Id == cardId);
+        if (card == null) return;
+        if (!ExcludedCards.Any(c => c.Id == cardId))
+        {
+            // 必須と除外は相互排他
+            var dup = RequiredCards.FirstOrDefault(c => c.Id == cardId);
+            if (dup != null)
+            {
+                RequiredCards.Remove(dup);
+                OnPropertyChanged(nameof(CanAddRequiredCard));
+            }
+            ExcludedCards.Add(card);
+        }
+        // 除外後に次の候補を反映するため再計算
+        if (_isHifMode) ExecuteHifCalculate();
+        else ExecuteCalculate();
     }
 
     private void ExecuteReset()
@@ -1950,6 +2035,7 @@ public class MainViewModel : ViewModelBase
         FullpowerAcquire = 0; AggressiveAcquire = 0; ConsultationDrink = 0;
         DeckCards.Clear();
         RequiredCards.Clear();
+        ExcludedCards.Clear();
         OnPropertyChanged(nameof(CanAddRequiredCard));
         OnPlanChanged();
     }
@@ -2248,6 +2334,7 @@ public class DeckCardViewModel : ViewModelBase
 {
     private bool _isExpanded;
 
+    public string CardId { get; set; } = string.Empty;
     public string CardName { get; set; } = string.Empty;
     public string CardType { get; set; } = string.Empty;
     public string CardRarity { get; set; } = string.Empty;
@@ -2291,6 +2378,10 @@ public class DeckCardViewModel : ViewModelBase
 
     public System.Windows.Visibility SpRateVisibility =>
         HasSpRate ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+
+    // 除外ボタンは必須カード以外で表示
+    public System.Windows.Visibility ExcludeButtonVisibility =>
+        IsRequired ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible;
 
     public string CardTypeDisplay => CardType switch
     {

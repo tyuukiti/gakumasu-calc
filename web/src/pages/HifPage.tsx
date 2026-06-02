@@ -17,6 +17,7 @@ import EventCountConfig from '../components/calculator/EventCountConfig';
 import OwnedOnlyToggle from '../components/calculator/OwnedOnlyToggle';
 import ContestModeToggle from '../components/calculator/ContestModeToggle';
 import RequiredCardSelector from '../components/calculator/RequiredCardSelector';
+import ExcludedCardSelector from '../components/calculator/ExcludedCardSelector';
 import CharacterSelector from '../components/calculator/CharacterSelector';
 import MemoryBonusInput from '../components/calculator/MemoryBonusInput';
 
@@ -72,6 +73,9 @@ export default function HifPage() {
 
         {/* 必須カード */}
         <RequiredCardSelector />
+
+        {/* 除外カード */}
+        <ExcludedCardSelector />
 
         {/* キャラ選択 */}
         <CharacterSelector />
