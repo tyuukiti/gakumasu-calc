@@ -769,6 +769,116 @@ function unprotectExcessSpCards(
   }
 }
 
+/**
+ * デッキ確定後、SP カードが spCounts 設定の枚数に「満たない」場合に、プール内の
+ * 余剰 SP カードと差し替えて要求枚数を満たす。
+ *
+ * ユーザ指定の優先順位「必須カード > SP枚数 > 編成パターン」を保証するための最終強制パス。
+ * - 必須カード (is_required) は絶対に外さない
+ * - 既に別属性のSP要件を満たしているカードも外さない
+ * - 所持枠は所持プール(cardContributions)のSPカードで、レンタル枠はレンタルプールのSPカードで補充
+ * - 補充のために編成パターン(cardTypeSlots)を崩すことは許容する (SP枚数 > 編成パターン)
+ */
+function enforceSpCounts(
+  selected: CardScore[],
+  cardContributions: CardScore[],
+  rentalPool: SupportCard[] | undefined,
+  triggerCounts: Record<string, number>,
+  lessonAllocation: Record<string, number>,
+  lessonStatTotals: StatusValues,
+  uncapLevels: Record<string, number> | undefined,
+  triggerBonusInfo: Record<string, TriggerBonusEntry> | undefined,
+  protectedIds: Set<string>,
+  spCounts: Record<string, number> | undefined,
+): void {
+  if (spCounts == null) return;
+
+  const coversStat = (card: SupportCard, stat: string): boolean =>
+    card.effects.some(
+      (e) =>
+        e.trigger === 'equip' &&
+        e.value_type === 'sp_rate' &&
+        (e.stat === stat || e.stat === 'all'),
+    );
+
+  // このカードが「まだ要求枚数 > 0 のいずれかの属性」のSPをカバーしているか
+  // (= 外すと別属性のSP要件を壊しうるカードか)
+  const coversAnyNeededSp = (card: SupportCard): boolean =>
+    (['vo', 'da', 'vi'] as const).some(
+      (s) => (spCounts[s] ?? 0) > 0 && coversStat(card, s),
+    );
+
+  const rawTotal = (cs: CardScore): number => cs.raw_vo + cs.raw_da + cs.raw_vi;
+
+  for (const stat of ['vo', 'da', 'vi']) {
+    const need = spCounts[stat] ?? 0;
+    if (need <= 0) continue;
+
+    let current = selected.filter((cs) => coversStat(cs.card, stat)).length;
+    if (current >= need) continue;
+
+    // 所持プールから、この属性のSPを持ち、まだデッキに居ないカード (寄与降順)
+    const inDeck = () => new Set(selected.map((s) => s.card.id));
+    const ownedSpCandidates = cardContributions
+      .filter((cs) => coversStat(cs.card, stat) && !inDeck().has(cs.card.id))
+      .sort((a, b) => rawTotal(b) - rawTotal(a));
+
+    // 1) 所持枠を所持SPカードで補充
+    while (current < need && ownedSpCandidates.length > 0) {
+      // 外せる犠牲カード: 非レンタル・非必須・他のSP要件を満たしていない、寄与の弱い順
+      // 同属性のカードを優先的に外して編成バランスへの影響を抑える
+      const removable = selected.filter(
+        (cs) => !cs.is_rental && !cs.is_required && !coversAnyNeededSp(cs.card),
+      );
+      if (removable.length === 0) break;
+      removable.sort((a, b) => {
+        const at = a.card.type === stat ? 0 : 1;
+        const bt = b.card.type === stat ? 0 : 1;
+        if (at !== bt) return at - bt;
+        return rawTotal(a) - rawTotal(b);
+      });
+      const victim = removable[0];
+      const sp = ownedSpCandidates.shift()!;
+      const idx = selected.findIndex((cs) => cs.card.id === victim.card.id);
+      selected[idx] = sp;
+      protectedIds.delete(victim.card.id);
+      protectedIds.add(sp.card.id);
+      current++;
+    }
+
+    // 2) まだ不足 → レンタル枠をこの属性のレンタルSPカードに差し替え
+    if (current < need && rentalPool != null) {
+      const rentalIdx = selected.findIndex((cs) => cs.is_rental);
+      if (
+        rentalIdx >= 0 &&
+        !coversStat(selected[rentalIdx].card, stat) &&
+        !coversAnyNeededSp(selected[rentalIdx].card)
+      ) {
+        const used = inDeck();
+        const rentalSp = rentalPool
+          .filter((c) => coversStat(c, stat) && !used.has(c.id))
+          .map((c) =>
+            calculateCardContribution(
+              c,
+              triggerCounts,
+              lessonAllocation,
+              lessonStatTotals,
+              { ...(uncapLevels ?? {}), [c.id]: 4 },
+              triggerBonusInfo,
+            ),
+          )
+          .sort((a, b) => rawTotal(b) - rawTotal(a));
+        if (rentalSp.length > 0) {
+          const best: CardScore = { ...rentalSp[0], is_rental: true };
+          selected[rentalIdx] = best;
+          protectedIds.add(best.card.id);
+          current++;
+        }
+      }
+    }
+  }
+}
+
 function postOptimize(
   selected: CardScore[],
   candidates: CardScore[],
@@ -1739,6 +1849,22 @@ export function selectOptimalDeck(
     cardTypeSlots,
     turnChoicesOverride,
     overflowPenalty,
+  );
+
+  // SP枚数の強制保証: postOptimize 後、SP カードが要求枚数に満たない場合は
+  // プール内の余剰 SP カードで補充する (優先順位 必須カード > SP枚数 > 編成パターン)。
+  // postOptimize は total を最大化するため非SPカードを優先しうるので、必ずこの後に実行する。
+  enforceSpCounts(
+    selected,
+    cardContributions,
+    rentalPool,
+    triggerCounts,
+    lessonAllocation,
+    lessonStatTotals,
+    uncapLevels,
+    triggerBonusInfo,
+    protectedIds,
+    spCounts,
   );
 
   // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映

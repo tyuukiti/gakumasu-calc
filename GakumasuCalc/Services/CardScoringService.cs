@@ -506,6 +506,12 @@ public class CardScoringService
             plan, lessonAllocation, mainStats, uncapLevels, additionalCounts, statCap,
             character, memoryBonuses, cardTypeSlots, turnChoicesOverride, overflowPenalty);
 
+        // SP枚数の強制保証: PostOptimize 後、SP カードが要求枚数に満たない場合は
+        // プール内の余剰 SP カードで補充する (優先順位 必須カード > SP枚数 > 編成パターン)。
+        // PostOptimize は total を最大化するため非SPカードを優先しうるので、必ずこの後に実行する。
+        EnforceSpCounts(selected, cardContributions, rentalPool, triggerCounts,
+            lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo, protectedIds, spCounts);
+
         // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
         RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
 
@@ -577,6 +583,113 @@ public class CardScoringService
             for (int i = 0; i < Math.Min(excess, trimCandidates.Count); i++)
             {
                 protectedIds.Remove(trimCandidates[i].Card.Id);
+            }
+        }
+    }
+
+    /// <summary>
+    /// デッキ確定後、SP カードが spCounts 設定の枚数に「満たない」場合に、プール内の
+    /// 余剰 SP カードと差し替えて要求枚数を満たす。
+    ///
+    /// ユーザ指定の優先順位「必須カード > SP枚数 > 編成パターン」を保証するための最終強制パス。
+    /// - 必須カード (IsRequired) は絶対に外さない
+    /// - 既に別属性のSP要件を満たしているカードも外さない
+    /// - 所持枠は所持プール(cardContributions)のSPカードで、レンタル枠はレンタルプールのSPカードで補充
+    /// - 補充のために編成パターン(cardTypeSlots)を崩すことは許容する (SP枚数 > 編成パターン)
+    /// </summary>
+    private void EnforceSpCounts(
+        List<CardScore> selected,
+        List<CardScore> cardContributions,
+        List<SupportCard>? rentalPool,
+        Dictionary<string, int> triggerCounts,
+        Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
+        Dictionary<string, int>? uncapLevels,
+        Dictionary<string, TriggerBonusEntry>? triggerBonusInfo,
+        HashSet<string> protectedIds,
+        Dictionary<string, int>? spCounts)
+    {
+        if (spCounts == null) return;
+
+        bool CoversStat(SupportCard card, string stat) =>
+            card.Effects.Any(e =>
+                e.Trigger == "equip" &&
+                e.ValueType == "sp_rate" &&
+                (e.Stat == stat || e.Stat == "all"));
+
+        // このカードが「まだ要求枚数 > 0 のいずれかの属性」のSPをカバーしているか
+        // (= 外すと別属性のSP要件を壊しうるカードか)
+        bool CoversAnyNeededSp(SupportCard card) =>
+            new[] { "vo", "da", "vi" }.Any(s => spCounts.GetValueOrDefault(s) > 0 && CoversStat(card, s));
+
+        static int RawTotal(CardScore cs) => cs.RawVo + cs.RawDa + cs.RawVi;
+
+        foreach (var stat in new[] { "vo", "da", "vi" })
+        {
+            int need = spCounts.GetValueOrDefault(stat);
+            if (need <= 0) continue;
+
+            int current = selected.Count(cs => CoversStat(cs.Card, stat));
+            if (current >= need) continue;
+
+            HashSet<string> InDeck() => selected.Select(s => s.Card.Id).ToHashSet();
+
+            // 所持プールから、この属性のSPを持ち、まだデッキに居ないカード (寄与降順)
+            var ownedSpCandidates = cardContributions
+                .Where(cs => CoversStat(cs.Card, stat) && !InDeck().Contains(cs.Card.Id))
+                .OrderByDescending(RawTotal)
+                .ToList();
+
+            // 1) 所持枠を所持SPカードで補充
+            int ownedIdx = 0;
+            while (current < need && ownedIdx < ownedSpCandidates.Count)
+            {
+                // 外せる犠牲カード: 非レンタル・非必須・他のSP要件を満たしていない、寄与の弱い順
+                // 同属性のカードを優先的に外して編成バランスへの影響を抑える
+                var victim = selected
+                    .Where(cs => !cs.IsRental && !cs.IsRequired && !CoversAnyNeededSp(cs.Card))
+                    .OrderBy(cs => cs.Card.Type == stat ? 0 : 1)
+                    .ThenBy(RawTotal)
+                    .FirstOrDefault();
+                if (victim == null) break;
+                var sp = ownedSpCandidates[ownedIdx++];
+                int idx = selected.FindIndex(cs => cs.Card.Id == victim.Card.Id);
+                selected[idx] = sp;
+                protectedIds.Remove(victim.Card.Id);
+                protectedIds.Add(sp.Card.Id);
+                current++;
+            }
+
+            // 2) まだ不足 → レンタル枠をこの属性のレンタルSPカードに差し替え
+            if (current < need && rentalPool != null)
+            {
+                int rentalIdx = selected.FindIndex(cs => cs.IsRental);
+                if (rentalIdx >= 0 &&
+                    !CoversStat(selected[rentalIdx].Card, stat) &&
+                    !CoversAnyNeededSp(selected[rentalIdx].Card))
+                {
+                    var used = InDeck();
+                    var rentalSp = rentalPool
+                        .Where(c => CoversStat(c, stat) && !used.Contains(c.Id))
+                        .Select(c =>
+                        {
+                            var uc = uncapLevels != null
+                                ? new Dictionary<string, int>(uncapLevels)
+                                : new Dictionary<string, int>();
+                            uc[c.Id] = 4;
+                            return CalculateCardContribution(c, triggerCounts, lessonAllocation, lessonStatTotals, uc, triggerBonusInfo);
+                        })
+                        .OrderByDescending(RawTotal)
+                        .ToList();
+                    if (rentalSp.Count > 0)
+                    {
+                        var best = rentalSp[0];
+                        best.IsRental = true;
+                        selected[rentalIdx] = best;
+                        protectedIds.Add(best.Card.Id);
+                        current++;
+                    }
+                }
             }
         }
     }
