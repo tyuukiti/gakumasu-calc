@@ -482,6 +482,48 @@
                 </StackPanel>
             </Border>
 
+            <!-- 除外カード選択 -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource SectionHeader}">
+                        <Run Text="除外カード"/>
+                        <Run Text="（" Foreground="#999"/><Run Text="{Binding ExcludedCards.Count, Mode=OneWay}" Foreground="#999"/><Run Text="）" Foreground="#999"/>
+                    </TextBlock>
+                    <!-- カード追加行 -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <ComboBox IsEditable="True" IsTextSearchEnabled="True"
+                                  ItemsSource="{Binding AvailableCardsForExcluded}"
+                                  SelectedItem="{Binding SelectedExcludedCard}"
+                                  DisplayMemberPath="Name"
+                                  MinWidth="300" FontSize="14" Padding="8,6"/>
+                        <Button Content="追加" Command="{Binding AddExcludedCardCommand}"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Margin="8,0,0,0" Padding="12,6" FontSize="13"/>
+                    </StackPanel>
+                    <!-- 除外済みカード一覧 -->
+                    <ItemsControl ItemsSource="{Binding ExcludedCards}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="{Binding Type}" FontWeight="Bold" FontSize="12" Width="30"
+                                               VerticalAlignment="Center" Foreground="#666"/>
+                                    <TextBlock Text="{Binding Rarity}" FontSize="12" Width="30"
+                                               VerticalAlignment="Center" Foreground="#999"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
+                                               MinWidth="200" Foreground="#C0392B"/>
+                                    <Button Content="✕" FontSize="10" Padding="4,2"
+                                            Command="{Binding DataContext.RemoveExcludedCardCommand,
+                                                RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource MaterialDesignFlatButton}"
+                                            Foreground="#999" MinWidth="0" MinHeight="0"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- キャラ選択 (折りたたみ式・任意) -->
             <Border Style="{StaticResource SectionCard}">
                 <Expander IsExpanded="False">
@@ -972,6 +1014,7 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <!-- 属性バッジ (色付き) -->
                                             <Border Grid.Column="0" Background="{Binding TypeBadgeBackground}" CornerRadius="3"
@@ -1006,8 +1049,18 @@
                                                        Foreground="{StaticResource AccentBrush}"
                                                        HorizontalAlignment="Right" VerticalAlignment="Center"
                                                        Margin="0,0,6,0"/>
+                                            <!-- 除外ボタン (必須カード以外で表示) -->
+                                            <Button Grid.Column="6" Content="除外" FontSize="10"
+                                                    Padding="6,1" Margin="2,0,4,0"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{Binding ExcludeButtonVisibility}"
+                                                    Command="{Binding DataContext.ExcludeCardCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding CardId}"
+                                                    Style="{StaticResource MaterialDesignFlatButton}"
+                                                    Foreground="#C0392B" MinWidth="0" MinHeight="0"
+                                                    ToolTip="このカードを除外して再計算"/>
                                             <!-- 展開矢印 (▶ / ▼) -->
-                                            <TextBlock Grid.Column="6" FontSize="10" Foreground="#AAA"
+                                            <TextBlock Grid.Column="7" FontSize="10" Foreground="#AAA"
                                                        VerticalAlignment="Center" Margin="2,0,2,0">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">

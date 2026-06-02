@@ -639,7 +639,7 @@ export const useHifStore = create<HifState>((set, get) => ({
       if (calc.daSpCount > 0) spCounts['da'] = calc.daSpCount;
       if (calc.viSpCount > 0) spCounts['vi'] = calc.viSpCount;
 
-      const candidateCards = getCandidateCards(allCards, calc.ownedOnly, calc.contestMode);
+      let candidateCards = getCandidateCards(allCards, calc.ownedOnly, calc.contestMode);
       const uncapLevels = buildUncapLevels(allCards, calc.ownedOnly);
 
       let rentalPool: SupportCard[] | undefined;
@@ -647,6 +647,15 @@ export const useHifStore = create<HifState>((set, get) => ({
         rentalPool = calc.contestMode
           ? allCards.filter((c) => c.tag !== 'skill' && c.tag !== 'exam_item')
           : allCards;
+      }
+
+      // 除外カードを候補・レンタルプールから除去（必須カードは相互排他のため除外集合に含まれない）
+      if (calc.excludedCardIds.length > 0) {
+        const excludedSet = new Set(calc.excludedCardIds);
+        candidateCards = candidateCards.filter((c) => !excludedSet.has(c.id));
+        if (rentalPool != null) {
+          rentalPool = rentalPool.filter((c) => !excludedSet.has(c.id));
+        }
       }
 
       const requiredCardIds = calc.requiredCardIds.length > 0 ? calc.requiredCardIds : undefined;

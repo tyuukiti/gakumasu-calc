@@ -4,6 +4,7 @@ import PlanTypeSelector from '../components/calculator/PlanTypeSelector';
 import StatRoleConfig from '../components/calculator/StatRoleConfig';
 import EventCountConfig from '../components/calculator/EventCountConfig';
 import RequiredCardSelector from '../components/calculator/RequiredCardSelector';
+import ExcludedCardSelector from '../components/calculator/ExcludedCardSelector';
 import CharacterSelector from '../components/calculator/CharacterSelector';
 import MemoryBonusInput from '../components/calculator/MemoryBonusInput';
 import OwnedOnlyToggle from '../components/calculator/OwnedOnlyToggle';
@@ -34,6 +35,7 @@ export default function CalculatorPage() {
         <StatRoleConfig />
         <EventCountConfig />
         <RequiredCardSelector />
+        <ExcludedCardSelector />
         <CharacterSelector />
         <MemoryBonusInput />
 

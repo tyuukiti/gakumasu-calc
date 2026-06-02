@@ -53,6 +53,8 @@ function BreakdownPanel({ cs }: { cs: CardScore }) {
 export default function DeckCardList() {
   const deckResults = useCalcStore((s) => s.deckResults);
   const selectedPatternIndex = useCalcStore((s) => s.selectedPatternIndex);
+  const addExcludedCard = useCalcStore((s) => s.addExcludedCard);
+  const executeCalculate = useCalcStore((s) => s.executeCalculate);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   if (deckResults.length === 0 || selectedPatternIndex >= deckResults.length) {
@@ -126,6 +128,26 @@ export default function DeckCardList() {
                     </span>
                   )}
                 </span>
+
+                {/* 除外ボタン (必須カードを除く) */}
+                {!cs.is_required && (
+                  <button
+                    type="button"
+                    title="このカードを除外して再計算"
+                    className="text-xs px-1.5 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 cursor-pointer shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      trackEvent('deck_card_excluded', {
+                        card_id: cs.card.id,
+                        card_name: cs.card.name,
+                      });
+                      addExcludedCard(cs.card.id);
+                      executeCalculate();
+                    }}
+                  >
+                    除外
+                  </button>
+                )}
 
                 {/* Expand indicator */}
                 <span className={`text-xs text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}>

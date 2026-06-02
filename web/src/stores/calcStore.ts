@@ -63,6 +63,8 @@ interface CalcState {
   ownedOnly: boolean;
   contestMode: boolean;
   requiredCardIds: string[];
+  /** 除外カード（編成候補から外す。枚数制限なし・セッション限定） */
+  excludedCardIds: string[];
   selectedCharacterId: string | null;
   uncap3BonusEnabled: boolean;
   /** 持ち込みメモリー（最大4枚・セッション限定。永続化なし） */
@@ -90,6 +92,8 @@ interface CalcState {
   setContestMode: (v: boolean) => void;
   addRequiredCard: (cardId: string) => void;
   removeRequiredCard: (cardId: string) => void;
+  addExcludedCard: (cardId: string) => void;
+  removeExcludedCard: (cardId: string) => void;
   setSelectedCharacter: (id: string | null) => void;
   setUncap3BonusEnabled: (v: boolean) => void;
   setMemoryBonus: (index: number, stat: 'vo' | 'da' | 'vi', patch: Partial<MemoryAttributeBonus>) => void;
@@ -347,6 +351,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   ownedOnly: false,
   contestMode: false,
   requiredCardIds: [],
+  excludedCardIds: [],
   selectedCharacterId:
     typeof window !== 'undefined' ? localStorage.getItem(SELECTED_CHARACTER_KEY) : null,
   // デフォルト OFF（3凸は課金要素で重いため）。para_bonus は3凸ON状態の最大値として保持し、OFFなら uncap3_bonus 分を減算
@@ -443,12 +448,31 @@ export const useCalcStore = create<CalcState>((set, get) => ({
     const state = get();
     if (state.requiredCardIds.length >= 4) return;
     if (state.requiredCardIds.includes(cardId)) return;
-    set({ requiredCardIds: [...state.requiredCardIds, cardId] });
+    set({
+      requiredCardIds: [...state.requiredCardIds, cardId],
+      // 必須と除外は相互排他: 必須に追加したら除外から外す
+      excludedCardIds: state.excludedCardIds.filter((id) => id !== cardId),
+    });
   },
 
   removeRequiredCard: (cardId) => {
     const state = get();
     set({ requiredCardIds: state.requiredCardIds.filter((id) => id !== cardId) });
+  },
+
+  addExcludedCard: (cardId) => {
+    const state = get();
+    if (state.excludedCardIds.includes(cardId)) return;
+    set({
+      excludedCardIds: [...state.excludedCardIds, cardId],
+      // 必須と除外は相互排他: 除外に追加したら必須から外す
+      requiredCardIds: state.requiredCardIds.filter((id) => id !== cardId),
+    });
+  },
+
+  removeExcludedCard: (cardId) => {
+    const state = get();
+    set({ excludedCardIds: state.excludedCardIds.filter((id) => id !== cardId) });
   },
 
   setSelectedCharacter: (id) => {
@@ -615,7 +639,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
       if (state.viSpCount > 0) spCounts['vi'] = state.viSpCount;
 
       // Candidate cards
-      const candidateCards = getCandidateCards(allCards, inventory, state.ownedOnly, state.contestMode);
+      let candidateCards = getCandidateCards(allCards, inventory, state.ownedOnly, state.contestMode);
       const uncapLevels = buildUncapLevels(allCards, inventory, state.ownedOnly);
 
       // Rental pool: if ownedOnly, all cards are rental candidates (contest mode filter applied)
@@ -624,6 +648,15 @@ export const useCalcStore = create<CalcState>((set, get) => ({
         rentalPool = state.contestMode
           ? allCards.filter((c) => c.tag !== 'skill' && c.tag !== 'exam_item')
           : allCards;
+      }
+
+      // 除外カードを候補・レンタルプールから除去（必須カードは相互排他のため除外集合に含まれない）
+      if (state.excludedCardIds.length > 0) {
+        const excludedSet = new Set(state.excludedCardIds);
+        candidateCards = candidateCards.filter((c) => !excludedSet.has(c.id));
+        if (rentalPool != null) {
+          rentalPool = rentalPool.filter((c) => !excludedSet.has(c.id));
+        }
       }
 
       // 必須カードはコンテストモード等のフィルタを回避して候補に含める
