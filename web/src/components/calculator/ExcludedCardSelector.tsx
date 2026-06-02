@@ -116,7 +116,7 @@ export default function ExcludedCardSelector() {
                   {TYPE_LABELS[card.type] ?? card.type}
                 </span>
                 <span className="text-xs text-gray-500">{card.rarity}</span>
-                <span className="flex-1 text-sm text-gray-800 truncate line-through decoration-red-400">
+                <span className="flex-1 text-sm text-gray-800 truncate">
                   {card.name}
                 </span>
                 <button
