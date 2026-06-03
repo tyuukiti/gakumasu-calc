@@ -296,6 +296,16 @@
                                     <ColumnDefinition Width="120"/>
                                     <ColumnDefinition Width="55"/>
                                 </Grid.ColumnDefinitions>
+                                <TextBlock Text="アクティブ獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding ActiveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                         Style="{StaticResource NumericTextBox}"
+                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="55"/>
+                                </Grid.ColumnDefinitions>
                                 <TextBlock Text="アクティブ強化" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1" Text="{Binding ActiveEnhance, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
                                          Style="{StaticResource NumericTextBox}"
@@ -308,16 +318,6 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="アクティブ削除" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
                                 <TextBox Grid.Column="1" Text="{Binding ActiveDelete, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                         Style="{StaticResource NumericTextBox}"
-                                         FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
-                            </Grid>
-                            <Grid Margin="0,0,0,4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120"/>
-                                    <ColumnDefinition Width="55"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="アクティブ獲得" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
-                                <TextBox Grid.Column="1" Text="{Binding ActiveAcquire, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
                                          Style="{StaticResource NumericTextBox}"
                                          FontSize="12" Padding="4,3" HorizontalContentAlignment="Center"/>
                             </Grid>
