@@ -3,6 +3,7 @@
 # - base_status_bonus: plan.base_status に加算される固定値
 # - para_bonus: 週次レッスンの上昇値に乗算される属性別%（サポカ para_bonus と同列加算、3凸前提の最大値）
 # - uncap3_bonus: 3凸時のレッスンボーナス追加分（OFFで減算）
+# - step4_bonus: 一部キャラに開放されるSTEP4の追加分。base_status_bonus(固定値)と para_bonus(%)の両方を上乗せ（ONで加算、デフォルトON）
 # 並びは学園アイドルマスター公式の順
 characters:
   - id: "char_saki"
@@ -20,6 +21,9 @@ characters:
     base_status_bonus: { vo: 120, da: 100, vi: 80 }
     para_bonus: { vo: 27.0, da: 26.5, vi: 8.5 }
     uncap3_bonus: { vo: 3.0, da: 5.0, vi: 0 }
+    step4_bonus:
+      base_status_bonus: { vo: 0, da: 0, vi: 0 }
+      para_bonus: { vo: 3.0, da: 1.0, vi: 3.0 }
 
   - id: "char_kotone"
     name: "藤田ことね"
@@ -44,6 +48,9 @@ characters:
     base_status_bonus: { vo: 125, da: 90, vi: 100 }
     para_bonus: { vo: 25.0, da: 8.0, vi: 28.0 }
     uncap3_bonus: { vo: 3.0, da: 0, vi: 5.0 }
+    step4_bonus:
+      base_status_bonus: { vo: 0, da: 0, vi: 15 }
+      para_bonus: { vo: 1.0, da: 3.0, vi: 1.0 }
 
   - id: "char_lilja"
     name: "葛城リーリヤ"
@@ -60,6 +67,9 @@ characters:
     base_status_bonus: { vo: 75, da: 115, vi: 125 }
     para_bonus: { vo: 10.0, da: 29.0, vi: 23.5 }
     uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
+    step4_bonus:
+      base_status_bonus: { vo: 20, da: 10, vi: 10 }
+      para_bonus: { vo: 3.0, da: 0, vi: 1.0 }
 
   - id: "char_sumika"
     name: "紫雲清夏"
@@ -76,6 +86,9 @@ characters:
     base_status_bonus: { vo: 125, da: 120, vi: 80 }
     para_bonus: { vo: 28.0, da: 24.5, vi: 10.0 }
     uncap3_bonus: { vo: 5.0, da: 5.0, vi: 0 }
+    step4_bonus:
+      base_status_bonus: { vo: 5, da: 5, vi: 15 }
+      para_bonus: { vo: 2.0, da: 0, vi: 3.0 }
 
   - id: "char_sena"
     name: "十王星南"
@@ -92,6 +105,9 @@ characters:
     base_status_bonus: { vo: 85, da: 125, vi: 135 }
     para_bonus: { vo: 31.0, da: 10.0, vi: 20.0 }
     uncap3_bonus: { vo: 4.0, da: 0, vi: 2.0 }
+    step4_bonus:
+      base_status_bonus: { vo: 10, da: 0, vi: 5 }
+      para_bonus: { vo: 0, da: 3.0, vi: 2.0 }
 
   - id: "char_ume"
     name: "花海佑芽"
@@ -108,3 +124,6 @@ characters:
     base_status_bonus: { vo: 85, da: 110, vi: 110 }
     para_bonus: { vo: 11.0, da: 24.5, vi: 28.5 }
     uncap3_bonus: { vo: 0, da: 3.0, vi: 5.0 }
+    step4_bonus:
+      base_status_bonus: { vo: 0, da: 10, vi: 15 }
+      para_bonus: { vo: 2.0, da: 0, vi: 2.0 }

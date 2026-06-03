@@ -145,7 +145,8 @@ export function buildDiagnosticReport(calc: CalcSnapshot, app: AppSnapshot): str
     : null;
   lines.push(
     `キャラ: ${character ? character.name : '(なし)'}` +
-      (character ? ` / 3凸ボーナス: ${calc.uncap3BonusEnabled ? 'ON' : 'OFF'}` : ''),
+      (character ? ` / 3凸ボーナス: ${calc.uncap3BonusEnabled ? 'ON' : 'OFF'}` : '') +
+      (character?.step4_bonus ? ` / STEP4ボーナス: ${calc.step4BonusEnabled ? 'ON' : 'OFF'}` : ''),
   );
 
   if (calc.selectedTemplateName) {
@@ -195,7 +196,8 @@ export function buildHifDiagnosticReport(
     : null;
   lines.push(
     `キャラ: ${character ? character.name : '(なし)'}` +
-      (character ? ` / 3凸ボーナス: ${calc.uncap3BonusEnabled ? 'ON' : 'OFF'}` : ''),
+      (character ? ` / 3凸ボーナス: ${calc.uncap3BonusEnabled ? 'ON' : 'OFF'}` : '') +
+      (character?.step4_bonus ? ` / STEP4ボーナス: ${calc.step4BonusEnabled ? 'ON' : 'OFF'}` : ''),
   );
 
   if (calc.selectedTemplateName) {

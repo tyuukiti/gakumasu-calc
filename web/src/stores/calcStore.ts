@@ -21,12 +21,72 @@ import type { CardInventoryEntry } from '../types/inventory';
 import { useAppStore } from './appStore';
 import { selectMultiplePatterns } from '../services/cardScoring';
 import { calculate } from '../services/statusCalculation';
+import { applyCharacterToggles } from '../services/characterBonus';
 import { trackEvent, startTimer, endTimer, incrementCounter, trackFunnelStep } from '../utils/analytics';
 
 const SELECTED_CHARACTER_KEY = 'selectedCharacterId';
-const UNCAP3_BONUS_KEY = 'uncap3CharacterBonusEnabled';
+// 旧: 全キャラ共通の単一トグル。現在はキャラ毎マップに移行（下のマイグレーション参照）
+const LEGACY_UNCAP3_BONUS_KEY = 'uncap3CharacterBonusEnabled';
+// 3凸・STEP4 のON/OFFはキャラ毎に保持（id -> bool のマップを localStorage に保存）
+const UNCAP3_BONUS_MAP_KEY = 'uncap3BonusByChar';
+const STEP4_BONUS_MAP_KEY = 'step4BonusByChar';
 const MEMORY_PRESETS_KEY = 'memoryPresets';
 const EVENT_COUNT_PRESETS_KEY = 'eventCountPresets';
+
+/** id -> bool のトグルマップを localStorage から読み込む。 */
+function loadBoolMap(key: string): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const out: Record<string, boolean> = {};
+      for (const [k, v] of Object.entries(parsed)) {
+        if (typeof v === 'boolean') out[k] = v;
+      }
+      return out;
+    }
+  } catch {
+    /* 破損時は空 */
+  }
+  return {};
+}
+
+function saveBoolMap(key: string, map: Record<string, boolean>) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(map));
+  } catch (e) {
+    console.warn('トグルマップの保存に失敗:', e);
+  }
+}
+
+/** 3凸は既定OFF。マップに無ければ false。 */
+function isUncap3EnabledFor(map: Record<string, boolean>, id: string | null): boolean {
+  if (!id) return false;
+  return map[id] ?? false;
+}
+
+/** STEP4は既定ON。マップに無ければ true。 */
+function isStep4EnabledFor(map: Record<string, boolean>, id: string | null): boolean {
+  if (!id) return true;
+  return map[id] ?? true;
+}
+
+/** 旧・全キャラ共通の3凸トグルを、当時選択中だったキャラのマップ値へ一度だけ移行する。 */
+function migrateLegacyUncap3Toggle() {
+  if (typeof window === 'undefined') return;
+  if (localStorage.getItem(UNCAP3_BONUS_MAP_KEY) == null) {
+    const legacy = localStorage.getItem(LEGACY_UNCAP3_BONUS_KEY);
+    const selId = localStorage.getItem(SELECTED_CHARACTER_KEY);
+    if (legacy === '1' && selId) {
+      saveBoolMap(UNCAP3_BONUS_MAP_KEY, { [selId]: true });
+    }
+  }
+  localStorage.removeItem(LEGACY_UNCAP3_BONUS_KEY);
+}
+migrateLegacyUncap3Toggle();
 /** 持ち込みメモリー プリセットの保存可能件数上限。 */
 export const MAX_MEMORY_PRESETS = 5;
 /** イベント回数プリセットの保存可能件数上限。 */
@@ -91,7 +151,14 @@ interface CalcState {
   /** 除外カード（編成候補から外す。枚数制限なし・セッション限定） */
   excludedCardIds: string[];
   selectedCharacterId: string | null;
+  /** 選択中キャラの3凸トグル（uncap3BonusByChar から導出。既存読み出し互換のため保持） */
   uncap3BonusEnabled: boolean;
+  /** 選択中キャラのSTEP4トグル（step4BonusByChar から導出） */
+  step4BonusEnabled: boolean;
+  /** 3凸トグルのキャラ毎の保持値（id -> bool、既定OFF） */
+  uncap3BonusByChar: Record<string, boolean>;
+  /** STEP4トグルのキャラ毎の保持値（id -> bool、既定ON） */
+  step4BonusByChar: Record<string, boolean>;
   /** 持ち込みメモリー（最大4枚・セッション限定。永続化なし） */
   memoryBonuses: MemoryBonus[];
   /** 保存済みプリセット（localStorage に永続化、上限 MAX_MEMORY_PRESETS 件） */
@@ -123,6 +190,7 @@ interface CalcState {
   removeExcludedCard: (cardId: string) => void;
   setSelectedCharacter: (id: string | null) => void;
   setUncap3BonusEnabled: (v: boolean) => void;
+  setStep4BonusEnabled: (v: boolean) => void;
   setMemoryBonus: (index: number, stat: 'vo' | 'da' | 'vi', patch: Partial<MemoryAttributeBonus>) => void;
   clearMemoryBonuses: () => void;
   /** 現在のメモリー値を名前付きで保存。同名は上書き、上限超過は無視。 */
@@ -330,18 +398,12 @@ function applySelectedPatternImpl(
     ? useAppStore.getState().characters.find((c) => c.id === state.selectedCharacterId) ?? null
     : null;
 
-  // para_bonus は3凸ON時の最大値。OFFなら uncap3_bonus 分を減算した一時オブジェクトを生成
-  const effectiveChar =
-    character && !state.uncap3BonusEnabled && character.uncap3_bonus
-      ? {
-          ...character,
-          para_bonus: {
-            vo: character.para_bonus.vo - character.uncap3_bonus.vo,
-            da: character.para_bonus.da - character.uncap3_bonus.da,
-            vi: character.para_bonus.vi - character.uncap3_bonus.vi,
-          },
-        }
-      : character;
+  // 3凸（OFFで減算）・STEP4（ONで加算）のトグルを反映した一時オブジェクトを生成
+  const effectiveChar = applyCharacterToggles(
+    character,
+    state.uncap3BonusEnabled,
+    state.step4BonusEnabled,
+  );
 
   const memoryBonuses = state.memoryBonuses;
   const hasAnyMemory = !isEmptyAllMemoryBonuses(memoryBonuses);
@@ -369,6 +431,11 @@ function applySelectedPatternImpl(
   };
 }
 
+const initialSelectedCharacterId =
+  typeof window !== 'undefined' ? localStorage.getItem(SELECTED_CHARACTER_KEY) : null;
+const initialUncap3BonusByChar = loadBoolMap(UNCAP3_BONUS_MAP_KEY);
+const initialStep4BonusByChar = loadBoolMap(STEP4_BONUS_MAP_KEY);
+
 export const useCalcStore = create<CalcState>((set, get) => ({
   selectedPlanId: '',
   selectedPlanType: 'sense',
@@ -384,11 +451,12 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   contestMode: false,
   requiredCardIds: [],
   excludedCardIds: [],
-  selectedCharacterId:
-    typeof window !== 'undefined' ? localStorage.getItem(SELECTED_CHARACTER_KEY) : null,
-  // デフォルト OFF（3凸は課金要素で重いため）。para_bonus は3凸ON状態の最大値として保持し、OFFなら uncap3_bonus 分を減算
-  uncap3BonusEnabled:
-    typeof window !== 'undefined' && localStorage.getItem(UNCAP3_BONUS_KEY) === '1',
+  selectedCharacterId: initialSelectedCharacterId,
+  // キャラ毎マップから選択中キャラの値を導出。3凸=既定OFF / STEP4=既定ON
+  uncap3BonusByChar: initialUncap3BonusByChar,
+  step4BonusByChar: initialStep4BonusByChar,
+  uncap3BonusEnabled: isUncap3EnabledFor(initialUncap3BonusByChar, initialSelectedCharacterId),
+  step4BonusEnabled: isStep4EnabledFor(initialStep4BonusByChar, initialSelectedCharacterId),
   // 持ち込みメモリー (最大4枚) はセッション限定。localStorage には保存しない
   memoryBonuses: [emptyMemoryBonus(), emptyMemoryBonus(), emptyMemoryBonus(), emptyMemoryBonus()],
   // プリセットは localStorage に永続化（メモリー値自体とは別）
@@ -512,13 +580,16 @@ export const useCalcStore = create<CalcState>((set, get) => ({
     if (id) localStorage.setItem(SELECTED_CHARACTER_KEY, id);
     else localStorage.removeItem(SELECTED_CHARACTER_KEY);
 
-    set({ selectedCharacterId: id });
+    const state = get();
+    // 選択キャラに応じてトグルの導出値を切り替える（3凸=既定OFF / STEP4=既定ON）
+    const uncap3BonusEnabled = isUncap3EnabledFor(state.uncap3BonusByChar, id);
+    const step4BonusEnabled = isStep4EnabledFor(state.step4BonusByChar, id);
+    set({ selectedCharacterId: id, uncap3BonusEnabled, step4BonusEnabled });
 
     // 計算済みなら現在の選択パターンで再計算
-    const state = get();
     if (state.calculationResult && state.deckResults.length > 0) {
       const updates = applySelectedPatternImpl(
-        { ...state, selectedCharacterId: id },
+        { ...state, selectedCharacterId: id, uncap3BonusEnabled, step4BonusEnabled },
         state.selectedPatternIndex,
       );
       set(updates as Partial<CalcState>);
@@ -526,16 +597,41 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   },
 
   setUncap3BonusEnabled: (v) => {
-    // デフォルトOFF。ONのみ '1' を記録、OFFなら削除（未設定=OFF扱い）
-    if (v) localStorage.setItem(UNCAP3_BONUS_KEY, '1');
-    else localStorage.removeItem(UNCAP3_BONUS_KEY);
-
-    set({ uncap3BonusEnabled: v });
-
+    // 選択中キャラのトグルとして保持（3凸=既定OFF）
     const state = get();
+    const id = state.selectedCharacterId;
+    const map = { ...state.uncap3BonusByChar };
+    if (id) {
+      if (v) map[id] = true;
+      else delete map[id]; // 既定OFFなのでOFFはマップから除去
+      saveBoolMap(UNCAP3_BONUS_MAP_KEY, map);
+    }
+    set({ uncap3BonusEnabled: v, uncap3BonusByChar: map });
+
     if (state.calculationResult && state.deckResults.length > 0) {
       const updates = applySelectedPatternImpl(
-        { ...state, uncap3BonusEnabled: v },
+        { ...state, uncap3BonusEnabled: v, uncap3BonusByChar: map },
+        state.selectedPatternIndex,
+      );
+      set(updates as Partial<CalcState>);
+    }
+  },
+
+  setStep4BonusEnabled: (v) => {
+    // 選択中キャラのトグルとして保持（STEP4=既定ON）
+    const state = get();
+    const id = state.selectedCharacterId;
+    const map = { ...state.step4BonusByChar };
+    if (id) {
+      if (v) delete map[id]; // 既定ONなのでONはマップから除去
+      else map[id] = false;
+      saveBoolMap(STEP4_BONUS_MAP_KEY, map);
+    }
+    set({ step4BonusEnabled: v, step4BonusByChar: map });
+
+    if (state.calculationResult && state.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(
+        { ...state, step4BonusEnabled: v, step4BonusByChar: map },
         state.selectedPatternIndex,
       );
       set(updates as Partial<CalcState>);

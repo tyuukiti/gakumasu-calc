@@ -153,10 +153,18 @@ public class MainViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedCharacter, value))
             {
+                // 選択キャラごとに保持したトグル値を反映（3凸=既定OFF / STEP4=既定ON）
+                _uncap3BonusEnabled = value != null
+                    && _uncap3BonusByChar.TryGetValue(value.Id, out var u) && u;
+                _step4BonusEnabled = value == null
+                    || !_step4BonusByChar.TryGetValue(value.Id, out var s) || s;
+                OnPropertyChanged(nameof(Uncap3BonusEnabled));
+                OnPropertyChanged(nameof(Step4BonusEnabled));
                 OnPropertyChanged(nameof(HasSelectedCharacter));
                 OnPropertyChanged(nameof(SelectedCharacterDisplay));
                 OnPropertyChanged(nameof(CharacterBonusSummary));
                 OnPropertyChanged(nameof(HasUncap3Bonus));
+                OnPropertyChanged(nameof(HasStep4Bonus));
                 foreach (var tile in CharacterTiles)
                     tile.IsSelected = (tile.Character == value);
                 // 計算済みなら選択中パターンで再計算
@@ -176,39 +184,56 @@ public class MainViewModel : ViewModelBase
         get
         {
             if (_selectedCharacter == null) return string.Empty;
-            var b = _selectedCharacter.BaseStatusBonus;
+            var b = EffectiveBaseStatus(_selectedCharacter);
             var p = EffectiveParaBonus(_selectedCharacter);
             return $"基礎+{b.Vo}/{b.Da}/{b.Vi}  パラボ Vo+{p.Vo:0.#}% Da+{p.Da:0.#}% Vi+{p.Vi:0.#}%";
         }
     }
 
     /// <summary>
-    /// 実効パラボを返す。para_bonus は3凸ON時の最大値で、OFFなら uncap3_bonus 分を減算する。
+    /// 実効パラボを返す。3凸OFFなら uncap3_bonus 分を減算、STEP4 ONなら step4_bonus.para_bonus を加算する。
     /// </summary>
     private StatBonusPercent EffectiveParaBonus(Character c)
     {
+        var p = c.ParaBonus;
         if (!_uncap3BonusEnabled && c.Uncap3Bonus != null)
-            return c.ParaBonus.Subtract(c.Uncap3Bonus);
-        return c.ParaBonus;
+            p = p.Subtract(c.Uncap3Bonus);
+        if (_step4BonusEnabled && c.Step4Bonus != null)
+            p = p.Add(c.Step4Bonus.ParaBonus);
+        return p;
     }
 
     /// <summary>
-    /// 計算で実際に渡すキャラ。3凸OFF時はパラボから3凸分を減算した一時オブジェクトを返す。
+    /// 実効基礎ステータス。STEP4 ONなら step4_bonus.base_status_bonus を加算する。
+    /// </summary>
+    private StatusValues EffectiveBaseStatus(Character c)
+    {
+        if (_step4BonusEnabled && c.Step4Bonus != null)
+            return c.BaseStatusBonus.Add(c.Step4Bonus.BaseStatusBonus);
+        return c.BaseStatusBonus;
+    }
+
+    /// <summary>
+    /// 計算で実際に渡すキャラ。3凸OFF時はパラボから3凸分を減算し、STEP4 ON時は基礎・パラボに加算した一時オブジェクトを返す。
     /// </summary>
     private Character? GetEffectiveCharacter()
     {
         if (_selectedCharacter == null) return null;
-        if (_uncap3BonusEnabled || _selectedCharacter.Uncap3Bonus == null)
-            return _selectedCharacter;
+        var c = _selectedCharacter;
+        bool adjustUncap3 = !_uncap3BonusEnabled && c.Uncap3Bonus != null;
+        bool adjustStep4 = _step4BonusEnabled && c.Step4Bonus != null;
+        if (!adjustUncap3 && !adjustStep4)
+            return c;
         return new Character
         {
-            Id = _selectedCharacter.Id,
-            Name = _selectedCharacter.Name,
-            Color = _selectedCharacter.Color,
-            Initial = _selectedCharacter.Initial,
-            BaseStatusBonus = _selectedCharacter.BaseStatusBonus,
-            ParaBonus = _selectedCharacter.ParaBonus.Subtract(_selectedCharacter.Uncap3Bonus),
-            Uncap3Bonus = _selectedCharacter.Uncap3Bonus,
+            Id = c.Id,
+            Name = c.Name,
+            Color = c.Color,
+            Initial = c.Initial,
+            BaseStatusBonus = EffectiveBaseStatus(c),
+            ParaBonus = EffectiveParaBonus(c),
+            Uncap3Bonus = c.Uncap3Bonus,
+            Step4Bonus = c.Step4Bonus,
         };
     }
 
@@ -252,6 +277,10 @@ public class MainViewModel : ViewModelBase
         };
     }
 
+    // トグルはキャラごとに保持（セッション内）。3凸=既定OFF / STEP4=既定ON。
+    private readonly Dictionary<string, bool> _uncap3BonusByChar = new();
+    private readonly Dictionary<string, bool> _step4BonusByChar = new();
+
     private bool _uncap3BonusEnabled = false;
     public bool Uncap3BonusEnabled
     {
@@ -260,6 +289,8 @@ public class MainViewModel : ViewModelBase
         {
             if (SetProperty(ref _uncap3BonusEnabled, value))
             {
+                if (_selectedCharacter != null)
+                    _uncap3BonusByChar[_selectedCharacter.Id] = value;
                 OnPropertyChanged(nameof(CharacterBonusSummary));
                 if (Result != null && _selectedPattern != null && _deckResults.Count > 0)
                     ApplySelectedPattern(_selectedPattern.Index);
@@ -268,6 +299,26 @@ public class MainViewModel : ViewModelBase
     }
 
     public bool HasUncap3Bonus => _selectedCharacter?.Uncap3Bonus != null;
+
+    // STEP4 はデフォルト ON（開放済み前提）。OFF にするとパラボ・基礎の加算を外す。
+    private bool _step4BonusEnabled = true;
+    public bool Step4BonusEnabled
+    {
+        get => _step4BonusEnabled;
+        set
+        {
+            if (SetProperty(ref _step4BonusEnabled, value))
+            {
+                if (_selectedCharacter != null)
+                    _step4BonusByChar[_selectedCharacter.Id] = value;
+                OnPropertyChanged(nameof(CharacterBonusSummary));
+                if (Result != null && _selectedPattern != null && _deckResults.Count > 0)
+                    ApplySelectedPattern(_selectedPattern.Index);
+            }
+        }
+    }
+
+    public bool HasStep4Bonus => _selectedCharacter?.Step4Bonus != null;
 
     public ICommand SelectCharacterCommand { get; }
     public ICommand ClearMemoryBonusesCommand { get; private set; } = null!;

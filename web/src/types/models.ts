@@ -182,6 +182,12 @@ export interface StatBonusPercent {
   vi: number;
 }
 
+/** 一部キャラに開放されるSTEP4の追加分（基礎ステータス・パラボの両方を上乗せ） */
+export interface Step4Bonus {
+  base_status_bonus: StatusValues;
+  para_bonus: StatBonusPercent;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -191,6 +197,8 @@ export interface Character {
   para_bonus: StatBonusPercent;
   /** 3凸時に追加されるレッスンボーナス（任意） */
   uncap3_bonus?: StatBonusPercent;
+  /** STEP4で追加される基礎ステータス＋パラボ（任意・ONで加算） */
+  step4_bonus?: Step4Bonus;
 }
 
 export interface CharacterFile {
