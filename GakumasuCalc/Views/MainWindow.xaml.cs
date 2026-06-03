@@ -20,4 +20,14 @@ public partial class MainWindow : Window
         if (DataContext is ViewModels.MainViewModel vm)
             vm.ReloadSelectedMemoryPreset();
     }
+
+    /// <summary>
+    /// イベント回数プリセット ComboBox のドロップダウン閉鎖時。
+    /// 同じ項目を再選択した場合も明示的に再読み込みする。
+    /// </summary>
+    private void OnEventCountPresetDropDownClosed(object sender, EventArgs e)
+    {
+        if (DataContext is ViewModels.MainViewModel vm)
+            vm.ReloadSelectedEventCountPreset();
+    }
 }

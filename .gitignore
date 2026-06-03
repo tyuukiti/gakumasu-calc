@@ -29,6 +29,9 @@ Data/Inventory/
 # Memory preset data (user-specific)
 Data/MemoryPresets/
 
+# Event count preset data (user-specific)
+Data/EventCountPresets/
+
 # Wiki sync state (auto-generated)
 Data/SupportCards/_synced.txt
 

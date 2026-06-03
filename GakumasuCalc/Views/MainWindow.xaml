@@ -193,6 +193,7 @@
                     </StackPanel>
 
                     <Expander Header="詳細を編集" IsExpanded="False" FontSize="12" Foreground="#666">
+                    <StackPanel>
                     <WrapPanel Margin="0,8,0,0">
                         <!-- 列1: アイテム系 -->
                         <StackPanel Margin="0,0,24,0">
@@ -436,6 +437,49 @@
                             </Grid>
                         </StackPanel>
                     </WrapPanel>
+
+                    <!-- マイプリセット (ユーザ入力の保存) -->
+                    <Border BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,8,0,0">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="マイプリセット" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="#666" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding EventCountPresetCountText}" FontSize="11"
+                                           Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox Grid.Column="0"
+                                          ItemsSource="{Binding EventCountPresets}"
+                                          SelectedItem="{Binding SelectedEventCountPreset}"
+                                          DisplayMemberPath="Name"
+                                          DropDownClosed="OnEventCountPresetDropDownClosed"
+                                          FontSize="12" Padding="6,4"/>
+                                <Button Grid.Column="1" Content="削除"
+                                        Command="{Binding DeleteEventCountPresetCommand}"
+                                        Style="{StaticResource DangerButton}"
+                                        FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                            </Grid>
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding NewEventCountPresetName, UpdateSourceTrigger=PropertyChanged}"
+                                         FontSize="12" Padding="6,4"
+                                         ToolTip="保存するプリセット名を入力（同名があれば上書き）"/>
+                                <Button Grid.Column="1" Content="現在の回数を保存"
+                                        Command="{Binding SaveEventCountPresetCommand}"
+                                        Style="{StaticResource PrimaryButton}"
+                                        FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                    </StackPanel>
                     </Expander>
                 </StackPanel>
             </Border>
