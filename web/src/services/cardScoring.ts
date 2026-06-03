@@ -879,6 +879,129 @@ function enforceSpCounts(
   }
 }
 
+/**
+ * postOptimize はレンタル枠 (is_rental) を絶対にスワップしないため、所持カードが
+ * postOptimize で入れ替わった後に「レンタル枠が最適でなくなる」ケースを補正できない。
+ *
+ * 例: レンタル選出時点で お城(Vo) が所持枠を占有 → レンタルに ほっぺた(Vi) が選ばれる。
+ * その後 postOptimize が 所持の お城 を 自分と向き合う(Da) に差し替えると お城 が枠から外れるが、
+ * レンタルは ほっぺた のまま固定される。本来は お城 をレンタルに据えた方が合計が高い。
+ *
+ * このパスは postOptimize 後に、実際の計算(calculate)でレンタル枠を再評価し、
+ * レンタルプール内の最良カードに差し替える。タイプ枠・SP枚数の制約は維持する。
+ */
+function optimizeRentalCard(
+  selected: CardScore[],
+  rentalPool: SupportCard[] | undefined,
+  planType: string | undefined,
+  triggerCounts: Record<string, number>,
+  lessonAllocation: Record<string, number>,
+  lessonStatTotals: StatusValues,
+  uncapLevels: Record<string, number> | undefined,
+  triggerBonusInfo: Record<string, TriggerBonusEntry> | undefined,
+  protectedIds: Set<string>,
+  spCounts: Record<string, number> | undefined,
+  plan: TrainingPlan,
+  additionalCounts: AdditionalCounts | undefined,
+  statCap: number,
+  character: Character | null,
+  memoryBonuses: MemoryBonus[] | null,
+  cardTypeSlots: Record<string, number> | undefined,
+  turnChoices: TurnChoice[],
+  overflowPenalty?: OverflowPenaltyConfig,
+): void {
+  if (rentalPool == null) return;
+  const rentalIdx = selected.findIndex((cs) => cs.is_rental);
+  if (rentalIdx < 0) return;
+  const current = selected[rentalIdx];
+  if (current.is_required) return;
+
+  const coversStat = (card: SupportCard, stat: string): boolean =>
+    card.effects.some(
+      (e) => e.trigger === 'equip' && e.value_type === 'sp_rate' && (e.stat === stat || e.stat === 'all'),
+    );
+  const meetsSpCounts = (cards: SupportCard[]): boolean => {
+    if (spCounts == null) return true;
+    for (const [stat, need] of Object.entries(spCounts)) {
+      if (need <= 0) continue;
+      if (cards.filter((c) => coversStat(c, stat)).length < need) return false;
+    }
+    return true;
+  };
+
+  // 評価用: レンタル候補を 4凸 として実際の計算で合計を求める (postOptimize と同一ロジック)
+  const evaluateFull = (cards: SupportCard[], rentalCardId: string): number => {
+    const uc: Record<string, number> = { ...(uncapLevels ?? {}) };
+    for (const cs of selected) {
+      if (cs.is_rental) uc[cs.card.id] = 4;
+    }
+    uc[rentalCardId] = 4;
+    const fs = calculate(plan, cards, turnChoices, uc, additionalCounts, character ?? null, memoryBonuses ?? null)
+      .final_status;
+    let total = Math.min(fs.vo, statCap) + Math.min(fs.da, statCap) + Math.min(fs.vi, statCap);
+    if (overflowPenalty) {
+      const overflow =
+        Math.max(0, fs.vo - statCap) + Math.max(0, fs.da - statCap) + Math.max(0, fs.vi - statCap);
+      if (overflow > overflowPenalty.threshold) total -= overflow * 2;
+    }
+    return total;
+  };
+
+  const ownedIds = new Set(
+    selected.filter((_, i) => i !== rentalIdx).map((s) => s.card.id),
+  );
+  let pool = rentalPool.filter((c) => !ownedIds.has(c.id));
+  if (planType != null && planType !== '') {
+    pool = pool.filter(
+      (c) => c.plan == null || c.plan === '' || c.plan === planType || c.plan === 'free',
+    );
+  }
+
+  const currentCards = selected.map((s) => s.card);
+  let bestTotal = evaluateFull(currentCards, current.card.id);
+  let bestCard: SupportCard | null = null;
+
+  // 全プールに calculate を回すと重いので、素の寄与上位のみ実評価する。
+  const rentalUncap: Record<string, number> = {};
+  for (const c of pool) rentalUncap[c.id] = 4;
+  const ranked = pool
+    .map((c) => ({
+      card: c,
+      score: (() => {
+        const cs = calculateCardContribution(c, triggerCounts, lessonAllocation, lessonStatTotals, rentalUncap, triggerBonusInfo);
+        return cs.raw_vo + cs.raw_da + cs.raw_vi;
+      })(),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 40)
+    .map((x) => x.card);
+
+  for (const cand of ranked) {
+    const testCards = [...currentCards];
+    testCards[rentalIdx] = cand;
+    if (cardTypeSlots != null && !meetsTypeSlots(testCards, cardTypeSlots)) continue;
+    if (!meetsSpCounts(testCards)) continue;
+    const total = evaluateFull(testCards, cand.id);
+    if (total > bestTotal) {
+      bestTotal = total;
+      bestCard = cand;
+    }
+  }
+
+  if (bestCard != null) {
+    const cs = calculateCardContribution(
+      bestCard,
+      triggerCounts,
+      lessonAllocation,
+      lessonStatTotals,
+      { ...(uncapLevels ?? {}), [bestCard.id]: 4 },
+      triggerBonusInfo,
+    );
+    selected[rentalIdx] = { ...cs, is_rental: true, is_required: false };
+    protectedIds.delete(current.card.id);
+  }
+}
+
 function postOptimize(
   selected: CardScore[],
   candidates: CardScore[],
@@ -1848,6 +1971,29 @@ export function selectOptimalDeck(
     memoryBonuses ?? null,
     cardTypeSlots,
     turnChoicesOverride,
+    overflowPenalty,
+  );
+
+  // レンタル枠の再最適化: postOptimize は is_rental を絶対スワップしないため、
+  // 所持カードが入れ替わった後にレンタル枠が最適でなくなるケースを実計算で補正する。
+  optimizeRentalCard(
+    selected,
+    rentalPool,
+    planType,
+    triggerCounts,
+    lessonAllocation,
+    lessonStatTotals,
+    uncapLevels,
+    triggerBonusInfo,
+    protectedIds,
+    spCounts,
+    plan,
+    additionalCounts,
+    statCap,
+    character ?? null,
+    memoryBonuses ?? null,
+    cardTypeSlots,
+    turnChoicesOverride ?? buildTurnChoices(plan, mainStats),
     overflowPenalty,
   );
 
