@@ -32,8 +32,21 @@ public class StatBonusPercent
 }
 
 /// <summary>
+/// 一部キャラに開放されるSTEP4の追加分。基礎ステータス加算とパラボ%加算の両方を持つ（ONで加算）。
+/// </summary>
+public class Step4Bonus
+{
+    [YamlMember(Alias = "base_status_bonus")]
+    public StatusValues BaseStatusBonus { get; set; } = StatusValues.Zero;
+
+    [YamlMember(Alias = "para_bonus")]
+    public StatBonusPercent ParaBonus { get; set; } = StatBonusPercent.Zero;
+}
+
+/// <summary>
 /// キャラクター固有データ。基礎ステータス加算と属性別パラメータボーナス%を持つ。
 /// uncap3_bonus は3凸時に付くレッスンボーナス（任意、null可）。
+/// step4_bonus は一部キャラに開放されるSTEP4の追加分（任意、null可）。
 /// </summary>
 public class Character
 {
@@ -50,6 +63,9 @@ public class Character
 
     [YamlMember(Alias = "uncap3_bonus")]
     public StatBonusPercent? Uncap3Bonus { get; set; }
+
+    [YamlMember(Alias = "step4_bonus")]
+    public Step4Bonus? Step4Bonus { get; set; }
 
     public override string ToString() => Name;
 }

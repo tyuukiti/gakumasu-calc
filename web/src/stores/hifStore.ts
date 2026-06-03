@@ -13,6 +13,7 @@ import { useAppStore } from './appStore';
 import { useCalcStore } from './calcStore';
 import { selectMultiplePatternsHif } from '../services/cardScoring';
 import { calculate } from '../services/statusCalculation';
+import { applyCharacterToggles } from '../services/characterBonus';
 import { trackEvent } from '../utils/analytics';
 import {
   type HifBonusLevels,
@@ -321,22 +322,17 @@ function buildHifEffectiveCharacter(
   bl: HifBonusLevels,
   selectedCharacterId: string | null,
   uncap3BonusEnabled: boolean,
+  step4BonusEnabled: boolean,
 ): { character: ReturnType<typeof useAppStore.getState>['characters'][number] | null; hasAnyHifBonus: boolean } {
   const app = useAppStore.getState();
   const character = selectedCharacterId
     ? app.characters.find((c) => c.id === selectedCharacterId) ?? null
     : null;
-  const effectiveCharBase =
-    character && !uncap3BonusEnabled && character.uncap3_bonus
-      ? {
-          ...character,
-          para_bonus: {
-            vo: character.para_bonus.vo - character.uncap3_bonus.vo,
-            da: character.para_bonus.da - character.uncap3_bonus.da,
-            vi: character.para_bonus.vi - character.uncap3_bonus.vi,
-          },
-        }
-      : character;
+  const effectiveCharBase = applyCharacterToggles(
+    character,
+    uncap3BonusEnabled,
+    step4BonusEnabled,
+  );
 
   const bonusVoFlat = getVoFlatBonus(bl.voUpLevel);
   const bonusDaFlat = getDaFlatBonus(bl.daUpLevel);
@@ -367,6 +363,7 @@ function buildHifEffectiveCharacter(
         vi: (effectiveCharBase?.para_bonus.vi ?? 0) + bonusViPara,
       },
       uncap3_bonus: effectiveCharBase?.uncap3_bonus,
+      step4_bonus: effectiveCharBase?.step4_bonus,
     },
     hasAnyHifBonus,
   };
@@ -397,6 +394,7 @@ function applySelectedPatternImpl(
     state.bonusLevels,
     calc.selectedCharacterId,
     calc.uncap3BonusEnabled,
+    calc.step4BonusEnabled,
   );
 
   const memoryBonuses = calc.memoryBonuses;
@@ -703,17 +701,11 @@ export const useHifStore = create<HifState>((set, get) => ({
       const character = calc.selectedCharacterId
         ? useAppStore.getState().characters.find((c) => c.id === calc.selectedCharacterId) ?? null
         : null;
-      const effectiveCharBase =
-        character && !calc.uncap3BonusEnabled && character.uncap3_bonus
-          ? {
-              ...character,
-              para_bonus: {
-                vo: character.para_bonus.vo - character.uncap3_bonus.vo,
-                da: character.para_bonus.da - character.uncap3_bonus.da,
-                vi: character.para_bonus.vi - character.uncap3_bonus.vi,
-              },
-            }
-          : character;
+      const effectiveCharBase = applyCharacterToggles(
+        character,
+        calc.uncap3BonusEnabled,
+        calc.step4BonusEnabled,
+      );
 
       // HIFボーナス (Vo/Da/Vi 上昇パネル) をキャラ補正に合算
       const bl = state.bonusLevels;
@@ -744,6 +736,7 @@ export const useHifStore = create<HifState>((set, get) => ({
               vi: (effectiveCharBase?.para_bonus.vi ?? 0) + bonusViPara,
             },
             uncap3_bonus: effectiveCharBase?.uncap3_bonus,
+            step4_bonus: effectiveCharBase?.step4_bonus,
           }
         : null;
 

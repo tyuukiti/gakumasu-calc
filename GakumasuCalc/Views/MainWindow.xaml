@@ -309,6 +309,11 @@
                                   IsChecked="{Binding Uncap3BonusEnabled}"
                                   FontSize="11" Margin="0,8,0,0"
                                   Visibility="{Binding HasUncap3Bonus, Converter={StaticResource BoolToVis}}"/>
+                        <!-- STEP4ボーナス切替（ONで基礎・パラボに加算。デフォルトON） -->
+                        <CheckBox Content="STEP4ボーナス込み"
+                                  IsChecked="{Binding Step4BonusEnabled}"
+                                  FontSize="11" Margin="0,4,0,0"
+                                  Visibility="{Binding HasStep4Bonus, Converter={StaticResource BoolToVis}}"/>
                         <!-- 補正サマリ -->
                         <TextBlock Text="{Binding CharacterBonusSummary}"
                                    FontSize="11" Foreground="#666" Margin="0,4,0,0"

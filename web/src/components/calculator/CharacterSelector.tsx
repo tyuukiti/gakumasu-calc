@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../../stores/appStore';
 import { useCalcStore } from '../../stores/calcStore';
+import { applyCharacterToggles } from '../../services/characterBonus';
 
 // 背景色の明度から白/黒の文字色を選ぶ（YIQ式）
 function foregroundFor(hex: string): string {
@@ -20,21 +21,17 @@ export default function CharacterSelector() {
   const setSelectedCharacter = useCalcStore((s) => s.setSelectedCharacter);
   const uncap3Enabled = useCalcStore((s) => s.uncap3BonusEnabled);
   const setUncap3Enabled = useCalcStore((s) => s.setUncap3BonusEnabled);
+  const step4Enabled = useCalcStore((s) => s.step4BonusEnabled);
+  const setStep4Enabled = useCalcStore((s) => s.setStep4BonusEnabled);
   const [isOpen, setIsOpen] = useState(false);
 
   if (characters.length === 0) return null;
 
   const selected = characters.find((c) => c.id === selectedCharacterId) ?? null;
-  // para_bonus は3凸ON時の最大値。OFFなら uncap3_bonus 分を減算した値を表示
-  const effectivePara = selected
-    ? !uncap3Enabled && selected.uncap3_bonus
-      ? {
-          vo: selected.para_bonus.vo - selected.uncap3_bonus.vo,
-          da: selected.para_bonus.da - selected.uncap3_bonus.da,
-          vi: selected.para_bonus.vi - selected.uncap3_bonus.vi,
-        }
-      : selected.para_bonus
-    : null;
+  // 計算と同じトグル（3凸 OFFで減算 / STEP4 ONで加算）を反映した表示値
+  const effective = applyCharacterToggles(selected, uncap3Enabled, step4Enabled);
+  const effectiveBase = effective?.base_status_bonus ?? null;
+  const effectivePara = effective?.para_bonus ?? null;
 
   return (
     <div className="border-t border-gray-100 pt-3">
@@ -103,12 +100,33 @@ export default function CharacterSelector() {
             </label>
           )}
 
-          {selected && effectivePara && (
+          {selected && selected.step4_bonus && (
+            <label className="mt-2 flex items-center gap-2 text-xs text-gray-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={step4Enabled}
+                onChange={(e) => setStep4Enabled(e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>
+                STEP4ボーナス込み
+                <span className="text-gray-500 ml-1">
+                  (基礎+{selected.step4_bonus.base_status_bonus.vo}/
+                  {selected.step4_bonus.base_status_bonus.da}/
+                  {selected.step4_bonus.base_status_bonus.vi}、パラボ+
+                  {selected.step4_bonus.para_bonus.vo}/{selected.step4_bonus.para_bonus.da}/
+                  {selected.step4_bonus.para_bonus.vi}%、ONで加算)
+                </span>
+              </span>
+            </label>
+          )}
+
+          {selected && effectiveBase && effectivePara && (
             <div className="mt-2 text-xs text-gray-600 bg-gray-50 rounded p-2 leading-relaxed">
               <div>
-                基礎+{selected.base_status_bonus.vo}/
-                {selected.base_status_bonus.da}/
-                {selected.base_status_bonus.vi}
+                基礎+{effectiveBase.vo}/
+                {effectiveBase.da}/
+                {effectiveBase.vi}
               </div>
               <div>
                 パラボ Vo+{effectivePara.vo}% Da+{effectivePara.da}% Vi+{effectivePara.vi}%
