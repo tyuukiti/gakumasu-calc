@@ -506,6 +506,13 @@ public class CardScoringService
             plan, lessonAllocation, mainStats, uncapLevels, additionalCounts, statCap,
             character, memoryBonuses, cardTypeSlots, turnChoicesOverride, overflowPenalty);
 
+        // レンタル枠の再最適化: PostOptimize は IsRental を絶対スワップしないため、
+        // 所持カードが入れ替わった後にレンタル枠が最適でなくなるケースを実計算で補正する。
+        OptimizeRentalCard(selected, rentalPool, planType, triggerCounts,
+            lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo, protectedIds, spCounts,
+            plan, additionalCounts, statCap, character, memoryBonuses, cardTypeSlots,
+            turnChoicesOverride ?? BuildTurnChoices(plan, mainStats), overflowPenalty);
+
         // SP枚数の強制保証: PostOptimize 後、SP カードが要求枚数に満たない場合は
         // プール内の余剰 SP カードで補充する (優先順位 必須カード > SP枚数 > 編成パターン)。
         // PostOptimize は total を最大化するため非SPカードを優先しうるので、必ずこの後に実行する。
@@ -691,6 +698,128 @@ public class CardScoringService
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// PostOptimize はレンタル枠 (IsRental) を絶対にスワップしないため、所持カードが
+    /// PostOptimize で入れ替わった後に「レンタル枠が最適でなくなる」ケースを補正できない。
+    ///
+    /// 例: レンタル選出時点で お城(Vo) が所持枠を占有 → レンタルに ほっぺた(Vi) が選ばれる。
+    /// その後 PostOptimize が 所持の お城 を 自分と向き合う(Da) に差し替えると お城 が枠から外れるが、
+    /// レンタルは ほっぺた のまま固定される。本来は お城 をレンタルに据えた方が合計が高い。
+    ///
+    /// このパスは PostOptimize 後に、実際の計算(Calculate)でレンタル枠を再評価し、
+    /// レンタルプール内の最良カードに差し替える。タイプ枠・SP枚数の制約は維持する。
+    /// </summary>
+    private void OptimizeRentalCard(
+        List<CardScore> selected,
+        List<SupportCard>? rentalPool,
+        string? planType,
+        Dictionary<string, int> triggerCounts,
+        Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
+        Dictionary<string, int>? uncapLevels,
+        Dictionary<string, TriggerBonusEntry>? triggerBonusInfo,
+        HashSet<string> protectedIds,
+        Dictionary<string, int>? spCounts,
+        TrainingPlan plan,
+        AdditionalCounts? additionalCounts,
+        int statCap,
+        Character? character,
+        IReadOnlyList<MemoryBonus>? memoryBonuses,
+        Dictionary<string, int>? cardTypeSlots,
+        List<TurnChoice> turnChoices,
+        OverflowPenaltyConfig? overflowPenalty)
+    {
+        if (rentalPool == null) return;
+        int rentalIdx = selected.FindIndex(cs => cs.IsRental);
+        if (rentalIdx < 0) return;
+        var current = selected[rentalIdx];
+        if (current.IsRequired) return;
+
+        bool CoversStat(SupportCard card, string stat) =>
+            card.Effects.Any(e =>
+                e.Trigger == "equip" && e.ValueType == "sp_rate" && (e.Stat == stat || e.Stat == "all"));
+        bool MeetsSpCounts(List<SupportCard> cards)
+        {
+            if (spCounts == null) return true;
+            foreach (var kvp in spCounts)
+            {
+                if (kvp.Value <= 0) continue;
+                if (cards.Count(c => CoversStat(c, kvp.Key)) < kvp.Value) return false;
+            }
+            return true;
+        }
+
+        var calcService = new StatusCalculationService();
+        // 評価用: レンタル候補を 4凸 として実際の計算で合計を求める (PostOptimize と同一ロジック)
+        int EvaluateFull(List<SupportCard> cards, string rentalCardId)
+        {
+            var uc = new Dictionary<string, int>(uncapLevels ?? new());
+            foreach (var cs in selected.Where(c => c.IsRental))
+                uc[cs.Card.Id] = 4;
+            uc[rentalCardId] = 4;
+            var fs = calcService.Calculate(plan, cards, turnChoices, uc, additionalCounts, character, memoryBonuses).FinalStatus;
+            int total = Math.Min(fs.Vo, statCap) + Math.Min(fs.Da, statCap) + Math.Min(fs.Vi, statCap);
+            if (overflowPenalty != null)
+            {
+                int overflow = Math.Max(0, fs.Vo - statCap) + Math.Max(0, fs.Da - statCap) + Math.Max(0, fs.Vi - statCap);
+                if (overflow > overflowPenalty.Threshold) total -= overflow * 2;
+            }
+            return total;
+        }
+
+        var ownedIds = new HashSet<string>(
+            selected.Where((_, i) => i != rentalIdx).Select(s => s.Card.Id));
+        var pool = rentalPool.Where(c => !ownedIds.Contains(c.Id));
+        if (!string.IsNullOrEmpty(planType))
+        {
+            pool = pool.Where(c =>
+                string.IsNullOrEmpty(c.Plan) || c.Plan == planType || c.Plan == "free");
+        }
+
+        var currentCards = selected.Select(s => s.Card).ToList();
+        int bestTotal = EvaluateFull(currentCards, current.Card.Id);
+        SupportCard? bestCard = null;
+
+        // 全プールに Calculate を回すと重いので、素の寄与上位のみ実評価する。
+        var rentalUncap = new Dictionary<string, int>();
+        foreach (var c in pool) rentalUncap[c.Id] = 4;
+        var ranked = pool
+            .Select(c =>
+            {
+                var cs = CalculateCardContribution(c, triggerCounts, lessonAllocation, lessonStatTotals, rentalUncap, triggerBonusInfo);
+                return (card: c, score: cs.RawVo + cs.RawDa + cs.RawVi);
+            })
+            .OrderByDescending(x => x.score)
+            .Take(40)
+            .Select(x => x.card)
+            .ToList();
+
+        foreach (var cand in ranked)
+        {
+            var testCards = new List<SupportCard>(currentCards);
+            testCards[rentalIdx] = cand;
+            if (cardTypeSlots != null && !MeetsTypeSlots(testCards, cardTypeSlots)) continue;
+            if (!MeetsSpCounts(testCards)) continue;
+            int total = EvaluateFull(testCards, cand.Id);
+            if (total > bestTotal)
+            {
+                bestTotal = total;
+                bestCard = cand;
+            }
+        }
+
+        if (bestCard != null)
+        {
+            var newUncap = new Dictionary<string, int>(uncapLevels ?? new()) { [bestCard.Id] = 4 };
+            var cs = CalculateCardContribution(
+                bestCard, triggerCounts, lessonAllocation, lessonStatTotals, newUncap, triggerBonusInfo);
+            cs.IsRental = true;
+            cs.IsRequired = false;
+            selected[rentalIdx] = cs;
+            protectedIds.Remove(current.Card.Id);
         }
     }
 
