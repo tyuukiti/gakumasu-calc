@@ -168,6 +168,12 @@ export interface EventCountTemplateFile {
   templates: EventCountTemplate[];
 }
 
+/** イベント回数のユーザ保存プリセット（現在の入力値を名前付きで保持） */
+export interface EventCountPreset {
+  name: string;
+  counts: AdditionalCounts;
+}
+
 // --- Character ---
 
 export interface StatBonusPercent {

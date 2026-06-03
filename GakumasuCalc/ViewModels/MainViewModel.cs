@@ -15,6 +15,7 @@ public class MainViewModel : ViewModelBase
     private readonly InventoryService _inventoryService;
     private readonly CharacterLoaderService _characterLoader;
     private readonly MemoryPresetService _memoryPresetService;
+    private readonly EventCountPresetService _eventCountPresetService;
     private readonly VersionCheckService _versionCheckService;
     private List<SupportCard> _allCards = new();
     private List<CardInventoryEntry> _inventory = new();
@@ -117,6 +118,33 @@ public class MainViewModel : ViewModelBase
 
     public int MaxMemoryPresets => MemoryPresetService.MaxPresets;
     public string MemoryPresetCountText => $"{MemoryPresets.Count}/{MaxMemoryPresets}";
+
+    // --- イベント回数プリセット ---
+    public ObservableCollection<EventCountPreset> EventCountPresets { get; } = new();
+
+    private EventCountPreset? _selectedEventCountPreset;
+    public EventCountPreset? SelectedEventCountPreset
+    {
+        get => _selectedEventCountPreset;
+        set
+        {
+            if (SetProperty(ref _selectedEventCountPreset, value))
+            {
+                if (value != null)
+                    LoadEventCountPreset(value);
+            }
+        }
+    }
+
+    private string _newEventCountPresetName = string.Empty;
+    public string NewEventCountPresetName
+    {
+        get => _newEventCountPresetName;
+        set => SetProperty(ref _newEventCountPresetName, value);
+    }
+
+    public int MaxEventCountPresets => EventCountPresetService.MaxPresets;
+    public string EventCountPresetCountText => $"{EventCountPresets.Count}/{MaxEventCountPresets}";
 
     public Character? SelectedCharacter
     {
@@ -245,6 +273,8 @@ public class MainViewModel : ViewModelBase
     public ICommand ClearMemoryBonusesCommand { get; private set; } = null!;
     public ICommand SaveMemoryPresetCommand { get; private set; } = null!;
     public ICommand DeleteMemoryPresetCommand { get; private set; } = null!;
+    public ICommand SaveEventCountPresetCommand { get; private set; } = null!;
+    public ICommand DeleteEventCountPresetCommand { get; private set; } = null!;
     public ICommand CheckUpdateCommand { get; private set; } = null!;
     public ICommand OpenReleasePageCommand { get; private set; } = null!;
     public ICommand DismissUpdateBannerCommand { get; private set; } = null!;
@@ -411,6 +441,107 @@ public class MainViewModel : ViewModelBase
                 "削除失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
         OnPropertyChanged(nameof(MemoryPresetCountText));
+    }
+
+    /// <summary>プリセットファイルから読み込んで EventCountPresets コレクションに反映。</summary>
+    private void LoadEventCountPresets()
+    {
+        try
+        {
+            var presets = _eventCountPresetService.Load();
+            EventCountPresets.Clear();
+            foreach (var p in presets)
+                EventCountPresets.Add(p);
+            OnPropertyChanged(nameof(EventCountPresetCountText));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"イベント回数プリセット読み込みエラー: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 現在選択されているイベント回数プリセットを強制的に再読み込みする。
+    /// ComboBox の DropDownClosed から呼ばれ、同じ項目を再選択した時にも値が反映されるようにする。
+    /// </summary>
+    public void ReloadSelectedEventCountPreset()
+    {
+        if (_selectedEventCountPreset != null)
+            LoadEventCountPreset(_selectedEventCountPreset);
+    }
+
+    /// <summary>選択されたプリセットのイベント回数を現在の入力欄に反映する。</summary>
+    private void LoadEventCountPreset(EventCountPreset preset)
+    {
+        ApplyCounts(preset.Counts);
+    }
+
+    private bool CanSaveEventCountPreset()
+    {
+        if (string.IsNullOrWhiteSpace(_newEventCountPresetName)) return false;
+        // 同名は上書き扱い。同名が無くて上限超過なら不可
+        var existing = EventCountPresets.FirstOrDefault(p => p.Name == _newEventCountPresetName.Trim());
+        return existing != null || EventCountPresets.Count < EventCountPresetService.MaxPresets;
+    }
+
+    private void ExecuteSaveEventCountPreset()
+    {
+        var name = _newEventCountPresetName.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+
+        var preset = new EventCountPreset
+        {
+            Name = name,
+            Counts = BuildAdditionalCounts(),
+        };
+
+        var existing = EventCountPresets.FirstOrDefault(p => p.Name == name);
+        if (existing != null)
+        {
+            // 同名は上書き
+            var idx = EventCountPresets.IndexOf(existing);
+            EventCountPresets[idx] = preset;
+        }
+        else
+        {
+            if (EventCountPresets.Count >= EventCountPresetService.MaxPresets) return;
+            EventCountPresets.Add(preset);
+        }
+
+        try
+        {
+            _eventCountPresetService.Save(EventCountPresets.ToList());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"イベント回数プリセット保存エラー: {ex}");
+            System.Windows.MessageBox.Show(
+                $"プリセットの保存に失敗しました。\n\n{ex.Message}",
+                "保存失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            return;
+        }
+        OnPropertyChanged(nameof(EventCountPresetCountText));
+        SelectedEventCountPreset = preset;
+        NewEventCountPresetName = string.Empty;
+    }
+
+    private void ExecuteDeleteEventCountPreset()
+    {
+        if (_selectedEventCountPreset == null) return;
+        EventCountPresets.Remove(_selectedEventCountPreset);
+        SelectedEventCountPreset = null;
+        try
+        {
+            _eventCountPresetService.Save(EventCountPresets.ToList());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"イベント回数プリセット削除エラー: {ex}");
+            System.Windows.MessageBox.Show(
+                $"プリセットの削除に失敗しました。\n\n{ex.Message}",
+                "削除失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+        OnPropertyChanged(nameof(EventCountPresetCountText));
     }
 
     /// <summary>
@@ -806,6 +937,7 @@ public class MainViewModel : ViewModelBase
         _inventoryService = new InventoryService(Path.Combine(dataDir, "Inventory", "inventory.yaml"));
         _characterLoader = new CharacterLoaderService(yamlService, Path.Combine(dataDir, "Characters"));
         _memoryPresetService = new MemoryPresetService(Path.Combine(dataDir, "MemoryPresets", "memory_presets.yaml"));
+        _eventCountPresetService = new EventCountPresetService(Path.Combine(dataDir, "EventCountPresets", "event_count_presets.yaml"));
         HifVm = new HifViewModel(
             new HifSchedulePresetService(Path.Combine(dataDir, "HifSchedulePresets", "hif_schedule_presets.yaml")),
             new HifBonusLevelsService(Path.Combine(dataDir, "HifBonusLevels", "hif_bonus_levels.yaml")));
@@ -853,6 +985,11 @@ public class MainViewModel : ViewModelBase
         DeleteMemoryPresetCommand = new RelayCommand(_ => ExecuteDeleteMemoryPreset(),
             _ => _selectedMemoryPreset != null);
 
+        SaveEventCountPresetCommand = new RelayCommand(_ => ExecuteSaveEventCountPreset(),
+            _ => CanSaveEventCountPreset());
+        DeleteEventCountPresetCommand = new RelayCommand(_ => ExecuteDeleteEventCountPreset(),
+            _ => _selectedEventCountPreset != null);
+
         CheckUpdateCommand = new RelayCommand(async _ => await CheckUpdateAsync(manual: true));
         OpenReleasePageCommand = new RelayCommand(_ => OpenReleasePage());
         DismissUpdateBannerCommand = new RelayCommand(_ =>
@@ -866,6 +1003,7 @@ public class MainViewModel : ViewModelBase
 
         LoadData();
         LoadMemoryPresets();
+        LoadEventCountPresets();
 
         // 起動時に非同期で更新確認（失敗は静かに無視）
         _ = CheckUpdateAsync(manual: false);
@@ -1829,7 +1967,12 @@ public class MainViewModel : ViewModelBase
 
     private void ApplyEventTemplate(EventCountTemplate template)
     {
-        var c = template.Counts;
+        ApplyCounts(template.Counts);
+    }
+
+    /// <summary>AdditionalCounts の各値を入力欄プロパティへ反映する（テンプレート/プリセット共通）。</summary>
+    private void ApplyCounts(AdditionalCounts c)
+    {
         PDrinkAcquire = c.PDrinkAcquire;
         PItemAcquire = c.PItemAcquire;
         SkillAcquire = c.SkillAcquire;

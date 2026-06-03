@@ -8,6 +8,7 @@ import type {
   MemoryBonus,
   MemoryAttributeBonus,
   MemoryPreset,
+  EventCountPreset,
 } from '../types/models';
 import {
   emptyAdditionalCounts,
@@ -25,8 +26,11 @@ import { trackEvent, startTimer, endTimer, incrementCounter, trackFunnelStep } f
 const SELECTED_CHARACTER_KEY = 'selectedCharacterId';
 const UNCAP3_BONUS_KEY = 'uncap3CharacterBonusEnabled';
 const MEMORY_PRESETS_KEY = 'memoryPresets';
+const EVENT_COUNT_PRESETS_KEY = 'eventCountPresets';
 /** 持ち込みメモリー プリセットの保存可能件数上限。 */
 export const MAX_MEMORY_PRESETS = 5;
+/** イベント回数プリセットの保存可能件数上限。 */
+export const MAX_EVENT_COUNT_PRESETS = 10;
 
 function loadMemoryPresetsFromStorage(): MemoryPreset[] {
   if (typeof window === 'undefined') return [];
@@ -46,6 +50,27 @@ function persistMemoryPresets(presets: MemoryPreset[]) {
     localStorage.setItem(MEMORY_PRESETS_KEY, JSON.stringify(presets));
   } catch (e) {
     console.warn('メモリープリセットの保存に失敗:', e);
+  }
+}
+
+function loadEventCountPresetsFromStorage(): EventCountPreset[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(EVENT_COUNT_PRESETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as EventCountPreset[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistEventCountPresets(presets: EventCountPreset[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(EVENT_COUNT_PRESETS_KEY, JSON.stringify(presets));
+  } catch (e) {
+    console.warn('イベント回数プリセットの保存に失敗:', e);
   }
 }
 
@@ -71,6 +96,8 @@ interface CalcState {
   memoryBonuses: MemoryBonus[];
   /** 保存済みプリセット（localStorage に永続化、上限 MAX_MEMORY_PRESETS 件） */
   memoryPresets: MemoryPreset[];
+  /** イベント回数の保存済みプリセット（localStorage に永続化、上限 MAX_EVENT_COUNT_PRESETS 件） */
+  eventCountPresets: EventCountPreset[];
   deckResults: DeckResult[];
   selectedPatternIndex: number;
   calculationResult: CalculationResult | null;
@@ -103,6 +130,11 @@ interface CalcState {
   /** プリセット名を指定して読み込み（4枠を上書き、自動再計算）。 */
   loadMemoryPreset: (name: string) => void;
   deleteMemoryPreset: (name: string) => void;
+  /** 現在のイベント回数入力を名前付きで保存。同名は上書き、上限超過は無視。 */
+  saveEventCountPreset: (name: string) => void;
+  /** プリセット名を指定して読み込み（イベント回数を上書き、自動再計算）。 */
+  loadEventCountPreset: (name: string) => void;
+  deleteEventCountPreset: (name: string) => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
 }
@@ -361,6 +393,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   memoryBonuses: [emptyMemoryBonus(), emptyMemoryBonus(), emptyMemoryBonus(), emptyMemoryBonus()],
   // プリセットは localStorage に永続化（メモリー値自体とは別）
   memoryPresets: loadMemoryPresetsFromStorage(),
+  eventCountPresets: loadEventCountPresetsFromStorage(),
   deckResults: [],
   selectedPatternIndex: 0,
   calculationResult: null,
@@ -599,6 +632,63 @@ export const useCalcStore = create<CalcState>((set, get) => ({
     if (newPresets.length === state.memoryPresets.length) return;
     persistMemoryPresets(newPresets);
     set({ memoryPresets: newPresets });
+  },
+
+  saveEventCountPreset: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const state = get();
+    // 現在の入力値の独立コピー（既知キーのみ保持）
+    const snapshot = emptyAdditionalCounts();
+    for (const key of Object.keys(snapshot)) {
+      (snapshot as Record<string, number>)[key] =
+        (state.additionalCounts as Record<string, number>)[key] ?? 0;
+    }
+
+    const existing = state.eventCountPresets.findIndex((p) => p.name === trimmed);
+    let newPresets: EventCountPreset[];
+    if (existing >= 0) {
+      // 同名は上書き
+      newPresets = state.eventCountPresets.map((p, i) =>
+        i === existing ? { name: trimmed, counts: snapshot } : p,
+      );
+    } else {
+      if (state.eventCountPresets.length >= MAX_EVENT_COUNT_PRESETS) return;
+      newPresets = [...state.eventCountPresets, { name: trimmed, counts: snapshot }];
+    }
+    persistEventCountPresets(newPresets);
+    set({ eventCountPresets: newPresets });
+  },
+
+  loadEventCountPreset: (name) => {
+    const state = get();
+    const preset = state.eventCountPresets.find((p) => p.name === name);
+    if (!preset) return;
+    // 既知キーのみ反映した独立コピーを作る
+    const counts = emptyAdditionalCounts();
+    for (const [key, value] of Object.entries(preset.counts)) {
+      if (key in counts) {
+        (counts as Record<string, number>)[key] = value;
+      }
+    }
+    set({ additionalCounts: counts });
+
+    // 既存テンプレートの week_actions は維持したまま、現在の選択パターンで再計算
+    if (state.calculationResult && state.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(
+        { ...state, additionalCounts: counts },
+        state.selectedPatternIndex,
+      );
+      set(updates as Partial<CalcState>);
+    }
+  },
+
+  deleteEventCountPreset: (name) => {
+    const state = get();
+    const newPresets = state.eventCountPresets.filter((p) => p.name !== name);
+    if (newPresets.length === state.eventCountPresets.length) return;
+    persistEventCountPresets(newPresets);
+    set({ eventCountPresets: newPresets });
   },
 
   executeCalculate: () => {
