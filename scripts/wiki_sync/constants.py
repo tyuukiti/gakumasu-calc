@@ -33,6 +33,17 @@ TRIGGER_MAP = [
     ("メンタルスキルカード強化", "mental_enhance"),
     ("メンタルスキルカード削除", "mental_delete"),
     ("メンタルスキルカード獲得", "mental_acquire"),
+    # 状態効果系「○○効果のスキルカード獲得時」: 汎用「スキルカード獲得」より先に判定する。
+    # 例:「集中効果のスキルカード獲得時」を skill_acquire ではなく concentrate_acquire にする。
+    ("集中効果", "concentrate_acquire"),
+    ("好調効果", "good_condition_acquire"),
+    ("好印象効果", "good_impression_acquire"),
+    ("温存効果", "conserve_acquire"),
+    ("やる気効果", "motivation_acquire"),
+    ("全力効果", "fullpower_acquire"),
+    ("強気効果", "aggressive_acquire"),
+    ("根気効果", "conserve_acquire"),
+    ("元気効果", "genki_acquire"),
     # 汎用「スキルカード獲得」: SSR/アクティブ/メンタル等の特殊系の後ろに置き、
     # specific patterns に取られなかった場合のフォールバックとしてマッチさせる
     ("スキルカード獲得", "skill_acquire"),
@@ -65,18 +76,13 @@ TRIGGER_MAP = [
     ("特別指導", "special_training"),
     ("Pアイテム獲得", "p_item_acquire"), ("Pドリンク獲得", "p_drink_acquire"),
     ("休む選択", "rest"), ("休憩選択", "rest"), ("休憩", "rest"),
-    ("元気効果", "genki_acquire"), ("元気カード獲得", "genki_acquire"),
+    # 「○○効果」の状態効果系は上部（汎用スキルカード獲得より前）で定義済み。
+    # ここでは「○○カード獲得」「○○獲得」表記のみ残す。
+    ("元気カード獲得", "genki_acquire"),
     ("元気獲得", "genki_acquire"),
-    ("好調効果", "good_condition_acquire"),
     ("好調カード獲得", "good_condition_acquire"),
-    ("好印象効果", "good_impression_acquire"),
     ("好印象カード獲得", "good_impression_acquire"),
-    ("温存効果", "conserve_acquire"), ("温存カード獲得", "conserve_acquire"),
-    ("集中効果", "concentrate_acquire"),
-    ("やる気効果", "motivation_acquire"),
-    ("全力効果", "fullpower_acquire"),
-    ("強気効果", "aggressive_acquire"),
-    ("根気効果", "conserve_acquire"),
+    ("温存カード獲得", "conserve_acquire"),
     ("メンタルスキルカード獲得", "mental_acquire"),
     ("メンタル獲得", "mental_acquire"), ("メンタル強化", "mental_enhance"),
     # 「スキル獲得」 (旧表記/短縮表記) 用の fallback。

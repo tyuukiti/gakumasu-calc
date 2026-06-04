@@ -66,6 +66,10 @@ support_cards:
     stat: da
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: concentrate_acquire
+    stat: da
+    values: [3, 3, 3, 3, 4]
+    value_type: flat
 - id: SP_SSR_0091
   name: かかってらっしゃい！
   rarity: SSR

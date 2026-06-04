@@ -166,11 +166,13 @@ def classify_and_match(
             continue
 
         # equip/flat は複数候補がある場合、最大値の高い方を優先マッチ
+        # source: item (Pアイテム由来) はサポート能力とは別管理なのでマッチ対象外
         matched_effect = None
         if target_trigger == "equip" and target_vtype == "flat":
             candidates = [
                 e for e in effects
                 if id(e) not in matched_effect_ids
+                and e.get("source") != "item"
                 and e.get("trigger") == "equip"
                 and e.get("value_type") == "flat"
                 and (stat is None or e.get("stat") == stat)
@@ -186,6 +188,8 @@ def classify_and_match(
         else:
             for e in effects:
                 if id(e) in matched_effect_ids:
+                    continue
+                if e.get("source") == "item":
                     continue
                 if (e.get("trigger") == target_trigger
                     and e.get("value_type") == target_vtype
