@@ -142,6 +142,7 @@ export default function MemoryBonusInput() {
                         type="button"
                         onClick={() => {
                           setSelectedPresetName(p.name);
+                          setNewPresetName(p.name);
                           loadMemoryPreset(p.name);
                         }}
                         className={`text-xs border rounded px-2 py-1 cursor-pointer transition-colors ${

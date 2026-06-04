@@ -145,6 +145,7 @@ export default function EventCountConfig({ planIdOverride }: Props = {}) {
                         type="button"
                         onClick={() => {
                           setSelectedPresetName(p.name);
+                          setNewPresetName(p.name);
                           loadEventCountPreset(p.name);
                           trackEvent('event_count_preset_loaded', { preset_name: p.name });
                         }}

@@ -179,7 +179,12 @@ public class HifViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedSchedulePreset, value))
             {
-                if (value != null) LoadSchedulePresetIntoItems(value);
+                if (value != null)
+                {
+                    LoadSchedulePresetIntoItems(value);
+                    // 上書き保存しやすいよう、選択したプリセット名を保存欄に入れる
+                    NewPresetName = value.Name;
+                }
             }
         }
     }

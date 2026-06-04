@@ -18,7 +18,10 @@ export default function HifSchedulePresets() {
 
   const handleLoad = (name: string) => {
     setSelectedName(name);
-    if (name) loadPreset(name);
+    if (name) {
+      setNewName(name);
+      loadPreset(name);
+    }
   };
 
   const handleSave = () => {
