@@ -104,7 +104,11 @@ public class MainViewModel : ViewModelBase
             if (SetProperty(ref _selectedMemoryPreset, value))
             {
                 if (value != null)
+                {
                     LoadMemoryPreset(value);
+                    // 上書き保存しやすいよう、選択したプリセット名を保存欄に入れる
+                    NewPresetName = value.Name;
+                }
             }
         }
     }
@@ -131,7 +135,11 @@ public class MainViewModel : ViewModelBase
             if (SetProperty(ref _selectedEventCountPreset, value))
             {
                 if (value != null)
+                {
                     LoadEventCountPreset(value);
+                    // 上書き保存しやすいよう、選択したプリセット名を保存欄に入れる
+                    NewEventCountPresetName = value.Name;
+                }
             }
         }
     }
