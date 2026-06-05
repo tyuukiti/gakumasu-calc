@@ -1002,6 +1002,142 @@ function optimizeRentalCard(
   }
 }
 
+/**
+ * 局所最適の修復: postOptimize(所持カードのみ・レンタル固定) と optimizeRentalCard
+ * (レンタルのみ・所持固定) は別々に最適化するため、「所持カードの差し替え」と
+ * 「レンタルの差し替え」を“同時”に行わないと届かない最適解を取り逃す。
+ * (例: 0023→ふわふわ と レンタル 0027→0069 を同時にやると合計が上がるが、片方ずつでは上がらない)
+ *
+ * このパスは、有望な未編成カード(SP率 or trigger_count_bonus producer)を1枚強制投入し、
+ * その状態でレンタルを再最適化して実計算で評価する。合計が上がる場合のみ採用するため、
+ * 結果が悪化することはない (単調改善)。
+ */
+function jointSwapRepair(
+  selected: CardScore[],
+  cardContributions: CardScore[],
+  protectedIds: Set<string>,
+  spCounts: Record<string, number> | undefined,
+  rentalPool: SupportCard[] | undefined,
+  planType: string | undefined,
+  triggerCounts: Record<string, number>,
+  lessonAllocation: Record<string, number>,
+  lessonStatTotals: StatusValues,
+  uncapLevels: Record<string, number> | undefined,
+  triggerBonusInfo: Record<string, TriggerBonusEntry> | undefined,
+  plan: TrainingPlan,
+  additionalCounts: AdditionalCounts | undefined,
+  statCap: number,
+  character: Character | null,
+  memoryBonuses: MemoryBonus[] | null,
+  cardTypeSlots: Record<string, number> | undefined,
+  turnChoices: TurnChoice[],
+  overflowPenalty?: OverflowPenaltyConfig,
+): void {
+  const hasSpRate = (card: SupportCard) =>
+    card.effects.some((e) => e.trigger === 'equip' && e.value_type === 'sp_rate');
+  const spStat = (card: SupportCard): string | undefined =>
+    card.effects.find((e) => e.trigger === 'equip' && e.value_type === 'sp_rate')?.stat;
+  const isProducer = (card: SupportCard) =>
+    card.effects.some((e) => e.value_type === 'trigger_count_bonus' && e.trigger_target);
+  const coversStat = (card: SupportCard, stat: string) =>
+    card.effects.some(
+      (e) => e.trigger === 'equip' && e.value_type === 'sp_rate' && (e.stat === stat || e.stat === 'all'),
+    );
+  const rawTotal = (cs: CardScore) => cs.raw_vo + cs.raw_da + cs.raw_vi;
+
+  const evalReal = (cards: SupportCard[], rentalIds: Set<string>): number => {
+    const uc: Record<string, number> = { ...(uncapLevels ?? {}) };
+    for (const id of rentalIds) uc[id] = 4;
+    const fs = calculate(plan, cards, turnChoices, uc, additionalCounts, character ?? null, memoryBonuses ?? null).final_status;
+    let total = Math.min(fs.vo, statCap) + Math.min(fs.da, statCap) + Math.min(fs.vi, statCap);
+    if (overflowPenalty) {
+      const overflow = Math.max(0, fs.vo - statCap) + Math.max(0, fs.da - statCap) + Math.max(0, fs.vi - statCap);
+      if (overflow > overflowPenalty.threshold) total -= overflow * 2;
+    }
+    return total;
+  };
+
+  const meetsSp = (cards: SupportCard[]): boolean => {
+    if (spCounts == null) return true;
+    for (const [stat, need] of Object.entries(spCounts)) {
+      if (need <= 0) continue;
+      if (cards.filter((c) => coversStat(c, stat)).length < need) return false;
+    }
+    return true;
+  };
+
+  let improved = true;
+  let guard = 0;
+  while (improved && guard++ < 3) {
+    improved = false;
+    const rentalIdsNow = new Set(selected.filter((s) => s.is_rental).map((s) => s.card.id));
+    const baseTotal = evalReal(selected.map((s) => s.card), rentalIdsNow);
+    const inDeck = new Set(selected.map((s) => s.card.id));
+
+    const promising = cardContributions
+      .filter((c) => !inDeck.has(c.card.id) && (hasSpRate(c.card) || isProducer(c.card)))
+      .sort((a, b) => rawTotal(b) - rawTotal(a))
+      .slice(0, 8);
+
+    for (const cand of promising) {
+      // 投入先スロットを選ぶ
+      const candSp = hasSpRate(cand.card) ? spStat(cand.card) : undefined;
+      let slotIdx = -1;
+      let weakest = Infinity;
+      if (candSp != null) {
+        // 同属性SPの保護枠のうち最弱を置換 → SP枚数を維持
+        for (let i = 0; i < selected.length; i++) {
+          const s = selected[i];
+          if (s.is_rental || s.is_required) continue;
+          if (protectedIds.has(s.card.id) && hasSpRate(s.card) && spStat(s.card) === candSp) {
+            const r = rawTotal(s);
+            if (r < weakest) { weakest = r; slotIdx = i; }
+          }
+        }
+      }
+      if (slotIdx < 0) {
+        // 非保護の最弱枠を置換
+        weakest = Infinity;
+        for (let i = 0; i < selected.length; i++) {
+          const s = selected[i];
+          if (s.is_rental || s.is_required || protectedIds.has(s.card.id)) continue;
+          const r = rawTotal(s);
+          if (r < weakest) { weakest = r; slotIdx = i; }
+        }
+      }
+      if (slotIdx < 0) continue;
+
+      const victim = selected[slotIdx];
+      const trial = [...selected];
+      trial[slotIdx] = cand;
+      const trialProtected = new Set(protectedIds);
+      if (protectedIds.has(victim.card.id)) trialProtected.delete(victim.card.id);
+      if (candSp != null) trialProtected.add(cand.card.id);
+
+      if (cardTypeSlots != null && !meetsTypeSlots(trial.map((s) => s.card), cardTypeSlots)) continue;
+      if (!meetsSp(trial.map((s) => s.card))) continue;
+
+      // 投入した状態でレンタルを再最適化 (同時手)
+      optimizeRentalCard(
+        trial, rentalPool, planType, triggerCounts, lessonAllocation, lessonStatTotals,
+        uncapLevels, triggerBonusInfo, trialProtected, spCounts, plan, additionalCounts,
+        statCap, character, memoryBonuses, cardTypeSlots, turnChoices, overflowPenalty,
+      );
+
+      const trialRentalIds = new Set(trial.filter((s) => s.is_rental).map((s) => s.card.id));
+      const trialTotal = evalReal(trial.map((s) => s.card), trialRentalIds);
+
+      if (trialTotal > baseTotal) {
+        selected.splice(0, selected.length, ...trial);
+        protectedIds.clear();
+        for (const id of trialProtected) protectedIds.add(id);
+        improved = true;
+        break;
+      }
+    }
+  }
+}
+
 function postOptimize(
   selected: CardScore[],
   candidates: CardScore[],
@@ -2013,6 +2149,30 @@ export function selectOptimalDeck(
     triggerBonusInfo,
     protectedIds,
     spCounts,
+  );
+
+  // 局所最適の修復: 所持カード差し替え + レンタル差し替えの「同時手」を試し、
+  // 実計算で合計が上がる場合のみ採用する (単調改善・悪化なし)。
+  jointSwapRepair(
+    selected,
+    cardContributions,
+    protectedIds,
+    spCounts,
+    rentalPool,
+    planType,
+    triggerCounts,
+    lessonAllocation,
+    lessonStatTotals,
+    uncapLevels,
+    triggerBonusInfo,
+    plan,
+    additionalCounts,
+    statCap,
+    character ?? null,
+    memoryBonuses ?? null,
+    cardTypeSlots,
+    turnChoicesOverride ?? buildTurnChoices(plan, mainStats),
+    overflowPenalty,
   );
 
   // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
