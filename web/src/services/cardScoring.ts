@@ -1526,9 +1526,13 @@ export function selectOptimalDeck(
   let requiredRentalCard: CardScore | undefined = undefined;
   const protectedIds = new Set<string>();
 
+  // ステップ1のSP率先取り用に「必須カードで消費した分を減算した」残り必要枚数。
+  // unprotectExcessSpCards / enforceSpCounts では必須カードを含む元の spCounts(総数)で
+  // 判定する必要があるため、減算後のカウントはこのローカル変数にのみ反映し、
+  // spCounts 自体は上書きしない (上書きすると SP枚数の最終保証が必須カード分だけ過小評価される)。
+  const spCountsForFill: Record<string, number> = spCounts != null ? { ...spCounts } : {};
+
   if (requiredCardIds != null && requiredCardIds.length > 0) {
-    // spCounts のローカルコピー（必須カードでSP率を消費するため）
-    const spCountsCopy: Record<string, number> = spCounts != null ? { ...spCounts } : {};
 
     for (const cardId of requiredCardIds) {
       // allCards から探す、見つからなければ rentalPool からも探す
@@ -1594,28 +1598,26 @@ export function selectOptimalDeck(
           (e) => e.trigger === 'equip' && e.value_type === 'sp_rate',
         );
         if (spEffect != null) {
-          for (const key of Object.keys(spCountsCopy)) {
+          for (const key of Object.keys(spCountsForFill)) {
             if (
               (card.type === key || card.type === 'all' || card.type === 'as') &&
-              spCountsCopy[key] > 0
+              spCountsForFill[key] > 0
             ) {
-              spCountsCopy[key]--;
+              spCountsForFill[key]--;
               break;
             }
           }
         }
       }
     }
-
-    // spCounts のローカル参照を更新（元のオブジェクトは変更しない）
-    spCounts = spCountsCopy;
   }
 
   // ステップ1: SP率カードをユーザ指定枚数分、先に確保
   const spCardSlotStat: Record<string, string> = {}; // cardId -> 消費したスロットのstat key
   const spCardUsedFree = new Set<string>(); // フリー枠を消費したcardId
   if (spCounts != null) {
-    for (const [stat, need] of Object.entries(spCounts)) {
+    // 必須カードで消費済みの分を差し引いた残り枚数のみ先取りする
+    for (const [stat, need] of Object.entries(spCountsForFill)) {
       if (need <= 0) continue;
 
       // この属性のSP率を持つカードをステータス寄与順で選ぶ ("as" は "all" と同等)

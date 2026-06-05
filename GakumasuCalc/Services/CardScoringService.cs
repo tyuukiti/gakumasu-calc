@@ -150,10 +150,14 @@ public class CardScoringService
         CardScore? requiredRentalCard = null;
         var protectedIds = new HashSet<string>();
 
+        // ステップ1のSP率先取り用に「必須カードで消費した分を減算した」残り必要枚数。
+        // UnprotectExcessSpCards / EnforceSpCounts では必須カードを含む元の spCounts(総数)で
+        // 判定する必要があるため、減算後のカウントはこのローカル変数にのみ反映し、
+        // spCounts 自体は上書きしない (上書きすると SP枚数の最終保証が必須カード分だけ過小評価される)。
+        var spCountsForFill = spCounts != null ? new Dictionary<string, int>(spCounts) : null;
+
         if (requiredCardIds != null && requiredCardIds.Count > 0)
         {
-            // spCounts のローカルコピー（必須カードでSP率を消費するため）
-            var spCountsCopy = spCounts != null ? new Dictionary<string, int>(spCounts) : null;
 
             foreach (var cardId in requiredCardIds)
             {
@@ -209,18 +213,17 @@ public class CardScoringService
                     else
                         remainingFree = Math.Max(0, remainingFree - 1);
 
-                    // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCounts を減算
-                    if (spCountsCopy != null)
+                    // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCountsForFill を減算
+                    if (spCountsForFill != null)
                     {
-                        // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCounts を減算
                         var spEffect = card.Effects.FirstOrDefault(e => e.Trigger == "equip" && e.ValueType == "sp_rate");
                         if (spEffect != null)
                         {
-                            foreach (var key in spCountsCopy.Keys.ToList())
+                            foreach (var key in spCountsForFill.Keys.ToList())
                             {
-                                if ((card.Type == key || card.Type == "all" || card.Type == "as") && spCountsCopy[key] > 0)
+                                if ((card.Type == key || card.Type == "all" || card.Type == "as") && spCountsForFill[key] > 0)
                                 {
-                                    spCountsCopy[key]--;
+                                    spCountsForFill[key]--;
                                     break;
                                 }
                             }
@@ -228,18 +231,15 @@ public class CardScoringService
                     }
                 }
             }
-
-            // spCounts を更新（必須カードで消費した分を反映）
-            if (spCountsCopy != null)
-                spCounts = spCountsCopy;
         }
 
         // ステップ1: SP率カードをユーザ指定枚数分、先に確保
         var spCardSlotStat = new Dictionary<string, string>(); // cardId -> 消費したスロットのstat key
         var spCardUsedFree = new HashSet<string>(); // フリー枠を消費したcardId
-        if (spCounts != null)
+        if (spCountsForFill != null)
         {
-            foreach (var kvp in spCounts)
+            // 必須カードで消費済みの分を差し引いた残り枚数のみ先取りする
+            foreach (var kvp in spCountsForFill)
             {
                 var stat = kvp.Key;
                 int need = kvp.Value;
