@@ -150,10 +150,14 @@ public class CardScoringService
         CardScore? requiredRentalCard = null;
         var protectedIds = new HashSet<string>();
 
+        // ステップ1のSP率先取り用に「必須カードで消費した分を減算した」残り必要枚数。
+        // UnprotectExcessSpCards / EnforceSpCounts では必須カードを含む元の spCounts(総数)で
+        // 判定する必要があるため、減算後のカウントはこのローカル変数にのみ反映し、
+        // spCounts 自体は上書きしない (上書きすると SP枚数の最終保証が必須カード分だけ過小評価される)。
+        var spCountsForFill = spCounts != null ? new Dictionary<string, int>(spCounts) : null;
+
         if (requiredCardIds != null && requiredCardIds.Count > 0)
         {
-            // spCounts のローカルコピー（必須カードでSP率を消費するため）
-            var spCountsCopy = spCounts != null ? new Dictionary<string, int>(spCounts) : null;
 
             foreach (var cardId in requiredCardIds)
             {
@@ -209,18 +213,17 @@ public class CardScoringService
                     else
                         remainingFree = Math.Max(0, remainingFree - 1);
 
-                    // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCounts を減算
-                    if (spCountsCopy != null)
+                    // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCountsForFill を減算
+                    if (spCountsForFill != null)
                     {
-                        // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCounts を減算
                         var spEffect = card.Effects.FirstOrDefault(e => e.Trigger == "equip" && e.ValueType == "sp_rate");
                         if (spEffect != null)
                         {
-                            foreach (var key in spCountsCopy.Keys.ToList())
+                            foreach (var key in spCountsForFill.Keys.ToList())
                             {
-                                if ((card.Type == key || card.Type == "all" || card.Type == "as") && spCountsCopy[key] > 0)
+                                if ((card.Type == key || card.Type == "all" || card.Type == "as") && spCountsForFill[key] > 0)
                                 {
-                                    spCountsCopy[key]--;
+                                    spCountsForFill[key]--;
                                     break;
                                 }
                             }
@@ -228,18 +231,15 @@ public class CardScoringService
                     }
                 }
             }
-
-            // spCounts を更新（必須カードで消費した分を反映）
-            if (spCountsCopy != null)
-                spCounts = spCountsCopy;
         }
 
         // ステップ1: SP率カードをユーザ指定枚数分、先に確保
         var spCardSlotStat = new Dictionary<string, string>(); // cardId -> 消費したスロットのstat key
         var spCardUsedFree = new HashSet<string>(); // フリー枠を消費したcardId
-        if (spCounts != null)
+        if (spCountsForFill != null)
         {
-            foreach (var kvp in spCounts)
+            // 必須カードで消費済みの分を差し引いた残り枚数のみ先取りする
+            foreach (var kvp in spCountsForFill)
             {
                 var stat = kvp.Key;
                 int need = kvp.Value;
@@ -518,6 +518,13 @@ public class CardScoringService
         // PostOptimize は total を最大化するため非SPカードを優先しうるので、必ずこの後に実行する。
         EnforceSpCounts(selected, cardContributions, rentalPool, triggerCounts,
             lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo, protectedIds, spCounts);
+
+        // 局所最適の修復: 所持カード差し替え + レンタル差し替えの「同時手」を試し、
+        // 実計算で合計が上がる場合のみ採用する (単調改善・悪化なし)。
+        JointSwapRepair(selected, cardContributions, protectedIds, spCounts, rentalPool, planType,
+            triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo,
+            plan, additionalCounts, statCap, character, memoryBonuses, cardTypeSlots,
+            turnChoicesOverride ?? BuildTurnChoices(plan, mainStats), overflowPenalty);
 
         // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
         RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
@@ -820,6 +827,148 @@ public class CardScoringService
             cs.IsRequired = false;
             selected[rentalIdx] = cs;
             protectedIds.Remove(current.Card.Id);
+        }
+    }
+
+    /// <summary>
+    /// 局所最適の修復: PostOptimize(所持のみ・レンタル固定) と OptimizeRentalCard(レンタルのみ・所持固定)
+    /// は別々に最適化するため、「所持カード差し替え」と「レンタル差し替え」を“同時”に行わないと
+    /// 届かない最適解を取り逃す (例: 所持SP 0023→ふわふわ と レンタル 0027→0069 を同時に行うと合計が上がる)。
+    /// 有望な未編成カード(SP率 or trigger_count_bonus producer)を1枚強制投入し、レンタルを再最適化して
+    /// 実計算で合計が上がる場合のみ採用する。合計が上がる時しか採用しないため悪化しない (単調改善)。
+    /// </summary>
+    private void JointSwapRepair(
+        List<CardScore> selected,
+        List<CardScore> cardContributions,
+        HashSet<string> protectedIds,
+        Dictionary<string, int>? spCounts,
+        List<SupportCard>? rentalPool,
+        string? planType,
+        Dictionary<string, int> triggerCounts,
+        Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
+        Dictionary<string, int>? uncapLevels,
+        Dictionary<string, TriggerBonusEntry>? triggerBonusInfo,
+        TrainingPlan plan,
+        AdditionalCounts? additionalCounts,
+        int statCap,
+        Character? character,
+        IReadOnlyList<MemoryBonus>? memoryBonuses,
+        Dictionary<string, int>? cardTypeSlots,
+        List<TurnChoice> turnChoices,
+        OverflowPenaltyConfig? overflowPenalty)
+    {
+        bool HasSpRate(SupportCard card) =>
+            card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate");
+        string? SpStat(SupportCard card) =>
+            card.Effects.FirstOrDefault(e => e.Trigger == "equip" && e.ValueType == "sp_rate")?.Stat;
+        bool IsProducer(SupportCard card) =>
+            card.Effects.Any(e => e.ValueType == "trigger_count_bonus" && !string.IsNullOrEmpty(e.TriggerTarget));
+        bool CoversStat(SupportCard card, string stat) =>
+            card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate" && (e.Stat == stat || e.Stat == "all"));
+        int RawTotal(CardScore cs) => cs.RawVo + cs.RawDa + cs.RawVi;
+
+        var calcService = new StatusCalculationService();
+        int EvalReal(List<SupportCard> cards, HashSet<string> rentalIds)
+        {
+            var uc = new Dictionary<string, int>(uncapLevels ?? new());
+            foreach (var id in rentalIds) uc[id] = 4;
+            var fs = calcService.Calculate(plan, cards, turnChoices, uc, additionalCounts, character, memoryBonuses).FinalStatus;
+            int total = Math.Min(fs.Vo, statCap) + Math.Min(fs.Da, statCap) + Math.Min(fs.Vi, statCap);
+            if (overflowPenalty != null)
+            {
+                int overflow = Math.Max(0, fs.Vo - statCap) + Math.Max(0, fs.Da - statCap) + Math.Max(0, fs.Vi - statCap);
+                if (overflow > overflowPenalty.Threshold) total -= overflow * 2;
+            }
+            return total;
+        }
+        bool MeetsSp(List<SupportCard> cards)
+        {
+            if (spCounts == null) return true;
+            foreach (var kvp in spCounts)
+            {
+                if (kvp.Value <= 0) continue;
+                if (cards.Count(c => CoversStat(c, kvp.Key)) < kvp.Value) return false;
+            }
+            return true;
+        }
+
+        bool improved = true;
+        int guard = 0;
+        while (improved && guard++ < 3)
+        {
+            improved = false;
+            var rentalIdsNow = new HashSet<string>(selected.Where(s => s.IsRental).Select(s => s.Card.Id));
+            int baseTotal = EvalReal(selected.Select(s => s.Card).ToList(), rentalIdsNow);
+            var inDeck = new HashSet<string>(selected.Select(s => s.Card.Id));
+
+            var promising = cardContributions
+                .Where(c => !inDeck.Contains(c.Card.Id) && (HasSpRate(c.Card) || IsProducer(c.Card)))
+                .OrderByDescending(RawTotal)
+                .Take(8)
+                .ToList();
+
+            foreach (var cand in promising)
+            {
+                string? candSp = HasSpRate(cand.Card) ? SpStat(cand.Card) : null;
+                int slotIdx = -1;
+                int weakest = int.MaxValue;
+                if (candSp != null)
+                {
+                    // 同属性SPの保護枠のうち最弱を置換 → SP枚数を維持
+                    for (int i = 0; i < selected.Count; i++)
+                    {
+                        var s = selected[i];
+                        if (s.IsRental || s.IsRequired) continue;
+                        if (protectedIds.Contains(s.Card.Id) && HasSpRate(s.Card) && SpStat(s.Card) == candSp)
+                        {
+                            int r = RawTotal(s);
+                            if (r < weakest) { weakest = r; slotIdx = i; }
+                        }
+                    }
+                }
+                if (slotIdx < 0)
+                {
+                    // 非保護の最弱枠を置換
+                    weakest = int.MaxValue;
+                    for (int i = 0; i < selected.Count; i++)
+                    {
+                        var s = selected[i];
+                        if (s.IsRental || s.IsRequired || protectedIds.Contains(s.Card.Id)) continue;
+                        int r = RawTotal(s);
+                        if (r < weakest) { weakest = r; slotIdx = i; }
+                    }
+                }
+                if (slotIdx < 0) continue;
+
+                var victim = selected[slotIdx];
+                var trial = new List<CardScore>(selected);
+                trial[slotIdx] = cand;
+                var trialProtected = new HashSet<string>(protectedIds);
+                if (protectedIds.Contains(victim.Card.Id)) trialProtected.Remove(victim.Card.Id);
+                if (candSp != null) trialProtected.Add(cand.Card.Id);
+
+                if (cardTypeSlots != null && !MeetsTypeSlots(trial.Select(s => s.Card).ToList(), cardTypeSlots)) continue;
+                if (!MeetsSp(trial.Select(s => s.Card).ToList())) continue;
+
+                // 投入した状態でレンタルを再最適化 (同時手)
+                OptimizeRentalCard(trial, rentalPool, planType, triggerCounts, lessonAllocation, lessonStatTotals,
+                    uncapLevels, triggerBonusInfo, trialProtected, spCounts, plan, additionalCounts,
+                    statCap, character, memoryBonuses, cardTypeSlots, turnChoices, overflowPenalty);
+
+                var trialRentalIds = new HashSet<string>(trial.Where(s => s.IsRental).Select(s => s.Card.Id));
+                int trialTotal = EvalReal(trial.Select(s => s.Card).ToList(), trialRentalIds);
+
+                if (trialTotal > baseTotal)
+                {
+                    selected.Clear();
+                    selected.AddRange(trial);
+                    protectedIds.Clear();
+                    foreach (var id in trialProtected) protectedIds.Add(id);
+                    improved = true;
+                    break;
+                }
+            }
         }
     }
 
