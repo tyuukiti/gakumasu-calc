@@ -101,7 +101,7 @@ export default function ResultDisplay() {
         <div className="flex-1">
           {totalOverflow > 0 && (
             <span
-              className="text-[10px] font-mono text-gray-400"
+              className="text-[10px] font-mono text-gray-400 whitespace-nowrap"
               title={`各属性の上限 (${statCap}) を超えた分は実ゲームでは捨てられるため、合計には含みません`}
             >
               cap超過 −{totalOverflow}

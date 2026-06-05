@@ -57,7 +57,7 @@ export default function DiagnosticCopyButton({ mode = 'calc' }: Props = {}) {
     <button
       type="button"
       onClick={handleCopy}
-      className="text-sm px-3 py-1.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 cursor-pointer"
+      className="text-sm px-3 py-1.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
       title="現在の設定・編成・計算結果を平文でコピーします（問題報告用）"
     >
       {copied ? '✓ コピーしました' : failed ? 'コピー失敗' : '📋 診断情報をコピー'}
