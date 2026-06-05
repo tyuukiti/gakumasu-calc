@@ -3126,3 +3126,36 @@ support_cards:
     values: [28, 28, 28, 28, 38]
     value_type: flat
     max_count: 2
+- id: SP_SSR_0101
+  name: 私を楽しませろ
+  rarity: SSR
+  type: da
+  plan: logic
+  tag: skill
+  effects:
+  - trigger: equip
+    stat: da
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: da
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: equip
+    stat: da
+    values: [21, 21, 28, 28, 28]
+    value_type: sp_rate
+  - trigger: activity_supply
+    stat: da
+    values: [28, 28, 28, 38, 38]
+    value_type: flat
+    max_count: 2
+  - trigger: mental_enhance
+    stat: da
+    values: [7, 7, 7, 7, 9]
+    value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
