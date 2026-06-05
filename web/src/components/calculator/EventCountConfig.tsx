@@ -65,7 +65,7 @@ export default function EventCountConfig({ planIdOverride }: Props = {}) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
         <label className="text-sm font-semibold text-gray-700 shrink-0">
           イベント回数テンプレート
         </label>
@@ -107,7 +107,7 @@ export default function EventCountConfig({ planIdOverride }: Props = {}) {
 
       {expanded && (
         <div className="space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 bg-gray-50 rounded-md p-3 border border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2 bg-gray-50 rounded-md p-3 border border-gray-200">
             {COUNT_LABELS.map(({ key, label }) => (
               <label key={key} className="flex items-center gap-2 text-sm">
                 <span className="text-gray-600 min-w-[8rem]">{label}</span>

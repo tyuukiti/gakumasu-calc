@@ -104,11 +104,13 @@ export default function HifPage() {
       {calculationResult && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+              <div className="flex-1 order-2 sm:order-1">
                 <HifResultDisplay />
               </div>
-              <DiagnosticCopyButton mode="hif" />
+              <div className="self-end order-1 sm:order-2 sm:self-auto">
+                <DiagnosticCopyButton mode="hif" />
+              </div>
             </div>
           </div>
 
