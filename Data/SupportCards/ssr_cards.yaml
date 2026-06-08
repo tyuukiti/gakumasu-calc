@@ -3007,7 +3007,7 @@ support_cards:
   effects:
   - trigger: equip
     stat: da
-    values: [6.5, 7, 7.5, 7.5, 8.5]
+    values: [6.5, 7, 7.5, 8, 8.5]
     value_type: para_bonus
   - trigger: sp_end
     stat: da
