@@ -880,6 +880,152 @@ function enforceSpCounts(
 }
 
 /**
+ * デッキ確定後、編成パターン (cardTypeSlots) の属性枚数が要求に「満たない」場合に、
+ * 余剰カードを当該属性のカードと差し替えて要求枚数を満たす。
+ *
+ * ユーザ指定の優先順位「必須カード > SP枚数 > 編成パターン」の最下位 (編成パターン) を
+ * 保証する最終強制パス。enforceSpCounts と対になる存在で、必ずその後に実行する。
+ * - 必須カード (is_required) は絶対に外さない
+ * - 外すと spCounts を割る SP カードは外さない (SP枚数 > 編成パターン)
+ * - 外すと他属性の枠要件を割るカードも外さない
+ * - 所持枠は所持プール、レンタル枠はレンタルプールから当該属性カードで補充する
+ *
+ * 例: 必須3枚(内1枚DaSP) + DaSP3枚指定 で「Visual 2 / フリー 3」を選ぶと、
+ *     必須(da/vo)とSP補充(da)で所持5枠が埋まり vi 枠が取り逃される。残るレンタル枠が
+ *     da で埋まり vi=1 のままになるのを、この関数がレンタル(またはdaの余剰所持枠)を
+ *     vi カードに差し替えて vi=2 を保証する。
+ */
+function enforceTypeSlots(
+  selected: CardScore[],
+  cardContributions: CardScore[],
+  rentalPool: SupportCard[] | undefined,
+  planType: string | undefined,
+  triggerCounts: Record<string, number>,
+  lessonAllocation: Record<string, number>,
+  lessonStatTotals: StatusValues,
+  uncapLevels: Record<string, number> | undefined,
+  triggerBonusInfo: Record<string, TriggerBonusEntry> | undefined,
+  protectedIds: Set<string>,
+  spCounts: Record<string, number> | undefined,
+  cardTypeSlots: Record<string, number> | undefined,
+): void {
+  if (cardTypeSlots == null) return;
+
+  const isTypeMatch = (card: SupportCard, type: string): boolean =>
+    card.type === type || card.type === 'all' || card.type === 'as';
+
+  const coversStat = (card: SupportCard, stat: string): boolean =>
+    card.effects.some(
+      (e) =>
+        e.trigger === 'equip' &&
+        e.value_type === 'sp_rate' &&
+        (e.stat === stat || e.stat === 'all'),
+    );
+
+  const rawTotal = (cs: CardScore): number => cs.raw_vo + cs.raw_da + cs.raw_vi;
+
+  const countType = (type: string): number =>
+    selected.filter((cs) => isTypeMatch(cs.card, type)).length;
+
+  // このカードを外すと spCounts のいずれかの属性が要求枚数を割るか
+  // (= SP枚数保証を崩しうる、外してはいけないカードか)
+  const breaksSpCounts = (card: SupportCard): boolean => {
+    if (spCounts == null) return false;
+    for (const stat of ['vo', 'da', 'vi']) {
+      const need = spCounts[stat] ?? 0;
+      if (need <= 0) continue;
+      if (coversStat(card, stat)) {
+        const cur = selected.filter((cs) => coversStat(cs.card, stat)).length;
+        if (cur <= need) return true;
+      }
+    }
+    return false;
+  };
+
+  for (const [type, required] of Object.entries(cardTypeSlots)) {
+    if (required <= 0) continue;
+
+    // countType は毎回 selected を参照する。1スワップで必ず +1 進むが、念のため guard を置く。
+    let guard = 0;
+    while (countType(type) < required && guard++ < 6) {
+      const inDeck = new Set(selected.map((s) => s.card.id));
+
+      // 外せる犠牲カード候補 (寄与の弱い順):
+      // - 必須でない / この属性のカードでない (外すと逆効果)
+      // - 外しても spCounts を割らない (SP枚数 > 編成パターン)
+      // - 外しても他属性の枠要件を割らない
+      const removables = selected
+        .map((cs, i) => ({ cs, i }))
+        .filter(({ cs }) =>
+          !cs.is_required &&
+          !isTypeMatch(cs.card, type) &&
+          !breaksSpCounts(cs.card) &&
+          Object.entries(cardTypeSlots).every(
+            ([t2, r2]) =>
+              t2 === type ||
+              r2 <= 0 ||
+              !isTypeMatch(cs.card, t2) ||
+              countType(t2) > r2,
+          ),
+        )
+        .sort((a, b) => rawTotal(a.cs) - rawTotal(b.cs));
+
+      let swapped = false;
+      for (const { cs: victim, i } of removables) {
+        let replacement: CardScore | null = null;
+
+        if (victim.is_rental && rentalPool != null) {
+          // レンタル枠 → レンタルプールから当該属性カード (4凸) で補充
+          const pool =
+            planType != null && planType !== ''
+              ? rentalPool.filter(
+                  (c) =>
+                    c.plan == null ||
+                    c.plan === '' ||
+                    c.plan === planType ||
+                    c.plan === 'free',
+                )
+              : rentalPool;
+          const cand = pool
+            .filter((c) => isTypeMatch(c, type) && !inDeck.has(c.id))
+            .map((c) =>
+              calculateCardContribution(
+                c,
+                triggerCounts,
+                lessonAllocation,
+                lessonStatTotals,
+                { ...(uncapLevels ?? {}), [c.id]: 4 },
+                triggerBonusInfo,
+              ),
+            )
+            .sort((a, b) => rawTotal(b) - rawTotal(a))[0];
+          if (cand != null) replacement = { ...cand, is_rental: true };
+        } else {
+          // 所持枠 → 所持プールから当該属性カードで補充
+          const cand = cardContributions
+            .filter(
+              (cs2) => isTypeMatch(cs2.card, type) && !inDeck.has(cs2.card.id),
+            )
+            .sort((a, b) => rawTotal(b) - rawTotal(a))[0];
+          if (cand != null) replacement = cand;
+        }
+
+        if (replacement == null) continue;
+
+        protectedIds.delete(victim.card.id);
+        selected[i] = replacement;
+        protectedIds.add(replacement.card.id);
+        swapped = true;
+        break;
+      }
+
+      // この属性を満たせるカードがプールに無い → これ以上は補充不能
+      if (!swapped) break;
+    }
+  }
+}
+
+/**
  * postOptimize はレンタル枠 (is_rental) を絶対にスワップしないため、所持カードが
  * postOptimize で入れ替わった後に「レンタル枠が最適でなくなる」ケースを補正できない。
  *
@@ -999,6 +1145,226 @@ function optimizeRentalCard(
     );
     selected[rentalIdx] = { ...cs, is_rental: true, is_required: false };
     protectedIds.delete(current.card.id);
+  }
+}
+
+/**
+ * レンタル枠は「デッキ内のどの1枚を4凸として借りるか」の指定にすぎない。
+ * 所持カードのみ ON では非レンタル5枚は所持凸数で、レンタル1枚は4凸で評価される。
+ * カード集合を変えずに「どのカードをレンタル(4凸借用)にするか」だけを最適化する。
+ *
+ * バグ例: 0凸所持の必須カードが所持枠(0凸)に固定され、4凸所持カードがレンタル枠
+ * (4凸借用=upgrade恩恵ゼロ)に入ると、レンタルを低凸カードに付け替えるだけで total が上がる。
+ * カード集合は不変なので属性枠・SP枚数・必須はすべて保持される (単調改善・悪化なし)。
+ *
+ * - デッキに未所持カードがあれば、それは必ずレンタル(所持枠に置けない)→ 付け替え不可で何もしない
+ * - 全カード所持なら、各カードをレンタルにした実計算 total を比較し最大の割り当てを採用
+ *
+ * 注: recomputeBreakdownsDeckAware は producer 不在時に早期 return するため、
+ *     付け替えた2枚の raw 寄与はこの関数内で再計算しておく (フラグ変更だけに頼らない)。
+ */
+function optimizeRentalAssignment(
+  selected: CardScore[],
+  ownedIds: Set<string>,
+  plan: TrainingPlan,
+  turnChoices: TurnChoice[],
+  triggerCounts: Record<string, number>,
+  lessonAllocation: Record<string, number>,
+  lessonStatTotals: StatusValues,
+  uncapLevels: Record<string, number> | undefined,
+  triggerBonusInfo: Record<string, TriggerBonusEntry> | undefined,
+  additionalCounts: AdditionalCounts | undefined,
+  statCap: number,
+  character: Character | null,
+  memoryBonuses: MemoryBonus[] | null,
+  overflowPenalty?: OverflowPenaltyConfig,
+): void {
+  const rentalIdx = selected.findIndex((cs) => cs.is_rental);
+  if (rentalIdx < 0) return; // レンタル枠なし
+
+  // デッキ内の未所持カードは必ずレンタル固定 (所持枠に置けない) → 付け替え不可
+  const hasUnowned = selected.some((cs) => !ownedIds.has(cs.card.id));
+  if (hasUnowned) return;
+
+  const cards = selected.map((cs) => cs.card);
+  const evalWith = (rentalCardId: string): number => {
+    const uc: Record<string, number> = { ...(uncapLevels ?? {}), [rentalCardId]: 4 };
+    const fs = calculate(
+      plan,
+      cards,
+      turnChoices,
+      uc,
+      additionalCounts,
+      character ?? null,
+      memoryBonuses ?? null,
+    ).final_status;
+    let total = Math.min(fs.vo, statCap) + Math.min(fs.da, statCap) + Math.min(fs.vi, statCap);
+    if (overflowPenalty) {
+      const overflow =
+        Math.max(0, fs.vo - statCap) + Math.max(0, fs.da - statCap) + Math.max(0, fs.vi - statCap);
+      if (overflow > overflowPenalty.threshold) total -= overflow * 2;
+    }
+    return total;
+  };
+
+  const currentId = selected[rentalIdx].card.id;
+  let bestId = currentId;
+  let bestTotal = evalWith(currentId);
+  for (const cs of selected) {
+    if (cs.card.id === currentId) continue;
+    const t = evalWith(cs.card.id);
+    if (t > bestTotal) {
+      bestTotal = t;
+      bestId = cs.card.id;
+    }
+  }
+
+  if (bestId === currentId) return;
+
+  // 付け替え: レンタル状態が変わる2枚の raw 寄与を新しい凸数で再計算する
+  for (let i = 0; i < selected.length; i++) {
+    const willBeRental = selected[i].card.id === bestId;
+    if (willBeRental === selected[i].is_rental) continue;
+    const uc: Record<string, number> = willBeRental
+      ? { ...(uncapLevels ?? {}), [selected[i].card.id]: 4 }
+      : { ...(uncapLevels ?? {}) };
+    const recomputed = calculateCardContribution(
+      selected[i].card,
+      triggerCounts,
+      lessonAllocation,
+      lessonStatTotals,
+      uc,
+      triggerBonusInfo,
+    );
+    selected[i] = {
+      ...recomputed,
+      is_rental: willBeRental,
+      is_required: selected[i].is_required,
+    };
+  }
+}
+
+/**
+ * 借用アップグレード（レンタル枠のジョイント最適化）。
+ *
+ * ユーザが低凸(uncap<4)で所持するカードは、所持枠では低凸の弱い寄与しか出ないが、
+ * レンタル枠で4凸借用すれば本来の強さを発揮する。一方、4凸所持カードをレンタルに置くのは
+ * 借用恩恵ゼロの浪費。既存パスは「所持5枚を固定してレンタルを選ぶ(optimizeRentalCard)」
+ * 「デッキ内で借用先を再割当(optimizeRentalAssignment)」しかできず、
+ * 「弱い所持カードを1枚落として、デッキ外の低凸所持カードを4凸借用する」ジョイント手を取り逃す。
+ *
+ * このパスは、デッキ外の低凸所持カードC(4凸寄与上位)を借用枠に投入し、デッキ内の非必須カードVを
+ * 1枚落とす手を実計算で評価し、合計が上がる場合のみ採用する(単調改善・悪化なし)。
+ * 旧レンタルカード(4凸所持等)は所持枠へ移る。属性枠(cardTypeSlots)・SP枚数・必須は維持する。
+ *
+ * 例: Vocal2 で 0069(da,4凸所持)がレンタル浪費 → 0069を所持に戻し、弱い4凸カードを1枚落として
+ *     0072(vo,1凸所持)を4凸借用する方が合計が高い、というケースを拾う。
+ */
+function optimizeRentalBorrowUpgrade(
+  selected: CardScore[],
+  cardContributions: CardScore[],
+  ownedIds: Set<string>,
+  plan: TrainingPlan,
+  turnChoices: TurnChoice[],
+  triggerCounts: Record<string, number>,
+  lessonAllocation: Record<string, number>,
+  lessonStatTotals: StatusValues,
+  uncapLevels: Record<string, number> | undefined,
+  triggerBonusInfo: Record<string, TriggerBonusEntry> | undefined,
+  additionalCounts: AdditionalCounts | undefined,
+  statCap: number,
+  character: Character | null,
+  memoryBonuses: MemoryBonus[] | null,
+  cardTypeSlots: Record<string, number> | undefined,
+  spCounts: Record<string, number> | undefined,
+  overflowPenalty?: OverflowPenaltyConfig,
+): void {
+  const rentalIdx = selected.findIndex((cs) => cs.is_rental);
+  if (rentalIdx < 0) return; // レンタル枠なし
+  // デッキに未所持カードがある = それがレンタル固定。借用枠は既に未所持カードが使用中 → 対象外。
+  if (selected.some((cs) => !ownedIds.has(cs.card.id))) return;
+
+  const coversStat = (card: SupportCard, stat: string): boolean =>
+    card.effects.some(
+      (e) => e.trigger === 'equip' && e.value_type === 'sp_rate' && (e.stat === stat || e.stat === 'all'),
+    );
+  const meetsSp = (cards: SupportCard[]): boolean => {
+    if (spCounts == null) return true;
+    for (const [stat, need] of Object.entries(spCounts)) {
+      if (need <= 0) continue;
+      if (cards.filter((c) => coversStat(c, stat)).length < need) return false;
+    }
+    return true;
+  };
+  const rawTotal = (cs: CardScore): number => cs.raw_vo + cs.raw_da + cs.raw_vi;
+
+  const realTotal = (cards: SupportCard[], rentalId: string): number => {
+    const uc: Record<string, number> = { ...(uncapLevels ?? {}), [rentalId]: 4 };
+    const fs = calculate(plan, cards, turnChoices, uc, additionalCounts, character ?? null, memoryBonuses ?? null).final_status;
+    let t = Math.min(fs.vo, statCap) + Math.min(fs.da, statCap) + Math.min(fs.vi, statCap);
+    if (overflowPenalty) {
+      const o = Math.max(0, fs.vo - statCap) + Math.max(0, fs.da - statCap) + Math.max(0, fs.vi - statCap);
+      if (o > overflowPenalty.threshold) t -= o * 2;
+    }
+    return t;
+  };
+
+  const at4 = (card: SupportCard): CardScore =>
+    calculateCardContribution(
+      card,
+      triggerCounts,
+      lessonAllocation,
+      lessonStatTotals,
+      { ...(uncapLevels ?? {}), [card.id]: 4 },
+      triggerBonusInfo,
+    );
+
+  const inDeck = new Set(selected.map((s) => s.card.id));
+  // 借用候補: デッキ外・低凸(uncap<4)所持カード。4凸寄与の上位のみ評価しコストを抑える。
+  const borrowCands = cardContributions
+    .filter((cs) => !inDeck.has(cs.card.id) && (uncapLevels?.[cs.card.id] ?? 0) < 4)
+    .map((cs) => at4(cs.card))
+    .sort((a, b) => rawTotal(b) - rawTotal(a))
+    .slice(0, 12);
+  if (borrowCands.length === 0) return;
+
+  const currentCards = selected.map((s) => s.card);
+  let bestTotal = realTotal(currentCards, selected[rentalIdx].card.id);
+  let bestVi = -1;
+  let bestCand: CardScore | null = null;
+
+  for (const cand of borrowCands) {
+    for (let vi = 0; vi < selected.length; vi++) {
+      if (selected[vi].is_required) continue; // 必須は落とさない
+      const trial = currentCards.map((c, i) => (i === vi ? cand.card : c));
+      if (cardTypeSlots != null && !meetsTypeSlots(trial, cardTypeSlots)) continue;
+      if (!meetsSp(trial)) continue;
+      const t = realTotal(trial, cand.card.id);
+      if (t > bestTotal) {
+        bestTotal = t;
+        bestVi = vi;
+        bestCand = cand;
+      }
+    }
+  }
+
+  if (bestCand == null || bestVi < 0) return;
+
+  // 採用: bestVi を借用カード(4凸レンタル)に置換。旧レンタル等は所持(所持凸)で再計算。
+  for (let i = 0; i < selected.length; i++) {
+    if (i === bestVi) {
+      selected[i] = { ...bestCand, is_rental: true, is_required: false };
+    } else if (selected[i].is_rental) {
+      const owned = calculateCardContribution(
+        selected[i].card,
+        triggerCounts,
+        lessonAllocation,
+        lessonStatTotals,
+        uncapLevels ?? {},
+        triggerBonusInfo,
+      );
+      selected[i] = { ...owned, is_rental: false, is_required: selected[i].is_required };
+    }
   }
 }
 
@@ -2151,6 +2517,24 @@ export function selectOptimalDeck(
     spCounts,
   );
 
+  // 編成パターンの強制保証: enforceSpCounts 後、属性枠 (cardTypeSlots) が要求枚数に
+  // 満たない場合は余剰カードを当該属性カードに差し替える (優先順位の最下位)。
+  // SP枚数 (enforceSpCounts) を崩さない範囲でのみ実行するため、必ずその後に呼ぶ。
+  enforceTypeSlots(
+    selected,
+    cardContributions,
+    rentalPool,
+    planType,
+    triggerCounts,
+    lessonAllocation,
+    lessonStatTotals,
+    uncapLevels,
+    triggerBonusInfo,
+    protectedIds,
+    spCounts,
+    cardTypeSlots,
+  );
+
   // 局所最適の修復: 所持カード差し替え + レンタル差し替えの「同時手」を試し、
   // 実計算で合計が上がる場合のみ採用する (単調改善・悪化なし)。
   jointSwapRepair(
@@ -2174,6 +2558,52 @@ export function selectOptimalDeck(
     turnChoicesOverride ?? buildTurnChoices(plan, mainStats),
     overflowPenalty,
   );
+
+  // 借用アップグレード: デッキ外の低凸所持カードを4凸借用で投入し、弱い非必須カードを1枚落とす
+  // ジョイント手を実計算で評価(改善時のみ採用)。4凸所持カードのレンタル浪費を解消する。
+  if (rentalPool != null) {
+    optimizeRentalBorrowUpgrade(
+      selected,
+      cardContributions,
+      new Set(allCards.map((c) => c.id)),
+      plan,
+      turnChoicesOverride ?? buildTurnChoices(plan, mainStats),
+      triggerCounts,
+      lessonAllocation,
+      lessonStatTotals,
+      uncapLevels,
+      triggerBonusInfo,
+      additionalCounts,
+      statCap,
+      character ?? null,
+      memoryBonuses ?? null,
+      cardTypeSlots,
+      spCounts,
+      overflowPenalty,
+    );
+  }
+
+  // レンタル枠の割り当て最適化: カード集合を変えず「どの1枚を4凸で借りるか」だけを最適化する。
+  // 0凸所持の必須カードが所持枠に固定され、4凸所持カードがレンタル枠(借用恩恵ゼロ)に
+  // 入っているケースを、低凸カードへ付け替えて total を上げる (属性枠・SP・必須は不変)。
+  if (rentalPool != null) {
+    optimizeRentalAssignment(
+      selected,
+      new Set(allCards.map((c) => c.id)),
+      plan,
+      turnChoicesOverride ?? buildTurnChoices(plan, mainStats),
+      triggerCounts,
+      lessonAllocation,
+      lessonStatTotals,
+      uncapLevels,
+      triggerBonusInfo,
+      additionalCounts,
+      statCap,
+      character ?? null,
+      memoryBonuses ?? null,
+      overflowPenalty,
+    );
+  }
 
   // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
   // - producer: trigger_count_bonus を raw_* に加算しない (consumer 側が adjustedCounts 経由で実発火数を加算するため)

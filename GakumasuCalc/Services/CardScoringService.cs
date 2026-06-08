@@ -519,12 +519,40 @@ public class CardScoringService
         EnforceSpCounts(selected, cardContributions, rentalPool, triggerCounts,
             lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo, protectedIds, spCounts);
 
+        // 編成パターンの強制保証: EnforceSpCounts 後、属性枠 (cardTypeSlots) が要求枚数に
+        // 満たない場合は余剰カードを当該属性カードに差し替える (優先順位の最下位)。
+        // SP枚数 (EnforceSpCounts) を崩さない範囲でのみ実行するため、必ずその後に呼ぶ。
+        EnforceTypeSlots(selected, cardContributions, rentalPool, planType, triggerCounts,
+            lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo, protectedIds,
+            spCounts, cardTypeSlots);
+
         // 局所最適の修復: 所持カード差し替え + レンタル差し替えの「同時手」を試し、
         // 実計算で合計が上がる場合のみ採用する (単調改善・悪化なし)。
         JointSwapRepair(selected, cardContributions, protectedIds, spCounts, rentalPool, planType,
             triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo,
             plan, additionalCounts, statCap, character, memoryBonuses, cardTypeSlots,
             turnChoicesOverride ?? BuildTurnChoices(plan, mainStats), overflowPenalty);
+
+        // 借用アップグレード: デッキ外の低凸所持カードを4凸借用で投入し、弱い非必須カードを1枚落とす
+        // ジョイント手を実計算で評価(改善時のみ採用)。4凸所持カードのレンタル浪費を解消する。
+        if (rentalPool != null)
+        {
+            OptimizeRentalBorrowUpgrade(selected, cardContributions, allCards.Select(c => c.Id).ToHashSet(),
+                plan, turnChoicesOverride ?? BuildTurnChoices(plan, mainStats), triggerCounts,
+                lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo, additionalCounts,
+                statCap, character, memoryBonuses, cardTypeSlots, spCounts, overflowPenalty);
+        }
+
+        // レンタル枠の割り当て最適化: カード集合を変えず「どの1枚を4凸で借りるか」だけを最適化する。
+        // 0凸所持の必須カードが所持枠に固定され、4凸所持カードがレンタル枠(借用恩恵ゼロ)に
+        // 入っているケースを、低凸カードへ付け替えて total を上げる (属性枠・SP・必須は不変)。
+        if (rentalPool != null)
+        {
+            OptimizeRentalAssignment(selected, allCards.Select(c => c.Id).ToHashSet(), plan,
+                turnChoicesOverride ?? BuildTurnChoices(plan, mainStats), triggerCounts,
+                lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo, additionalCounts,
+                statCap, character, memoryBonuses, overflowPenalty);
+        }
 
         // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
         RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
@@ -709,6 +737,152 @@ public class CardScoringService
     }
 
     /// <summary>
+    /// デッキ確定後、編成パターン (cardTypeSlots) の属性枚数が要求に「満たない」場合に、
+    /// 余剰カードを当該属性のカードと差し替えて要求枚数を満たす。
+    ///
+    /// ユーザ指定の優先順位「必須カード > SP枚数 > 編成パターン」の最下位 (編成パターン) を
+    /// 保証する最終強制パス。EnforceSpCounts と対になり、必ずその後に実行する。
+    /// - 必須カード (IsRequired) は絶対に外さない
+    /// - 外すと spCounts を割る SP カードは外さない (SP枚数 > 編成パターン)
+    /// - 外すと他属性の枠要件を割るカードも外さない
+    /// - 所持枠は所持プール、レンタル枠はレンタルプールから当該属性カードで補充する
+    ///
+    /// 例: 必須3枚(内1枚DaSP) + DaSP3枚指定 で「Visual 2 / フリー 3」を選ぶと、
+    ///     必須(da/vo)とSP補充(da)で所持5枠が埋まり vi 枠が取り逃される。残るレンタル枠が
+    ///     da で埋まり vi=1 のままになるのを、この関数がレンタル(またはdaの余剰所持枠)を
+    ///     vi カードに差し替えて vi=2 を保証する。
+    /// </summary>
+    private void EnforceTypeSlots(
+        List<CardScore> selected,
+        List<CardScore> cardContributions,
+        List<SupportCard>? rentalPool,
+        string? planType,
+        Dictionary<string, int> triggerCounts,
+        Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
+        Dictionary<string, int>? uncapLevels,
+        Dictionary<string, TriggerBonusEntry>? triggerBonusInfo,
+        HashSet<string> protectedIds,
+        Dictionary<string, int>? spCounts,
+        Dictionary<string, int>? cardTypeSlots)
+    {
+        if (cardTypeSlots == null) return;
+
+        bool IsTypeMatch(SupportCard card, string type) =>
+            card.Type == type || card.Type == "all" || card.Type == "as";
+
+        bool CoversStat(SupportCard card, string stat) =>
+            card.Effects.Any(e =>
+                e.Trigger == "equip" && e.ValueType == "sp_rate" && (e.Stat == stat || e.Stat == "all"));
+
+        static int RawTotal(CardScore cs) => cs.RawVo + cs.RawDa + cs.RawVi;
+
+        int CountType(string type) => selected.Count(cs => IsTypeMatch(cs.Card, type));
+
+        // このカードを外すと spCounts のいずれかの属性が要求枚数を割るか
+        // (= SP枚数保証を崩しうる、外してはいけないカードか)
+        bool BreaksSpCounts(SupportCard card)
+        {
+            if (spCounts == null) return false;
+            foreach (var stat in new[] { "vo", "da", "vi" })
+            {
+                int need = spCounts.GetValueOrDefault(stat);
+                if (need <= 0) continue;
+                if (CoversStat(card, stat))
+                {
+                    int cur = selected.Count(cs => CoversStat(cs.Card, stat));
+                    if (cur <= need) return true;
+                }
+            }
+            return false;
+        }
+
+        foreach (var kvp in cardTypeSlots)
+        {
+            string type = kvp.Key;
+            int required = kvp.Value;
+            if (required <= 0) continue;
+
+            // CountType は毎回 selected を参照する。1スワップで必ず +1 進むが、念のため guard を置く。
+            int guard = 0;
+            while (CountType(type) < required && guard++ < 6)
+            {
+                var inDeck = selected.Select(s => s.Card.Id).ToHashSet();
+
+                // 外せる犠牲カード候補 (寄与の弱い順):
+                // - 必須でない / この属性のカードでない (外すと逆効果)
+                // - 外しても spCounts を割らない (SP枚数 > 編成パターン)
+                // - 外しても他属性の枠要件を割らない
+                var removables = selected
+                    .Select((cs, i) => (cs, i))
+                    .Where(t =>
+                        !t.cs.IsRequired &&
+                        !IsTypeMatch(t.cs.Card, type) &&
+                        !BreaksSpCounts(t.cs.Card) &&
+                        cardTypeSlots.All(kv2 =>
+                            kv2.Key == type ||
+                            kv2.Value <= 0 ||
+                            !IsTypeMatch(t.cs.Card, kv2.Key) ||
+                            CountType(kv2.Key) > kv2.Value))
+                    .OrderBy(t => RawTotal(t.cs))
+                    .ToList();
+
+                bool swapped = false;
+                foreach (var (victim, idx) in removables)
+                {
+                    CardScore? replacement = null;
+
+                    if (victim.IsRental && rentalPool != null)
+                    {
+                        // レンタル枠 → レンタルプールから当該属性カード (4凸) で補充
+                        IEnumerable<SupportCard> pool = rentalPool;
+                        if (!string.IsNullOrEmpty(planType))
+                            pool = pool.Where(c =>
+                                string.IsNullOrEmpty(c.Plan) || c.Plan == planType || c.Plan == "free");
+                        var cand = pool
+                            .Where(c => IsTypeMatch(c, type) && !inDeck.Contains(c.Id))
+                            .Select(c =>
+                            {
+                                var uc = uncapLevels != null
+                                    ? new Dictionary<string, int>(uncapLevels)
+                                    : new Dictionary<string, int>();
+                                uc[c.Id] = 4;
+                                return CalculateCardContribution(c, triggerCounts, lessonAllocation, lessonStatTotals, uc, triggerBonusInfo);
+                            })
+                            .OrderByDescending(RawTotal)
+                            .FirstOrDefault();
+                        if (cand != null)
+                        {
+                            cand.IsRental = true;
+                            replacement = cand;
+                        }
+                    }
+                    else
+                    {
+                        // 所持枠 → 所持プールから当該属性カードで補充
+                        var cand = cardContributions
+                            .Where(cs2 => IsTypeMatch(cs2.Card, type) && !inDeck.Contains(cs2.Card.Id))
+                            .OrderByDescending(RawTotal)
+                            .FirstOrDefault();
+                        if (cand != null) replacement = cand;
+                    }
+
+                    if (replacement == null) continue;
+
+                    protectedIds.Remove(victim.Card.Id);
+                    selected[idx] = replacement;
+                    protectedIds.Add(replacement.Card.Id);
+                    swapped = true;
+                    break;
+                }
+
+                // この属性を満たせるカードがプールに無い → これ以上は補充不能
+                if (!swapped) break;
+            }
+        }
+    }
+
+    /// <summary>
     /// PostOptimize はレンタル枠 (IsRental) を絶対にスワップしないため、所持カードが
     /// PostOptimize で入れ替わった後に「レンタル枠が最適でなくなる」ケースを補正できない。
     ///
@@ -827,6 +1001,216 @@ public class CardScoringService
             cs.IsRequired = false;
             selected[rentalIdx] = cs;
             protectedIds.Remove(current.Card.Id);
+        }
+    }
+
+    /// <summary>
+    /// レンタル枠は「デッキ内のどの1枚を4凸として借りるか」の指定にすぎない。
+    /// 所持カードのみ ON では非レンタル5枚は所持凸数で、レンタル1枚は4凸で評価される。
+    /// カード集合を変えずに「どのカードをレンタル(4凸借用)にするか」だけを最適化する。
+    ///
+    /// バグ例: 0凸所持の必須カードが所持枠(0凸)に固定され、4凸所持カードがレンタル枠
+    /// (4凸借用=upgrade恩恵ゼロ)に入ると、レンタルを低凸カードに付け替えるだけで total が上がる。
+    /// カード集合は不変なので属性枠・SP枚数・必須はすべて保持される (単調改善・悪化なし)。
+    ///
+    /// - デッキに未所持カードがあれば、それは必ずレンタル(所持枠に置けない)→ 付け替え不可で何もしない
+    /// - 全カード所持なら、各カードをレンタルにした実計算 total を比較し最大の割り当てを採用
+    ///
+    /// 注: RecomputeBreakdownsDeckAware は producer 不在時に早期 return するため、
+    ///     付け替えた2枚の raw 寄与はこの関数内で再計算しておく (フラグ変更だけに頼らない)。
+    /// </summary>
+    private void OptimizeRentalAssignment(
+        List<CardScore> selected,
+        HashSet<string> ownedIds,
+        TrainingPlan plan,
+        List<TurnChoice> turnChoices,
+        Dictionary<string, int> triggerCounts,
+        Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
+        Dictionary<string, int>? uncapLevels,
+        Dictionary<string, TriggerBonusEntry>? triggerBonusInfo,
+        AdditionalCounts? additionalCounts,
+        int statCap,
+        Character? character,
+        IReadOnlyList<MemoryBonus>? memoryBonuses,
+        OverflowPenaltyConfig? overflowPenalty)
+    {
+        int rentalIdx = selected.FindIndex(cs => cs.IsRental);
+        if (rentalIdx < 0) return; // レンタル枠なし
+
+        // デッキ内の未所持カードは必ずレンタル固定 (所持枠に置けない) → 付け替え不可
+        if (selected.Any(cs => !ownedIds.Contains(cs.Card.Id))) return;
+
+        var cards = selected.Select(cs => cs.Card).ToList();
+        var calcService = new StatusCalculationService();
+        int EvaluateWith(string rentalCardId)
+        {
+            var uc = new Dictionary<string, int>(uncapLevels ?? new()) { [rentalCardId] = 4 };
+            var fs = calcService.Calculate(plan, cards, turnChoices, uc, additionalCounts, character, memoryBonuses).FinalStatus;
+            int total = Math.Min(fs.Vo, statCap) + Math.Min(fs.Da, statCap) + Math.Min(fs.Vi, statCap);
+            if (overflowPenalty != null)
+            {
+                int overflow = Math.Max(0, fs.Vo - statCap) + Math.Max(0, fs.Da - statCap) + Math.Max(0, fs.Vi - statCap);
+                if (overflow > overflowPenalty.Threshold) total -= overflow * 2;
+            }
+            return total;
+        }
+
+        string currentId = selected[rentalIdx].Card.Id;
+        string bestId = currentId;
+        int bestTotal = EvaluateWith(currentId);
+        foreach (var cs in selected)
+        {
+            if (cs.Card.Id == currentId) continue;
+            int t = EvaluateWith(cs.Card.Id);
+            if (t > bestTotal)
+            {
+                bestTotal = t;
+                bestId = cs.Card.Id;
+            }
+        }
+
+        if (bestId == currentId) return;
+
+        // 付け替え: レンタル状態が変わる2枚の raw 寄与を新しい凸数で再計算する
+        for (int i = 0; i < selected.Count; i++)
+        {
+            bool willBeRental = selected[i].Card.Id == bestId;
+            if (willBeRental == selected[i].IsRental) continue;
+            var uc = willBeRental
+                ? new Dictionary<string, int>(uncapLevels ?? new()) { [selected[i].Card.Id] = 4 }
+                : new Dictionary<string, int>(uncapLevels ?? new());
+            bool wasRequired = selected[i].IsRequired;
+            var recomputed = CalculateCardContribution(
+                selected[i].Card, triggerCounts, lessonAllocation, lessonStatTotals, uc, triggerBonusInfo);
+            recomputed.IsRental = willBeRental;
+            recomputed.IsRequired = wasRequired;
+            selected[i] = recomputed;
+        }
+    }
+
+    /// <summary>
+    /// 借用アップグレード（レンタル枠のジョイント最適化）。
+    ///
+    /// ユーザが低凸(uncap&lt;4)で所持するカードは、所持枠では低凸の弱い寄与しか出ないが、
+    /// レンタル枠で4凸借用すれば本来の強さを発揮する。一方、4凸所持カードをレンタルに置くのは
+    /// 借用恩恵ゼロの浪費。既存パス(OptimizeRentalCard=所持固定 / OptimizeRentalAssignment=デッキ内再割当)では
+    /// 「弱い所持カードを1枚落として、デッキ外の低凸所持カードを4凸借用する」ジョイント手を取り逃す。
+    ///
+    /// このパスは、デッキ外の低凸所持カードC(4凸寄与上位)を借用枠に投入し、デッキ内の非必須カードVを
+    /// 1枚落とす手を実計算で評価し、合計が上がる場合のみ採用する(単調改善・悪化なし)。
+    /// 旧レンタルカード(4凸所持等)は所持枠へ移る。属性枠(cardTypeSlots)・SP枚数・必須は維持する。
+    /// </summary>
+    private void OptimizeRentalBorrowUpgrade(
+        List<CardScore> selected,
+        List<CardScore> cardContributions,
+        HashSet<string> ownedIds,
+        TrainingPlan plan,
+        List<TurnChoice> turnChoices,
+        Dictionary<string, int> triggerCounts,
+        Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
+        Dictionary<string, int>? uncapLevels,
+        Dictionary<string, TriggerBonusEntry>? triggerBonusInfo,
+        AdditionalCounts? additionalCounts,
+        int statCap,
+        Character? character,
+        IReadOnlyList<MemoryBonus>? memoryBonuses,
+        Dictionary<string, int>? cardTypeSlots,
+        Dictionary<string, int>? spCounts,
+        OverflowPenaltyConfig? overflowPenalty)
+    {
+        int rentalIdx = selected.FindIndex(cs => cs.IsRental);
+        if (rentalIdx < 0) return;
+        // デッキに未所持カードがある = それがレンタル固定。借用枠は使用中 → 対象外。
+        if (selected.Any(cs => !ownedIds.Contains(cs.Card.Id))) return;
+
+        bool CoversStat(SupportCard card, string stat) =>
+            card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate" && (e.Stat == stat || e.Stat == "all"));
+        bool MeetsSp(List<SupportCard> cards)
+        {
+            if (spCounts == null) return true;
+            foreach (var kvp in spCounts)
+            {
+                if (kvp.Value <= 0) continue;
+                if (cards.Count(c => CoversStat(c, kvp.Key)) < kvp.Value) return false;
+            }
+            return true;
+        }
+        static int RawTotal(CardScore cs) => cs.RawVo + cs.RawDa + cs.RawVi;
+
+        var calcService = new StatusCalculationService();
+        int RealTotal(List<SupportCard> cards, string rentalId)
+        {
+            var uc = new Dictionary<string, int>(uncapLevels ?? new()) { [rentalId] = 4 };
+            var fs = calcService.Calculate(plan, cards, turnChoices, uc, additionalCounts, character, memoryBonuses).FinalStatus;
+            int t = Math.Min(fs.Vo, statCap) + Math.Min(fs.Da, statCap) + Math.Min(fs.Vi, statCap);
+            if (overflowPenalty != null)
+            {
+                int o = Math.Max(0, fs.Vo - statCap) + Math.Max(0, fs.Da - statCap) + Math.Max(0, fs.Vi - statCap);
+                if (o > overflowPenalty.Threshold) t -= o * 2;
+            }
+            return t;
+        }
+        CardScore At4(SupportCard card)
+        {
+            var uc = new Dictionary<string, int>(uncapLevels ?? new()) { [card.Id] = 4 };
+            return CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, uc, triggerBonusInfo);
+        }
+
+        var inDeck = selected.Select(s => s.Card.Id).ToHashSet();
+        // 借用候補: デッキ外・低凸(uncap<4)所持カード。4凸寄与の上位のみ評価しコストを抑える。
+        var borrowCands = cardContributions
+            .Where(cs => !inDeck.Contains(cs.Card.Id) && (uncapLevels?.GetValueOrDefault(cs.Card.Id) ?? 0) < 4)
+            .Select(cs => At4(cs.Card))
+            .OrderByDescending(RawTotal)
+            .Take(12)
+            .ToList();
+        if (borrowCands.Count == 0) return;
+
+        var currentCards = selected.Select(s => s.Card).ToList();
+        int bestTotal = RealTotal(currentCards, selected[rentalIdx].Card.Id);
+        int bestVi = -1;
+        CardScore? bestCand = null;
+
+        foreach (var cand in borrowCands)
+        {
+            for (int vi = 0; vi < selected.Count; vi++)
+            {
+                if (selected[vi].IsRequired) continue;
+                var trial = new List<SupportCard>(currentCards);
+                trial[vi] = cand.Card;
+                if (cardTypeSlots != null && !MeetsTypeSlots(trial, cardTypeSlots)) continue;
+                if (!MeetsSp(trial)) continue;
+                int t = RealTotal(trial, cand.Card.Id);
+                if (t > bestTotal)
+                {
+                    bestTotal = t;
+                    bestVi = vi;
+                    bestCand = cand;
+                }
+            }
+        }
+
+        if (bestCand == null || bestVi < 0) return;
+
+        for (int i = 0; i < selected.Count; i++)
+        {
+            if (i == bestVi)
+            {
+                bestCand.IsRental = true;
+                bestCand.IsRequired = false;
+                selected[i] = bestCand;
+            }
+            else if (selected[i].IsRental)
+            {
+                bool wasRequired = selected[i].IsRequired;
+                var owned = CalculateCardContribution(
+                    selected[i].Card, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels ?? new(), triggerBonusInfo);
+                owned.IsRental = false;
+                owned.IsRequired = wasRequired;
+                selected[i] = owned;
+            }
         }
     }
 
