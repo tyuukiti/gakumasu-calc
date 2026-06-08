@@ -80,7 +80,7 @@ function appendMemory(lines: string[], memoryBonuses: MemoryBonus[]): void {
 /** 選択編成 (パターン名 + カード一覧) を lines に追記。 */
 function appendSelectedPattern(
   lines: string[],
-  deckResults: { label: string; selected_cards: { card: { id: string; name: string }; is_rental: boolean; is_required: boolean }[] }[],
+  deckResults: { label: string; selected_cards: { card: { id: string; name: string }; is_rental: boolean; is_required: boolean; uncap_level: number }[] }[],
   selectedPatternIndex: number,
 ): void {
   const pattern = deckResults[selectedPatternIndex];
@@ -92,7 +92,8 @@ function appendSelectedPattern(
     if (cs.is_rental) tags.push('レンタル');
     if (cs.is_required) tags.push('必須');
     const tagStr = tags.length > 0 ? ` [${tags.join(', ')}]` : '';
-    lines.push(`${i + 1}. ${cs.card.name} (${cs.card.id})${tagStr}`);
+    const uncap = cs.is_rental ? 4 : cs.uncap_level;
+    lines.push(`${i + 1}. ${cs.card.name} (${cs.card.id}) ${uncap}凸${tagStr}`);
   });
 }
 
