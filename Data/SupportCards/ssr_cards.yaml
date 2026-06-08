@@ -1442,10 +1442,6 @@ support_cards:
   effects:
   - trigger: equip
     stat: all
-    values: [14, 14, 14, 14, 14]
-    value_type: sp_rate
-  - trigger: equip
-    stat: vo
     values: [10.5, 10.5, 14, 14, 14]
     value_type: sp_rate
 - id: SP_SSR_0035
@@ -2339,10 +2335,6 @@ support_cards:
   effects:
   - trigger: equip
     stat: all
-    values: [14, 14, 14, 14, 14]
-    value_type: sp_rate
-  - trigger: equip
-    stat: vo
     values: [10.5, 10.5, 14, 14, 14]
     value_type: sp_rate
 - id: SP_SSR_0090
@@ -2973,11 +2965,11 @@ support_cards:
   effects:
   - trigger: equip
     stat: vi
-    values: [52, 55, 55, 62, 65]
+    values: [52, 55, 59, 62, 65]
     value_type: flat
   - trigger: equip
     stat: vi
-    values: [21, 21, 21, 28, 28]
+    values: [21, 21, 28, 28, 28]
     value_type: sp_rate
   - trigger: good_condition_acquire
     stat: vi

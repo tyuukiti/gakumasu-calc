@@ -2245,10 +2245,6 @@ support_cards:
   effects:
   - trigger: equip
     stat: all
-    values: [10.5, 10.5, 10.5, 10.5, 10.5]
-    value_type: sp_rate
-  - trigger: equip
-    stat: vo
     values: [5.2, 10.5, 10.5, 10.5, 10.5]
     value_type: sp_rate
 - id: SP_SR_0070
