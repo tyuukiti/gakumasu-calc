@@ -70,7 +70,7 @@ export default function HifDeckCardList() {
       <div className="space-y-1">
         {pattern.selected_cards.map((cs, index) => {
           const typeStyle = TYPE_COLORS[cs.card.type] ?? TYPE_COLORS['all'];
-          const suffix = cs.is_rental ? ' (レンタル)' : cs.is_required ? ' (必須)' : '';
+          const suffix = `${cs.is_rental ? ' (レンタル)' : ''}${cs.is_required ? ' (必須)' : ''}`;
           const displayName = cs.card.name + suffix;
           const isExpanded = expandedIndex === index;
 

@@ -1254,7 +1254,7 @@ public class MainViewModel : ViewModelBase
             var vm = new PatternResultViewModel { Label = pattern.Label, Index = i };
             foreach (var cs in pattern.SelectedCards)
             {
-                var suffix = cs.IsRental ? "（レンタル）" : cs.IsRequired ? "（必須）" : "";
+                var suffix = (cs.IsRental ? "（レンタル）" : "") + (cs.IsRequired ? "（必須）" : "");
                 var displayName = cs.Card.Name + suffix;
                 var breakdown = string.Join("\n", cs.Breakdowns
                     .Select(b => b.Value == 0 ? $"  {b.Reason}" : $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
@@ -1342,7 +1342,7 @@ public class MainViewModel : ViewModelBase
         DeckCards.Clear();
         foreach (var cs in pattern.SelectedCards)
         {
-            var suffix = cs.IsRental ? " (レンタル)" : cs.IsRequired ? " (必須)" : "";
+            var suffix = (cs.IsRental ? " (レンタル)" : "") + (cs.IsRequired ? " (必須)" : "");
             var displayName = cs.Card.Name + suffix;
             var breakdown = string.Join("\n", cs.Breakdowns
                 .Select(b => b.Value == 0 ? $"  {b.Reason}" : $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
@@ -1565,7 +1565,7 @@ public class MainViewModel : ViewModelBase
             var vm = new PatternResultViewModel { Label = pattern.Label, Index = i };
             foreach (var cs in pattern.SelectedCards)
             {
-                var suffix = cs.IsRental ? "（レンタル）" : cs.IsRequired ? "（必須）" : "";
+                var suffix = (cs.IsRental ? "（レンタル）" : "") + (cs.IsRequired ? "（必須）" : "");
                 var displayName = cs.Card.Name + suffix;
                 var breakdown = string.Join("\n", cs.Breakdowns
                     .Select(b => b.Value == 0 ? $"  {b.Reason}" : $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
