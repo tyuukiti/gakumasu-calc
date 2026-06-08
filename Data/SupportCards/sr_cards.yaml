@@ -2245,10 +2245,6 @@ support_cards:
   effects:
   - trigger: equip
     stat: all
-    values: [10.5, 10.5, 10.5, 10.5, 10.5]
-    value_type: sp_rate
-  - trigger: equip
-    stat: vo
     values: [5.2, 10.5, 10.5, 10.5, 10.5]
     value_type: sp_rate
 - id: SP_SR_0070
@@ -2375,11 +2371,11 @@ support_cards:
     event_param: true
   - trigger: equip
     stat: vi
-    values: [37, 37, 37, 37, 49]
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: skill_change
     stat: vi
-    values: [8, 8, 8, 8, 16]
+    values: [8, 8, 8, 16, 16]
     value_type: flat
     max_count: 3
   - trigger: p_item_acquire
@@ -2389,7 +2385,7 @@ support_cards:
     max_count: 6
   - trigger: equip
     stat: vi
-    values: [50, 50, 50, 50, 100]
+    values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
 - id: SP_SR_0073
   name: のんびり美味しいひととき
