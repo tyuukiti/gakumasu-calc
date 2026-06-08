@@ -27,6 +27,8 @@ export interface CardScore {
   breakdowns: EffectBreakdown[];
   is_rental: boolean;
   is_required: boolean;
+  /** このカードが計算に使われた凸数 (0-4)。レンタルは4凸借用、所持のみOFFの未所持カードは4。 */
+  uncap_level: number;
 }
 
 export interface TeamBonusContributor {

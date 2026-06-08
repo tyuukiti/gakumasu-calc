@@ -1087,11 +1087,18 @@
                                                 <TextBlock Text="SP" FontSize="9" FontWeight="Bold"
                                                            Foreground="#2E7D32"/>
                                             </Border>
-                                            <!-- カード名 (レンタル=オレンジ, 必須=紫) -->
-                                            <TextBlock Grid.Column="4" Text="{Binding CardName}"
-                                                       FontSize="12" VerticalAlignment="Center"
-                                                       Foreground="{Binding CardNameForeground}"
-                                                       Margin="4,0,0,0"/>
+                                            <!-- 凸数バッジ + カード名 (レンタル=オレンジ, 必須=紫) -->
+                                            <StackPanel Grid.Column="4" Orientation="Horizontal"
+                                                        VerticalAlignment="Center" Margin="4,0,0,0">
+                                                <Border Background="#EEF2FF" CornerRadius="2" Padding="3,1"
+                                                        Margin="0,0,4,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding UncapDisplay}" FontSize="9"
+                                                               FontWeight="Bold" Foreground="#4F46E5"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding CardName}" FontSize="12"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{Binding CardNameForeground}"/>
+                                            </StackPanel>
                                             <TextBlock Grid.Column="5" Text="{Binding StatValueDisplay}"
                                                        FontSize="13" FontWeight="SemiBold" FontFamily="Consolas"
                                                        Foreground="{StaticResource AccentBrush}"

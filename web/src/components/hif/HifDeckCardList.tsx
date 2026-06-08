@@ -73,6 +73,7 @@ export default function HifDeckCardList() {
           const suffix = `${cs.is_rental ? ' (レンタル)' : ''}${cs.is_required ? ' (必須)' : ''}`;
           const displayName = cs.card.name + suffix;
           const isExpanded = expandedIndex === index;
+          const uncapLevel = cs.is_rental ? 4 : cs.uncap_level;
 
           return (
             <div
@@ -89,6 +90,11 @@ export default function HifDeckCardList() {
                 </span>
 
                 <span className="text-xs text-gray-500">{cs.card.rarity}</span>
+
+                {/* 凸数バッジ */}
+                <span className="text-[10px] font-bold px-1 py-0.5 rounded bg-indigo-50 text-indigo-600">
+                  {uncapLevel}凸
+                </span>
 
                 {cs.card.plan && (
                   <span className="text-xs text-gray-400">

@@ -24,6 +24,8 @@ public class CardScoringService
         public bool IsRental { get; set; }
         /// <summary>必須カードかどうか</summary>
         public bool IsRequired { get; set; }
+        /// <summary>計算に使われた凸数 (0-4)。レンタルは4凸借用、所持のみOFFの未所持カードは4。</summary>
+        public int UncapLevel { get; set; }
     }
 
     public class TeamBonusContributor
@@ -2200,7 +2202,8 @@ public class CardScoringService
             TeamBonusTotal = (int)Math.Floor(teamBonusTotal),
             TeamBonusContributors = teamBonusContributors,
             TotalValue = iVo + iDa + iVi,
-            Breakdowns = breakdowns
+            Breakdowns = breakdowns,
+            UncapLevel = uncap
         };
     }
 

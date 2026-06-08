@@ -1365,6 +1365,7 @@ public class MainViewModel : ViewModelBase
                 BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}",
                 IsRental = cs.IsRental,
                 IsRequired = cs.IsRequired,
+                UncapLevel = cs.UncapLevel,
                 HasSpRate = cs.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"),
             });
         }
@@ -2580,6 +2581,10 @@ public class DeckCardViewModel : ViewModelBase
     public bool IsRental { get; set; }
     public bool IsRequired { get; set; }
     public bool HasSpRate { get; set; }
+    public int UncapLevel { get; set; }
+
+    /// <summary>表示用: レンタルは4凸借用、それ以外は所持凸数。"1凸"〜"4凸"。</summary>
+    public string UncapDisplay => $"{(IsRental ? 4 : UncapLevel)}凸";
 
     public System.Windows.Visibility SpRateVisibility =>
         HasSpRate ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;

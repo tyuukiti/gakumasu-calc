@@ -617,6 +617,7 @@ export function calculateCardContribution(
     breakdowns,
     is_rental: false,
     is_required: false,
+    uncap_level: uncap,
   };
 }
 
