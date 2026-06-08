@@ -2405,23 +2405,23 @@ support_cards:
     event_param: true
   - trigger: equip
     stat: vi
-    values: [49, 49, 49, 49, 49]
+    values: [37, 40, 43, 46, 49]
     value_type: flat
   - trigger: equip
     stat: vi
-    values: [21, 21, 21, 21, 21]
+    values: [10.5, 21, 21, 21, 21]
     value_type: sp_rate
   - trigger: sp_end
     stat: vi
-    values: [15, 15, 15, 15, 15]
+    values: [15, 15, 15, 15, 21]
     value_type: flat
     max_count: 4
     condition: deck>=20
   - trigger: equip
     stat: vi
-    values: [100, 100, 100, 100, 100]
+    values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
   - trigger: skill_acquire
     stat: vi
-    values: [2, 2, 2, 2, 2]
+    values: [1, 1, 1, 2, 2]
     value_type: flat
