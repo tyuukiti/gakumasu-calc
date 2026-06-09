@@ -31,7 +31,7 @@ function normalizeWeek(w: Partial<WeekSchedule>): WeekSchedule {
   }
 }
 
-function normalizePlan(plan: TrainingPlan): TrainingPlan {
+export function normalizePlan(plan: TrainingPlan): TrainingPlan {
   return {
     ...plan,
     status_limit: plan.status_limit ?? 2800,
@@ -41,7 +41,7 @@ function normalizePlan(plan: TrainingPlan): TrainingPlan {
   }
 }
 
-function normalizeCard(card: SupportCard): SupportCard {
+export function normalizeCard(card: SupportCard): SupportCard {
   return {
     ...card,
     plan: card.plan ?? '',
@@ -85,7 +85,7 @@ export async function loadTrainingPlans(): Promise<TrainingPlan[]> {
   return results
 }
 
-function normalizeTemplate(t: EventCountTemplate): EventCountTemplate {
+export function normalizeTemplate(t: EventCountTemplate): EventCountTemplate {
   if (!t.week_actions) return t
   const norm: Record<number, ActionType> = {}
   for (const [k, v] of Object.entries(t.week_actions)) {

@@ -3,6 +3,10 @@ bin/
 obj/
 release/
 
+# Test result artifacts (実行ごとに再生成される。TESTS.md と configs/expected.json は管理対象)
+test-results/
+**/TestResults/
+
 # IDE / Editor
 .vs/
 .vscode/

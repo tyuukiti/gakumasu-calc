@@ -1,0 +1,18 @@
+{
+  "_comment": "TS版(web)とC#版(GakumasuCalc)が同じ期待値に対してアサートする共有パリティ設定。両実装が同一の編成・合計を出すことを保証する。expected.json は TS パリティテストが初回に生成し、以後は両実装がこのファイルへ突合する。",
+  "planId": "hatsu_legend",
+  "scenarios": [
+    { "id": "voda", "mainStats": ["vo", "da"], "subStat": "vi", "templateName": "センス（活動支給軸）" },
+    { "id": "davi", "mainStats": ["da", "vi"], "subStat": "vo", "templateName": "センス（活動支給軸）" },
+    { "id": "vovi", "mainStats": ["vo", "vi"], "subStat": "da", "templateName": "センス（活動支給軸）" },
+    { "id": "voda_sp_vo2", "mainStats": ["vo", "da"], "subStat": "vi", "spCounts": { "vo": 2 }, "templateName": "センス（活動支給軸）" },
+
+    { "id": "hif_voda", "planId": "hif", "mode": "hif", "mainStats": ["vo", "da"], "subStat": "vi", "templateName": "センス" },
+    { "id": "hif_vovi", "planId": "hif", "mode": "hif", "mainStats": ["vo", "vi"], "subStat": "da", "templateName": "センス" },
+    { "id": "hif_davo", "planId": "hif", "mode": "hif", "mainStats": ["da", "vo"], "subStat": "vi", "templateName": "センス" },
+    { "id": "hif_davi", "planId": "hif", "mode": "hif", "mainStats": ["da", "vi"], "subStat": "vo", "templateName": "センス" },
+    { "id": "hif_vivo", "planId": "hif", "mode": "hif", "mainStats": ["vi", "vo"], "subStat": "da", "templateName": "センス" },
+    { "id": "hif_vida", "planId": "hif", "mode": "hif", "mainStats": ["vi", "da"], "subStat": "vo", "templateName": "センス" },
+    { "id": "hif_voda_sp_vo2", "planId": "hif", "mode": "hif", "mainStats": ["vo", "da"], "subStat": "vi", "spCounts": { "vo": 2 }, "templateName": "センス" }
+  ]
+}

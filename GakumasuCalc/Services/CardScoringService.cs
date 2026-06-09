@@ -59,10 +59,105 @@ public class CardScoringService
     }
 
     /// <summary>
-    /// 属性ごとの枚数制約+ステータス上限2800を考慮して最適6枚を選択する。
+    /// 属性ごとの枚数制約+ステータス上限を考慮して最適6枚を選択する (マルチスタート)。
+    ///
+    /// 貪欲法はカード探索順に依存して別の局所最適へ落ちるため、カードデータ由来の複数順序
+    /// (ID昇順/降順/レアリティ順) で選出を試し、実 Calculate の cap 後合計が最大の編成を採る。
+    /// 順序はカードデータのみから決まるので呼び出し側の読込順に**非依存** (Web版 cardScoring.ts と
+    /// 同挙動・デスクトップ版/Web版の乖離を解消)。各候補を実計算で採点し最大を採るので単調改善。
     /// </summary>
     /// <param name="spCounts">属性ごとのSP率カード必要枚数 (例: {"da":1, "vi":1})</param>
     public DeckResult SelectOptimalDeck(
+        TrainingPlan plan,
+        List<SupportCard> allCards,
+        Dictionary<string, int> lessonAllocation,
+        Dictionary<string, int> cardTypeSlots,
+        List<string> mainStats,
+        Dictionary<string, int>? spCounts = null,
+        string? planType = null,
+        AdditionalCounts? additionalCounts = null,
+        Dictionary<string, int>? uncapLevels = null,
+        List<SupportCard>? rentalPool = null,
+        int freeSlots = 0,
+        List<string>? requiredCardIds = null,
+        Character? character = null,
+        IReadOnlyList<MemoryBonus>? memoryBonuses = null,
+        List<TurnChoice>? turnChoicesOverride = null,
+        OverflowPenaltyConfig? overflowPenalty = null)
+    {
+        var statCap = plan.StatusLimit;
+        // レンタルプールも順序依存を排除するため ID 昇順に正準化 (全スタート共通)
+        var canonicalRental = rentalPool?.OrderBy(c => c.Id, StringComparer.Ordinal).ToList();
+
+        DeckResult? best = null;
+        int bestScore = int.MinValue;
+        foreach (var pool in CandidateOrderings(allCards))
+        {
+            var result = SelectOptimalDeckOnce(
+                plan, pool, lessonAllocation, cardTypeSlots, mainStats,
+                spCounts, planType, additionalCounts, uncapLevels, canonicalRental,
+                freeSlots, requiredCardIds, character, memoryBonuses,
+                turnChoicesOverride, overflowPenalty);
+            int score = EvalDeckScore(
+                result, plan, mainStats, uncapLevels, additionalCounts,
+                character, memoryBonuses, statCap, turnChoicesOverride, overflowPenalty);
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = result;
+            }
+        }
+        return best!;
+    }
+
+    /// <summary>マルチスタート用の候補プール順序集合 (すべてカードデータ由来・入力順非依存)。</summary>
+    private static List<List<SupportCard>> CandidateOrderings(List<SupportCard> cards)
+    {
+        static int RarityRank(string r) => r == "ssr" ? 0 : r == "sr" ? 1 : 2;
+        var asc = cards.OrderBy(c => c.Id, StringComparer.Ordinal).ToList();
+        var desc = cards.OrderByDescending(c => c.Id, StringComparer.Ordinal).ToList();
+        var byRarity = cards
+            .OrderBy(c => RarityRank(c.Rarity))
+            .ThenBy(c => c.Id, StringComparer.Ordinal)
+            .ToList();
+        return new List<List<SupportCard>> { asc, desc, byRarity };
+    }
+
+    /// <summary>
+    /// 確定デッキを実 Calculate で採点し cap 後合計を返す (overflow罰則込み)。
+    /// PostOptimize の評価と同一基準。マルチスタートの優劣比較に使う。
+    /// </summary>
+    private int EvalDeckScore(
+        DeckResult result,
+        TrainingPlan plan,
+        List<string> mainStats,
+        Dictionary<string, int>? uncapLevels,
+        AdditionalCounts? additionalCounts,
+        Character? character,
+        IReadOnlyList<MemoryBonus>? memoryBonuses,
+        int statCap,
+        List<TurnChoice>? turnChoicesOverride,
+        OverflowPenaltyConfig? overflowPenalty)
+    {
+        var turnChoices = turnChoicesOverride ?? BuildTurnChoices(plan, mainStats);
+        var uc = uncapLevels != null
+            ? new Dictionary<string, int>(uncapLevels)
+            : new Dictionary<string, int>();
+        foreach (var cs in result.SelectedCards)
+            if (cs.IsRental) uc[cs.Card.Id] = 4;
+        var cards = result.SelectedCards.Select(cs => cs.Card).ToList();
+        var calcService = new StatusCalculationService();
+        var fs = calcService.Calculate(plan, cards, turnChoices, uc, additionalCounts, character, memoryBonuses).FinalStatus;
+        int total = Math.Min(fs.Vo, statCap) + Math.Min(fs.Da, statCap) + Math.Min(fs.Vi, statCap);
+        if (overflowPenalty != null)
+        {
+            int overflow = Math.Max(0, fs.Vo - statCap) + Math.Max(0, fs.Da - statCap) + Math.Max(0, fs.Vi - statCap);
+            if (overflow > overflowPenalty.Threshold) total -= overflow * 2;
+        }
+        return total;
+    }
+
+    private DeckResult SelectOptimalDeckOnce(
         TrainingPlan plan,
         List<SupportCard> allCards,
         Dictionary<string, int> lessonAllocation,
@@ -1482,7 +1577,7 @@ public class CardScoringService
     /// <summary>
     /// プランとメイン属性からターン選択を生成する。
     /// </summary>
-    private static List<TurnChoice> BuildTurnChoices(TrainingPlan plan, List<string> mainStats)
+    internal static List<TurnChoice> BuildTurnChoices(TrainingPlan plan, List<string> mainStats)
     {
         var choices = new List<TurnChoice>();
         var subStat = new[] { "vo", "da", "vi" }.First(s => !mainStats.Contains(s));
