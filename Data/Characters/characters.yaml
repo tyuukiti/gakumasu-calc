@@ -59,6 +59,9 @@ characters:
     base_status_bonus: { vo: 80, da: 100, vi: 115 }
     para_bonus: { vo: 18.0, da: 25.0, vi: 21.0 }
     uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
+    step4_bonus:
+      base_status_bonus: { vo: 15, da: 0, vi: 5 }
+      para_bonus: { vo: 0, da: 3.0, vi: 3.0 }
 
   - id: "char_china"
     name: "倉本千奈"
@@ -78,6 +81,9 @@ characters:
     base_status_bonus: { vo: 100, da: 115, vi: 90 }
     para_bonus: { vo: 9.0, da: 28.0, vi: 26.0 }
     uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
+    step4_bonus:
+      base_status_bonus: { vo: 5, da: 0, vi: 5 }
+      para_bonus: { vo: 3.0, da: 2.0, vi: 1.0 }
 
   - id: "char_hiro"
     name: "篠澤広"
