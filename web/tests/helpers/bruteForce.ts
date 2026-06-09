@@ -107,3 +107,63 @@ export function findOptimalDeck(
 }
 
 export { isFeasible };
+
+export interface RentalBruteForceResult {
+  bestTotal: number;
+  bestDeck: SupportCard[];
+  bestRentalId: string | null;
+  evaluated: number;
+}
+
+/**
+ * レンタル枠対応の総当たり最適オラクル (実データ・要キュレーション小プール)。
+ *
+ * 所持のみモードの編成 = 「非レンタル(deckSize-1)枚 (所持凸数) + レンタル1枚 (4凸借用)」を
+ * 全列挙し、外部 score 関数 (実 calculate / cap後合計) で採点して真の最大を返す。
+ * `findOptimalDeck` がモデル化していないレンタル枠を扱うため、HIFのレンタル前提シナリオの
+ * 最適性検証に使う。プールは寄与上位などにキュレーションして組合せ爆発を防ぐこと。
+ *
+ * @param ownedPool   非レンタル枠の候補 (凸数は score 側で解決)
+ * @param rentalPool  レンタル枠の候補 (4凸借用は score 側で解決。所持/未所持どちらも可)
+ * @param score       (deck, rentalId) -> cap後合計。レンタルカードを4凸として評価すること
+ * @param isValid     SP枚数・必須など編成制約を満たすか (満たさない組合せは除外)
+ */
+export function bruteForceOptimalRental(
+  ownedPool: SupportCard[],
+  rentalPool: SupportCard[],
+  deckSize: number,
+  score: (deck: SupportCard[], rentalId: string) => number,
+  isValid: (deck: SupportCard[]) => boolean,
+  maxCombinations = MAX_COMBINATIONS,
+): RentalBruteForceResult {
+  const ownedSlots = deckSize - 1;
+  // 概算: |rentalPool| × C(|ownedPool|, ownedSlots)
+  const combos = rentalPool.length * nCk(ownedPool.length, ownedSlots);
+  if (combos > maxCombinations) {
+    throw new Error(
+      `rental brute force too large: ${rentalPool.length} × C(${ownedPool.length}, ${ownedSlots}) ≈ ${combos} > ${maxCombinations}`,
+    );
+  }
+
+  let bestTotal = -Infinity;
+  let bestDeck: SupportCard[] = [];
+  let bestRentalId: string | null = null;
+  let evaluated = 0;
+
+  for (const rental of rentalPool) {
+    const ownedCandidates = ownedPool.filter((c) => c.id !== rental.id);
+    for (const idxs of combinations(ownedCandidates.length, ownedSlots)) {
+      const deck = [...idxs.map((i) => ownedCandidates[i]), rental];
+      if (!isValid(deck)) continue;
+      evaluated += 1;
+      const total = score(deck, rental.id);
+      if (total > bestTotal) {
+        bestTotal = total;
+        bestDeck = deck;
+        bestRentalId = rental.id;
+      }
+    }
+  }
+
+  return { bestTotal, bestDeck, bestRentalId, evaluated };
+}

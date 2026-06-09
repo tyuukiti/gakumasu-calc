@@ -12,7 +12,8 @@ namespace GakumasuCalc.Tests;
 /// 回帰テスト: ユーザ報告(2026-06) HIF 診断シナリオの C# 版 (TS の cardScoringHif.crossSeed.test.ts と対)。
 /// バグ: 自動編成が Da偏重・Vi0枚の局所最適(6354)に落ち、ほっぺた等の高Viカードを使う
 ///       balanced 最適(6418)を逃していた。修正: SelectMultiplePatternsHif の cross-seed 大域最適化。
-/// 検証: 自動最良 ≧ 手動 ほっぺた入りデッキ (自動が手動に負けたらバグ)。
+/// 検証: レンタル枠対応の総当たりオラクルを実データ(各パターンが surface したカードの和集合)に適用し、
+///       自動最良 ≧ 独立に総当たりで求めた最適。答えを事前に知らなくてもこのクラスのバグを捕捉できる。
 /// </summary>
 public class ReproHif0030Tests
 {
@@ -83,25 +84,49 @@ public class ReproHif0030Tests
             return Math.Min(fs.Vo, cap) + Math.Min(fs.Da, cap) + Math.Min(fs.Vi, cap);
         }
 
-        int best = int.MinValue;
-        List<SupportCard>? bestCards = null;
+        int autoBest = int.MinValue;
         foreach (var p in patterns)
         {
             var cards = p.SelectedCards.Select(cs => cs.Card).ToList();
             var rentalId = p.SelectedCards.FirstOrDefault(cs => cs.IsRental)?.Card.Id;
             int total = Score(cards, rentalId);
             _out.WriteLine($"{p.Label}: total={total} [{string.Join(",", cards.Select(c => c.Id))}]");
-            if (total > best) { best = total; bestCards = cards; }
+            if (total > autoBest) autoBest = total;
         }
-        _out.WriteLine($"BEST={best}");
+        _out.WriteLine($"autoBest={autoBest}");
 
-        // ユーザが手動で組める ほっぺた入りデッキ (0059=レンタル4凸): 修正前の自動(6354)はこれに負けていた
-        var manualIds = new[] { "SP_SSR_0069", "SP_SSR_0059", "SP_SSR_0084", "SP_SR_0010", "SP_SR_0071", "SP_SR_0008" };
-        var manualDeck = manualIds.Select(id => allCards.First(c => c.Id == id)).ToList();
-        int manualScore = Score(manualDeck, "SP_SSR_0059");
+        // --- 独立した総当たりオラクル (実データ・レンタル枠考慮) ---
+        // プール = 各パターンが選んだカードの和集合 (最適化器自身が surface した属性多様な部品;
+        // 個別寄与が低くても最適に入る札 0008 等も含む) + レンタル候補の Da上位 (0059 等)。
+        bool PlanOk(SupportCard c) => string.IsNullOrEmpty(c.Plan) || c.Plan == "anomaly" || c.Plan == "free";
+        var patternCardIds = patterns.SelectMany(p => p.SelectedCards.Select(cs => cs.Card.Id)).ToHashSet();
+        int SoloTotal(SupportCard c, bool asRental)
+        {
+            var uc = new Dictionary<string, int>(uncapLevels);
+            if (asRental) uc[c.Id] = 4;
+            var fs = calc.Calculate(plan, new List<SupportCard> { c }, turnChoices, uc, additionalCounts, effectiveChar, null).FinalStatus;
+            return Math.Min(fs.Vo, cap) + Math.Min(fs.Da, cap) + Math.Min(fs.Vi, cap);
+        }
+        var ownedBF = candidateCards.Where(c => patternCardIds.Contains(c.Id) && PlanOk(c)).ToList();
+        var topDaRental = rentalPool.Where(c => PlanOk(c) && c.Type == "da")
+            .OrderByDescending(c => SoloTotal(c, true)).Take(5);
+        var rentalBF = rentalPool.Where(c => patternCardIds.Contains(c.Id) && PlanOk(c))
+            .Concat(topDaRental)
+            .GroupBy(c => c.Id).Select(g => g.First()).ToList();
 
-        Assert.True(best >= manualScore, $"自動最良={best} は手動 ほっぺたデッキ={manualScore} 以上であるべき");
-        Assert.Contains(bestCards!, c => c.Type == "vi"); // balanced 最適は Viカードを含む
+        bool CoversDaSp(SupportCard c) =>
+            c.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate" && (e.Stat == "da" || e.Stat == "all"));
+        bool ValidDeck(List<SupportCard> deck) =>
+            deck.Select(c => c.Id).Distinct().Count() == deck.Count && deck.Count(CoversDaSp) >= 3;
+
+        var bf = BruteForce.FindOptimalDeckWithRental(ownedBF, rentalBF, 6,
+            (deck, rentalId) => Score(deck, rentalId), ValidDeck);
+        _out.WriteLine($"bf.BestTotal={bf.BestTotal} [{string.Join(",", bf.BestDeck.Select(c => c.Id))}] rental={bf.BestRentalId}");
+
+        // teeth: オラクルは旧出荷の局所最適(6354)を独立に上回るデッキを実際に見つけている
+        Assert.True(bf.BestTotal > 6354, $"オラクルが独立に見つけた最適={bf.BestTotal} は旧出荷値6354を上回るべき(teeth)");
+        // 本検証: 自動最良は独立に求めた総当たり最適を下回ってはならない
+        Assert.True(autoBest >= bf.BestTotal, $"自動最良={autoBest} は総当たり最適={bf.BestTotal} 以上であるべき");
     }
 
     // hifStore.buildPlanAndChoices の複製 (診断のスケジュール選択を再構築)

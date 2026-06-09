@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { selectMultiplePatternsHif } from '../src/services/cardScoring';
 import { calculate } from '../src/services/statusCalculation';
 import { loadAllCards, loadPlan, loadCharacters, REPO_ROOT } from './helpers/loadRealData';
+import { bruteForceOptimalRental } from './helpers/bruteForce';
 import { emptyAdditionalCounts } from '../src/types/models';
 import type {
   TrainingPlan, TurnChoice, StatusValues, WeekSchedule, ActionType, SupportCard, Character,
@@ -18,8 +19,14 @@ import type {
  *       ほっぺた等の高Viカードを使う balanced 最適 (6418) を逃していた。
  * 修正: selectMultiplePatternsHif の cross-seed 大域最適化 (フリー5を全パターンの種から
  *       joint 単一スワップ山登り)。
- * 検証: 自動最良 ≧ ユーザが手動で組める ほっぺた入りデッキ。
- *       ([[feedback_optimizer_is_the_product]]: 自動が手動に負けたらバグ)
+ *
+ * 検証方針 (重要): 既存スイートがこのバグを取りこぼした構造的原因は、
+ *   ① 総当たりオラクルが合成小プール専用かつレンタル枠を非モデル化 → 実データ最適性が未検証
+ *   ② 実データのテストが「auto ≧ 素朴な手動編成」のみ → バグ自動でも素朴手動には勝てて素通り
+ * だった。ここでは **レンタル枠対応の総当たりオラクルを実データ(寄与上位プール)に適用**し、
+ * 「自動最良 ≧ 独立に総当たりで求めた最適」を検証する。答えを事前に知らなくても
+ * このクラスのバグ(局所最適への落ち込み)を捕捉できる。
+ * ([[feedback_optimizer_is_the_product]]: 自動が(独立に求めた)最適に負けたらバグ)
  */
 
 type Choice = { action: string; sub_stat?: 'vo' | 'da' | 'vi' };
@@ -83,7 +90,7 @@ function buildPlanAndChoices(hifPlan: TrainingPlan): { plan: TrainingPlan; turnC
 interface InvEntry { card_id: string; owned: boolean; uncap: number }
 
 describe('HIF cross-seed 回帰 (ユーザ報告 2026-06: 上限張り付き属性での balanced 最適)', () => {
-  it('自動最良 ≧ 手動 ほっぺた入りデッキ (Da偏重局所最適に落ちない)', () => {
+  it('自動最良 ≧ 総当たり最適 (実データ・レンタル枠考慮)', () => {
     const allCards = loadAllCards();
     const hifPlan = loadPlan('hif');
     const lilja = loadCharacters().find((c) => c.id === 'char_lilja')!;
@@ -141,21 +148,49 @@ describe('HIF cross-seed 回帰 (ユーザ報告 2026-06: 上限張り付き属�
     );
 
     let autoBest = -Infinity;
-    let autoBestCards: SupportCard[] = [];
     for (const p of patterns) {
       const cards = p.selected_cards.map((cs) => cs.card);
       const rentalId = p.selected_cards.find((cs) => cs.is_rental)?.card.id;
       const s = score(cards, rentalId);
-      if (s > autoBest) { autoBest = s; autoBestCards = cards; }
+      if (s > autoBest) autoBest = s;
     }
 
-    // ユーザが手動で組める ほっぺた入りデッキ (0059=レンタル4凸): 修正前の自動(6354)はこれに負けていた
-    const manualIds = ['SP_SSR_0069', 'SP_SSR_0059', 'SP_SSR_0084', 'SP_SR_0010', 'SP_SR_0071', 'SP_SR_0008'];
-    const manualDeck = manualIds.map((id) => allCards.find((c) => c.id === id)!);
-    const manualScore = score(manualDeck, 'SP_SSR_0059');
+    // --- 独立した総当たりオラクル (実データ・レンタル枠考慮) ---
+    // 「5枚(所持凸) + レンタル1枚(4凸)」を全列挙し SP(da>=3) を満たす真の最大を求める。
+    // プール = 各パターンが選んだカードの和集合 (= 最適化器自身が surface した属性多様な部品。
+    // 個別寄与が低くても最適編成に入る札 0008 等も含む) + レンタル候補の Da上位 (0059 等)。
+    // バグの本質は「部品は各パターンに出ているが、それらを跨いだ最良の組合せを作れない」点なので、
+    // この和集合を総当たりすれば答えを事前に知らなくても最適を独立に再現できる。
+    const planOk = (c: SupportCard) => c.plan == null || c.plan === '' || c.plan === 'anomaly' || c.plan === 'free';
+    const patternCardIds = new Set(patterns.flatMap((p) => p.selected_cards.map((cs) => cs.card.id)));
+    const soloTotal = (c: SupportCard, asRental: boolean): number => {
+      const uc = { ...uncapLevels };
+      if (asRental) uc[c.id] = 4;
+      const fs = calculate(plan, [c], turnChoices, uc, additionalCounts, effectiveChar, null).final_status;
+      return Math.min(fs.vo, cap) + Math.min(fs.da, cap) + Math.min(fs.vi, cap);
+    };
+    const topDa = (pool: SupportCard[], n: number) => pool
+      .filter((c) => planOk(c) && c.type === 'da')
+      .sort((a, b) => soloTotal(b, true) - soloTotal(a, true)).slice(0, n);
+    const dedupe = (cards: SupportCard[]) => [...new Map(cards.map((c) => [c.id, c])).values()];
 
-    expect(autoBest).toBeGreaterThanOrEqual(manualScore - 1e-6);
-    // balanced 最適は Viカードを含む (Da偏重・Vi0枚の退化編成ではない)
-    expect(autoBestCards.some((c) => c.type === 'vi')).toBe(true);
+    const ownedBF = candidateCards.filter((c) => patternCardIds.has(c.id) && planOk(c));
+    const rentalBF = dedupe([
+      ...rentalPool.filter((c) => patternCardIds.has(c.id) && planOk(c)),
+      ...topDa(rentalPool, 5),
+    ]);
+
+    const coversDaSp = (c: SupportCard) =>
+      c.effects.some((e) => e.trigger === 'equip' && e.value_type === 'sp_rate' && (e.stat === 'da' || e.stat === 'all'));
+    const validDeck = (deck: SupportCard[]) =>
+      new Set(deck.map((c) => c.id)).size === deck.length && deck.filter(coversDaSp).length >= 3;
+
+    const bf = bruteForceOptimalRental(ownedBF, rentalBF, 6, (deck, rentalId) => score(deck, rentalId), validDeck);
+
+    // teeth: オラクルは旧出荷の局所最適(6354)を独立に上回るデッキを実際に見つけている
+    // (= 修正前なら autoBest(6354) < bf.bestTotal となりこのテストは赤になる)
+    expect(bf.bestTotal).toBeGreaterThan(6354);
+    // 本検証: 自動最良は独立に求めた総当たり最適を下回ってはならない
+    expect(autoBest).toBeGreaterThanOrEqual(bf.bestTotal - 1e-6);
   });
 });
