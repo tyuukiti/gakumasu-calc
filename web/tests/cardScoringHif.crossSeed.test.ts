@@ -7,8 +7,9 @@ import { loadAllCards, loadPlan, loadCharacters, REPO_ROOT } from './helpers/loa
 import { bruteForceOptimalRental } from './helpers/bruteForce';
 import { emptyAdditionalCounts } from '../src/types/models';
 import type {
-  TrainingPlan, TurnChoice, StatusValues, WeekSchedule, ActionType, SupportCard, Character,
+  TrainingPlan, TurnChoice, StatusValues, WeekSchedule, SupportCard, Character,
 } from '../src/types/models';
+import type { ActionType } from '../src/types/enums';
 
 /**
  * 回帰テスト: ユーザ報告(2026-06) HIF 診断シナリオ。

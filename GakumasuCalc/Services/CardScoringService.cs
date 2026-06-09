@@ -592,6 +592,15 @@ public class CardScoringService
             }
         }
 
+        // 所持カードのみ ON でレンタル枠が1枚も立っていなければ確保する。
+        // (必須 + SP補充で所持枠が6枚埋まり「レンタル1枠」ブロックが発火しなかったケース)。
+        // 以降の PostOptimize / Enforce* / OptimizeRental* は通常フローと同じく
+        // 「レンタル枠が1枚存在する」前提で動く。借用先の最適化は後続パスが実計算で行う。
+        if (rentalPool != null)
+        {
+            EnsureRentalSlot(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo);
+        }
+
         // レンタル含む deck 確定後、SP カードが spCounts 設定を超過しているなら
         // 余剰分の保護を外す → PostOptimize で非SPカードへの差し替えを許可する。
         // (step 1 でレンタルが SP かどうかは未確定のため、ここで補正)
@@ -1102,6 +1111,50 @@ public class CardScoringService
     }
 
     /// <summary>
+    /// 所持カードのみ ON では編成6枚 = 所持5枚 + レンタル1枚(4凸借用) が原則で、6枚中必ず1枚を
+    /// レンタル(借用先)として指定する。ところが必須カード + SP補充で所持枠が6枚埋まると、
+    /// 「レンタル1枠」選出ブロック (selected.Count &lt; 6) が発火せず IsRental が1枚も立たないまま
+    /// になる (= レンタル枠が消える)。必須枚数を増やすとレンタルが消えるバグはこれが原因。
+    ///
+    /// レンタル枠は「デッキ内のどの1枚を4凸として借りるか」の指定にすぎず、借用は必ず total を
+    /// 増やす(または同値)ので、ここで最低凸カードを暫定レンタルに指定して枠を必ず確保する。
+    /// 真に最良の借用先への付け替え(別カードへの差し替え含む)は後続の
+    /// OptimizeRentalCard / OptimizeRentalAssignment が実計算で行う。
+    /// </summary>
+    private void EnsureRentalSlot(
+        List<CardScore> selected,
+        Dictionary<string, int> triggerCounts,
+        Dictionary<string, int> lessonAllocation,
+        StatusValues lessonStatTotals,
+        Dictionary<string, int>? uncapLevels,
+        Dictionary<string, TriggerBonusEntry>? triggerBonusInfo)
+    {
+        if (selected.Count == 0) return;
+        if (selected.Any(cs => cs.IsRental)) return;
+
+        // 最低凸のカードを借用先に選ぶ (借用恩恵が最大)。凸不明は4凸扱い。
+        int target = 0;
+        int lowest = int.MaxValue;
+        for (int i = 0; i < selected.Count; i++)
+        {
+            int u = uncapLevels != null && uncapLevels.TryGetValue(selected[i].Card.Id, out var v) ? v : 4;
+            if (u < lowest)
+            {
+                lowest = u;
+                target = i;
+            }
+        }
+
+        var uc = new Dictionary<string, int>(uncapLevels ?? new()) { [selected[target].Card.Id] = 4 };
+        bool wasRequired = selected[target].IsRequired;
+        var recomputed = CalculateCardContribution(
+            selected[target].Card, triggerCounts, lessonAllocation, lessonStatTotals, uc, triggerBonusInfo);
+        recomputed.IsRental = true;
+        recomputed.IsRequired = wasRequired;
+        selected[target] = recomputed;
+    }
+
+    /// <summary>
     /// レンタル枠は「デッキ内のどの1枚を4凸として借りるか」の指定にすぎない。
     /// 所持カードのみ ON では非レンタル5枚は所持凸数で、レンタル1枚は4凸で評価される。
     /// カード集合を変えずに「どのカードをレンタル(4凸借用)にするか」だけを最適化する。
@@ -1153,17 +1206,30 @@ public class CardScoringService
             return total;
         }
 
+        // 借用先は「合計が最大」かつ、同点なら「所持凸が最低」のカードを選ぶ。
+        // レンタルは4凸借用なので低凸カードほど借用恩恵が大きく、上限張り付き等で合計が
+        // 同点になるケースでは、4凸所持カードをレンタルに据える浪費を避けて低凸カードへ寄せる
+        // (レンタル枠はデッキ内最低凸の所持カードであるべき、という原則)。
+        int UncapOf(string id) => uncapLevels != null && uncapLevels.TryGetValue(id, out var v) ? v : 4;
         string currentId = selected[rentalIdx].Card.Id;
         string bestId = currentId;
         int bestTotal = EvaluateWith(currentId);
+        int bestUncap = UncapOf(currentId);
         foreach (var cs in selected)
         {
             if (cs.Card.Id == currentId) continue;
             int t = EvaluateWith(cs.Card.Id);
+            int u = UncapOf(cs.Card.Id);
             if (t > bestTotal)
             {
                 bestTotal = t;
                 bestId = cs.Card.Id;
+                bestUncap = u;
+            }
+            else if (t == bestTotal && u < bestUncap)
+            {
+                bestId = cs.Card.Id;
+                bestUncap = u;
             }
         }
 
@@ -2211,6 +2277,17 @@ public class CardScoringService
             cs.IsRequired = requiredSet.Contains(card.Id);
             return cs;
         }).ToList();
+
+        // HillClimb はレンタル枠の位置を固定したままカードを入れ替えるため、最終デッキで
+        // レンタルが最低凸カードに乗っていないことがある。借用先を実計算で最適化する
+        // (同点時は最低凸カードを優先。SelectOptimalDeck の確定処理と挙動を揃える)。
+        if (rentalPool != null)
+        {
+            OptimizeRentalAssignment(selected, ownedCards.Select(c => c.Id).ToHashSet(), plan,
+                turnChoices, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo,
+                additionalCounts, statCap, character, memoryBonuses, overflowPenalty);
+        }
+
         RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
         RecalculateWithCap(selected, baseStats, statCap);
         selected = selected.OrderByDescending(cs => cs.TotalValue).ToList();
