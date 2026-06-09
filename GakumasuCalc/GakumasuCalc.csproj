@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- テストプロジェクトから internal メンバー (BuildTurnChoices 等) を参照可能にする -->
+    <InternalsVisibleTo Include="GakumasuCalc.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="..\favicon.ico" Link="favicon.ico" />
   </ItemGroup>
 

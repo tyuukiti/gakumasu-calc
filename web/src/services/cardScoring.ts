@@ -1624,7 +1624,7 @@ function postOptimize(
   } while (improved);
 }
 
-function buildTurnChoices(
+export function buildTurnChoices(
   plan: TrainingPlan,
   mainStats: string[],
 ): TurnChoice[] {
@@ -1916,7 +1916,115 @@ export function generateLabel(
 
 // --- Select optimal deck ---
 
+/**
+ * カード探索順 (候補プールの順序) に依存して別の局所最適へ落ちる貪欲法を補正するため、
+ * カードデータ由来の複数順序で選出を試し、実 calculate の cap 後合計が最大の編成を採用する
+ * マルチスタートのラッパ。
+ *
+ * - 順序はカードデータ (id / レアリティ) のみから決まるので、呼び出し側の読込順に**非依存**。
+ *   → デスクトップ版とWeb版でカード読込順が違っても同一結果になる (実装間の乖離を解消)。
+ * - 各候補を実 calculate で採点して最大を採るので、単一スタートより悪化しない (単調改善)。
+ */
 export function selectOptimalDeck(
+  plan: TrainingPlan,
+  allCards: SupportCard[],
+  lessonAllocation: Record<string, number>,
+  cardTypeSlots: Record<string, number>,
+  mainStats: string[],
+  spCounts?: Record<string, number>,
+  planType?: string,
+  additionalCounts?: AdditionalCounts,
+  uncapLevels?: Record<string, number>,
+  rentalPool?: SupportCard[],
+  freeSlots: number = 0,
+  requiredCardIds?: string[],
+  character?: Character | null,
+  memoryBonuses?: MemoryBonus[] | null,
+  turnChoicesOverride?: TurnChoice[],
+  overflowPenalty?: OverflowPenaltyConfig,
+): DeckResult {
+  const statCap = plan.status_limit;
+  // レンタルプールも順序依存を排除するため id 昇順に正規化 (全スタート共通)
+  const canonicalRental = rentalPool != null
+    ? [...rentalPool].sort(compareById)
+    : undefined;
+
+  let best: DeckResult | null = null;
+  let bestScore = -Infinity;
+  for (const pool of candidateOrderings(allCards)) {
+    const result = selectOptimalDeckOnce(
+      plan, pool, lessonAllocation, cardTypeSlots, mainStats,
+      spCounts, planType, additionalCounts, uncapLevels, canonicalRental,
+      freeSlots, requiredCardIds, character, memoryBonuses,
+      turnChoicesOverride, overflowPenalty,
+    );
+    const score = evalDeckScore(
+      result, plan, mainStats, uncapLevels, additionalCounts,
+      character, memoryBonuses, statCap, turnChoicesOverride, overflowPenalty,
+    );
+    if (score > bestScore) {
+      bestScore = score;
+      best = result;
+    }
+  }
+  return best!;
+}
+
+/** id 昇順比較 (ordinal)。 */
+function compareById(a: SupportCard, b: SupportCard): number {
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+/**
+ * マルチスタート用の候補プール順序集合。すべてカードデータのみから決まる (入力順非依存)。
+ * 貪欲法の出発点を散らして別々の局所最適を探索する。
+ */
+function candidateOrderings(cards: SupportCard[]): SupportCard[][] {
+  const rarityRank = (r: string): number => (r === 'ssr' ? 0 : r === 'sr' ? 1 : 2);
+  const asc = [...cards].sort(compareById);
+  const desc = [...cards].sort((a, b) => -compareById(a, b));
+  const byRarity = [...cards].sort(
+    (a, b) => rarityRank(a.rarity) - rarityRank(b.rarity) || compareById(a, b),
+  );
+  // すべてカードデータのみから決まる順序 (入力順非依存)。貪欲法の出発点を散らして
+  // 別々の局所最適を探索し、実 calculate 採点で最良を採る (単調改善・悪化なし)。
+  return [asc, desc, byRarity];
+}
+
+/**
+ * 確定デッキを実 calculate で採点し cap 後合計を返す (overflow罰則込み)。
+ * postOptimize の evaluateFull と同一基準。マルチスタートの優劣比較に使う。
+ */
+function evalDeckScore(
+  result: DeckResult,
+  plan: TrainingPlan,
+  mainStats: string[],
+  uncapLevels: Record<string, number> | undefined,
+  additionalCounts: AdditionalCounts | undefined,
+  character: Character | null | undefined,
+  memoryBonuses: MemoryBonus[] | null | undefined,
+  statCap: number,
+  turnChoicesOverride: TurnChoice[] | undefined,
+  overflowPenalty: OverflowPenaltyConfig | undefined,
+): number {
+  const turnChoices = turnChoicesOverride ?? buildTurnChoices(plan, mainStats);
+  const uc: Record<string, number> = { ...(uncapLevels ?? {}) };
+  for (const cs of result.selected_cards) {
+    if (cs.is_rental) uc[cs.card.id] = 4;
+  }
+  const cards = result.selected_cards.map((cs) => cs.card);
+  const fs = calculate(
+    plan, cards, turnChoices, uc, additionalCounts, character ?? null, memoryBonuses ?? null,
+  ).final_status;
+  let total = Math.min(fs.vo, statCap) + Math.min(fs.da, statCap) + Math.min(fs.vi, statCap);
+  if (overflowPenalty) {
+    const overflow = Math.max(0, fs.vo - statCap) + Math.max(0, fs.da - statCap) + Math.max(0, fs.vi - statCap);
+    if (overflow > overflowPenalty.threshold) total -= overflow * 2;
+  }
+  return total;
+}
+
+function selectOptimalDeckOnce(
   plan: TrainingPlan,
   allCards: SupportCard[],
   lessonAllocation: Record<string, number>,
