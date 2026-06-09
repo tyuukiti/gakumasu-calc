@@ -1150,6 +1150,58 @@ function optimizeRentalCard(
 }
 
 /**
+ * 所持カードのみ ON では編成6枚 = 所持5枚 + レンタル1枚(4凸借用) が原則で、6枚中必ず1枚を
+ * レンタル(借用先)として指定する。ところが必須カード + SP補充で所持枠が6枚埋まると、
+ * 「レンタル1枠」選出ブロック (selected.length < 6) が発火せず is_rental が1枚も立たないまま
+ * になる (= レンタル枠が消える)。必須枚数を増やすとレンタルが消えるバグはこれが原因。
+ *
+ * レンタル枠は「デッキ内のどの1枚を4凸として借りるか」の指定にすぎず、借用は必ず total を
+ * 増やす(または同値)ので、ここで最低凸カードを暫定レンタルに指定して枠を必ず確保する。
+ * 真に最良の借用先への付け替え(別カードへの差し替え含む)は後続の
+ * optimizeRentalCard / optimizeRentalAssignment が実計算で行う。
+ *
+ * - 既にレンタルがあれば何もしない
+ * - デッキに未所持カードがあれば本来 requiredRentalCard 経由で指定済みのはず。ここに来る = 全所持
+ * - 指定する1枚は4凸に再計算してから is_rental を立てる (raw 寄与を凸数と整合させる)
+ */
+function ensureRentalSlot(
+  selected: CardScore[],
+  triggerCounts: Record<string, number>,
+  lessonAllocation: Record<string, number>,
+  lessonStatTotals: StatusValues,
+  uncapLevels: Record<string, number> | undefined,
+  triggerBonusInfo: Record<string, TriggerBonusEntry> | undefined,
+): void {
+  if (selected.length === 0) return;
+  if (selected.some((cs) => cs.is_rental)) return;
+
+  // 最低凸のカードを借用先に選ぶ (借用恩恵が最大)。凸不明は4凸扱い。
+  let target = 0;
+  let lowest = Infinity;
+  for (let i = 0; i < selected.length; i++) {
+    const u = uncapLevels?.[selected[i].card.id] ?? 4;
+    if (u < lowest) {
+      lowest = u;
+      target = i;
+    }
+  }
+
+  const recomputed = calculateCardContribution(
+    selected[target].card,
+    triggerCounts,
+    lessonAllocation,
+    lessonStatTotals,
+    { ...(uncapLevels ?? {}), [selected[target].card.id]: 4 },
+    triggerBonusInfo,
+  );
+  selected[target] = {
+    ...recomputed,
+    is_rental: true,
+    is_required: selected[target].is_required,
+  };
+}
+
+/**
  * レンタル枠は「デッキ内のどの1枚を4凸として借りるか」の指定にすぎない。
  * 所持カードのみ ON では非レンタル5枚は所持凸数で、レンタル1枚は4凸で評価される。
  * カード集合を変えずに「どのカードをレンタル(4凸借用)にするか」だけを最適化する。
@@ -1208,15 +1260,26 @@ function optimizeRentalAssignment(
     return total;
   };
 
+  // 借用先は「合計が最大」かつ、同点なら「所持凸が最低」のカードを選ぶ。
+  // レンタルは4凸借用なので低凸カードほど借用恩恵が大きく、上限張り付き等で合計が
+  // 同点になるケースでは、4凸所持カードをレンタルに据える浪費を避けて低凸カードへ寄せる
+  // (レンタル枠はデッキ内最低凸の所持カードであるべき、という原則)。
+  const uncapOf = (id: string): number => uncapLevels?.[id] ?? 4;
   const currentId = selected[rentalIdx].card.id;
   let bestId = currentId;
   let bestTotal = evalWith(currentId);
+  let bestUncap = uncapOf(currentId);
   for (const cs of selected) {
     if (cs.card.id === currentId) continue;
     const t = evalWith(cs.card.id);
+    const u = uncapOf(cs.card.id);
     if (t > bestTotal) {
       bestTotal = t;
       bestId = cs.card.id;
+      bestUncap = u;
+    } else if (t === bestTotal && u < bestUncap) {
+      bestId = cs.card.id;
+      bestUncap = u;
     }
   }
 
@@ -2564,6 +2627,21 @@ function selectOptimalDeckOnce(
     }
   }
 
+  // 所持カードのみ ON でレンタル枠が1枚も立っていなければ確保する。
+  // (必須 + SP補充で所持枠が6枚埋まり「レンタル1枠」ブロックが発火しなかったケース)。
+  // 以降の postOptimize / enforce* / optimizeRental* は通常フローと同じく
+  // 「レンタル枠が1枚存在する」前提で動く。借用先の最適化は後続パスが実計算で行う。
+  if (rentalPool != null) {
+    ensureRentalSlot(
+      selected,
+      triggerCounts,
+      lessonAllocation,
+      lessonStatTotals,
+      uncapLevels,
+      triggerBonusInfo,
+    );
+  }
+
   // レンタル含む deck 確定後、SP カードが spCounts 設定を超過しているなら
   // 余剰分の保護を外す → postOptimize で非SPカードへの差し替えを許可する。
   // (step 1 でレンタルが SP かどうかは未確定のため、ここで補正)
@@ -3046,6 +3124,29 @@ function crossSeedFreeDeck(
     const cs = calculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, ucEff, triggerBonusInfo);
     return { ...cs, is_rental: card.id === rentalId, is_required: requiredSet.has(card.id) };
   });
+
+  // hillClimb はレンタル枠の位置を固定したままカードを入れ替えるため、最終デッキで
+  // レンタルが最低凸カードに乗っていないことがある。借用先を実計算で最適化する
+  // (同点時は最低凸カードを優先。selectOptimalDeck の確定処理と挙動を揃える)。
+  if (rentalPool != null) {
+    optimizeRentalAssignment(
+      selected,
+      new Set(ownedCards.map((c) => c.id)),
+      plan,
+      turnChoices,
+      triggerCounts,
+      lessonAllocation,
+      lessonStatTotals,
+      uncapLevels,
+      triggerBonusInfo,
+      additionalCounts,
+      statCap,
+      character,
+      memoryBonuses,
+      overflowPenalty,
+    );
+  }
+
   recomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
   recalculateWithCap(selected, baseStats, statCap);
   selected.sort((a, b) => b.total_value - a.total_value);
