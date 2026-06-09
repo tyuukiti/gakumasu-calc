@@ -2039,7 +2039,186 @@ public class CardScoringService
             results.Add(result);
         }
 
+        // cross-seed 大域最適化: 各パターンの greedy は属性偏重の局所最適へ収束しやすく、特に型制約の
+        // ない「フリー5」は Da偏重 basin に落ちて balanced 最適へ単一スワップで渡れないことがある。
+        // 一方 Vo/Vi 偏重パターンのデッキを種に、型制約なし(SP枚数+必須のみ)で joint 単一スワップ
+        // 山登りすると balanced 最適へ届く。全パターンのデッキを種に山登りし、得た大域最良を
+        // 「フリー5」枠へ反映する (現フリー5を上回る場合のみ・単調改善)。
+        CrossSeedFreeDeck(
+            results, plan, allCards, lessonAllocation, mainStats, spCounts, planType,
+            additionalCounts, uncapLevels, rentalPool, requiredCardIds,
+            character, memoryBonuses, turnChoicesOverride, overflowPenalty);
+
         return results;
+    }
+
+    /// <summary>
+    /// HIFパターン群の「フリー5」枠を、全パターンのデッキを種にした joint 単一スワップ山登りで
+    /// 求めた大域最良デッキに置き換える (改善時のみ)。属性偏重 greedy の basin を跨いで
+    /// balanced 最適を拾うための cross-seed。制約は SP枚数 + 必須カードのみ (フリー5は型制約なし)。
+    /// レンタル枠は1枚を4凸借用として評価する (rentalPool 指定時)。
+    /// </summary>
+    private void CrossSeedFreeDeck(
+        List<DeckResult> results,
+        TrainingPlan plan,
+        List<SupportCard> ownedCards,
+        Dictionary<string, int> lessonAllocation,
+        List<string> mainStats,
+        Dictionary<string, int>? spCounts,
+        string? planType,
+        AdditionalCounts? additionalCounts,
+        Dictionary<string, int>? uncapLevels,
+        List<SupportCard>? rentalPool,
+        List<string>? requiredCardIds,
+        Character? character,
+        IReadOnlyList<MemoryBonus>? memoryBonuses,
+        List<TurnChoice>? turnChoicesOverride,
+        OverflowPenaltyConfig? overflowPenalty)
+    {
+        if (results.Count == 0) return;
+        var statCap = plan.StatusLimit;
+        var freeLabel = GenerateLabel(new Dictionary<string, int>(), 5);
+        int freeIdx = results.FindIndex(r => r.Label == freeLabel);
+        if (freeIdx < 0) return;
+
+        var turnChoices = turnChoicesOverride ?? BuildTurnChoices(plan, mainStats);
+        var requiredSet = (requiredCardIds ?? new List<string>()).ToHashSet();
+
+        // 共有コンテキスト (raw寄与ランキング & 最終 DeckResult 生成で使用)
+        var triggerCounts = CountTriggers(plan, lessonAllocation, mainStats, turnChoicesOverride);
+        if (additionalCounts != null)
+        {
+            foreach (var kvp in additionalCounts.ToDictionary())
+                if (kvp.Value > 0)
+                    triggerCounts[kvp.Key] = triggerCounts.GetValueOrDefault(kvp.Key) + kvp.Value;
+        }
+        var baseStats = EstimateBaseStats(plan, lessonAllocation);
+        var lessonStatTotals = CalculateLessonStatTotals(plan, lessonAllocation);
+        var triggerBonusInfo = ComputeTriggerBonusInfo(ownedCards, uncapLevels);
+
+        bool PlanOk(SupportCard c) =>
+            string.IsNullOrEmpty(planType) || string.IsNullOrEmpty(c.Plan) || c.Plan == planType || c.Plan == "free";
+
+        // 所持枠 / レンタル枠の候補を raw寄与上位に絞る (計算量削減)
+        const int TopN = 40;
+        int RawTotalOf(SupportCard c, bool asRental)
+        {
+            var uc = uncapLevels != null ? new Dictionary<string, int>(uncapLevels) : new Dictionary<string, int>();
+            if (asRental) uc[c.Id] = 4;
+            var cs = CalculateCardContribution(c, triggerCounts, lessonAllocation, lessonStatTotals, uc, triggerBonusInfo);
+            return cs.RawVo + cs.RawDa + cs.RawVi;
+        }
+        List<SupportCard> RankTopN(List<SupportCard> pool, bool asRental) =>
+            pool.Where(PlanOk).OrderByDescending(c => RawTotalOf(c, asRental)).Take(TopN).ToList();
+        var ownedRanked = RankTopN(ownedCards, false);
+        var rentalRanked = RankTopN(rentalPool ?? ownedCards, true);
+
+        bool CoversStat(SupportCard card, string stat) =>
+            card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate" && (e.Stat == stat || e.Stat == "all"));
+        bool MeetsSp(List<SupportCard> cards)
+        {
+            if (spCounts == null) return true;
+            foreach (var kvp in spCounts)
+            {
+                if (kvp.Value <= 0) continue;
+                if (cards.Count(c => CoversStat(c, kvp.Key)) < kvp.Value) return false;
+            }
+            return true;
+        }
+        bool HasRequired(List<SupportCard> cards)
+        {
+            foreach (var id in requiredSet)
+                if (!cards.Any(c => c.Id == id)) return false;
+            return true;
+        }
+
+        var calcService = new StatusCalculationService();
+        int EvalTotal(List<SupportCard> cards, int rentalIdx)
+        {
+            var uc = uncapLevels != null ? new Dictionary<string, int>(uncapLevels) : new Dictionary<string, int>();
+            if (rentalIdx >= 0) uc[cards[rentalIdx].Id] = 4;
+            var fs = calcService.Calculate(plan, cards, turnChoices, uc, additionalCounts, character, memoryBonuses).FinalStatus;
+            int total = Math.Min(fs.Vo, statCap) + Math.Min(fs.Da, statCap) + Math.Min(fs.Vi, statCap);
+            if (overflowPenalty != null)
+            {
+                int o = Math.Max(0, fs.Vo - statCap) + Math.Max(0, fs.Da - statCap) + Math.Max(0, fs.Vi - statCap);
+                if (o > overflowPenalty.Threshold) total -= o * 2;
+            }
+            return total;
+        }
+
+        // joint 単一スワップ山登り (所持枠は ownedRanked, レンタル枠は rentalRanked から; 改善時のみ採用)
+        (List<SupportCard> cards, int total) HillClimb(List<SupportCard> start, int rentalIdx)
+        {
+            var cur = new List<SupportCard>(start);
+            int curTotal = EvalTotal(cur, rentalIdx);
+            bool improved = true;
+            int guard = 0;
+            while (improved && guard++ < 20)
+            {
+                improved = false;
+                for (int slot = 0; slot < cur.Count; slot++)
+                {
+                    if (requiredSet.Contains(cur[slot].Id)) continue; // 必須カードは固定
+                    var pool = slot == rentalIdx ? rentalRanked : ownedRanked;
+                    foreach (var cand in pool)
+                    {
+                        bool dup = false;
+                        for (int i = 0; i < cur.Count; i++)
+                            if (i != slot && cur[i].Id == cand.Id) { dup = true; break; }
+                        if (dup) continue;
+                        var trial = new List<SupportCard>(cur) { [slot] = cand };
+                        if (!MeetsSp(trial) || !HasRequired(trial)) continue;
+                        int t = EvalTotal(trial, rentalIdx);
+                        if (t > curTotal) { cur = trial; curTotal = t; improved = true; }
+                    }
+                }
+            }
+            return (cur, curTotal);
+        }
+
+        // 全パターンのデッキを種に大域最良を探索
+        List<SupportCard>? bestCards = null;
+        int bestRentalIdx = -1;
+        int bestTotal = int.MinValue;
+        foreach (var r in results)
+        {
+            var cards = r.SelectedCards.Select(cs => cs.Card).ToList();
+            int rentalIdx = r.SelectedCards.FindIndex(cs => cs.IsRental);
+            var (hcCards, hcTotal) = HillClimb(cards, rentalIdx);
+            if (hcTotal > bestTotal)
+            {
+                bestTotal = hcTotal;
+                bestCards = hcCards;
+                bestRentalIdx = rentalIdx;
+            }
+        }
+        if (bestCards == null) return;
+
+        var free = results[freeIdx];
+        int freeRentalIdx = free.SelectedCards.FindIndex(cs => cs.IsRental);
+        int freeTotal = EvalTotal(free.SelectedCards.Select(cs => cs.Card).ToList(), freeRentalIdx);
+        if (bestTotal <= freeTotal) return; // 改善なし
+
+        // 大域最良デッキを DeckResult 化 (SelectOptimalDeckOnce の確定処理と同一手順)
+        string? rentalId = bestRentalIdx >= 0 ? bestCards[bestRentalIdx].Id : null;
+        var ucEff = uncapLevels != null ? new Dictionary<string, int>(uncapLevels) : new Dictionary<string, int>();
+        if (rentalId != null) ucEff[rentalId] = 4;
+        var selected = bestCards.Select(card =>
+        {
+            var cs = CalculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, ucEff, triggerBonusInfo);
+            cs.IsRental = card.Id == rentalId;
+            cs.IsRequired = requiredSet.Contains(card.Id);
+            return cs;
+        }).ToList();
+        RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
+        RecalculateWithCap(selected, baseStats, statCap);
+        selected = selected.OrderByDescending(cs => cs.TotalValue).ToList();
+        results[freeIdx] = new DeckResult
+        {
+            Label = free.Label,
+            SelectedCards = selected,
+        };
     }
 
     /// <summary>trigger_count_bonus 用、消費側カード1枚分の per-fire 寄与情報</summary>

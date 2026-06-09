@@ -95,4 +95,58 @@ public static class BruteForce
 
         return new Result { BestTotal = bestTotal, BestDeck = bestDeck, Evaluated = evaluated };
     }
+
+    public sealed class RentalResult
+    {
+        public int BestTotal;
+        public List<SupportCard> BestDeck = new();
+        public string? BestRentalId;
+        public int Evaluated;
+    }
+
+    /// <summary>
+    /// レンタル枠対応の総当たり最適オラクル (実データ・要キュレーション小プール)。TS 版 bruteForceOptimalRental と対応。
+    /// 「非レンタル(deckSize-1)枚 (所持凸数) + レンタル1枚 (4凸借用)」を全列挙し、外部 score 関数
+    /// (実 Calculate / cap後合計) で採点して真の最大を返す。プールは寄与上位等にキュレーションして
+    /// 組合せ爆発を防ぐこと。findOptimalDeck がモデル化しないレンタル枠を扱う。
+    /// </summary>
+    public static RentalResult FindOptimalDeckWithRental(
+        List<SupportCard> ownedPool,
+        List<SupportCard> rentalPool,
+        int deckSize,
+        Func<List<SupportCard>, string, int> score,
+        Func<List<SupportCard>, bool> isValid,
+        int maxCombinations = MaxCombinations)
+    {
+        int ownedSlots = deckSize - 1;
+        long combos = (long)rentalPool.Count * NCk(ownedPool.Count, ownedSlots);
+        if (combos > maxCombinations)
+            throw new InvalidOperationException(
+                $"rental brute force too large: {rentalPool.Count} × C({ownedPool.Count},{ownedSlots}) ≈ {combos} > {maxCombinations}");
+
+        int bestTotal = int.MinValue;
+        var bestDeck = new List<SupportCard>();
+        string? bestRentalId = null;
+        int evaluated = 0;
+
+        foreach (var rental in rentalPool)
+        {
+            var ownedCandidates = ownedPool.Where(c => c.Id != rental.Id).ToList();
+            foreach (var idxs in Combinations(ownedCandidates.Count, ownedSlots))
+            {
+                var deck = idxs.Select(i => ownedCandidates[i]).Append(rental).ToList();
+                if (!isValid(deck)) continue;
+                evaluated++;
+                int total = score(deck, rental.Id);
+                if (total > bestTotal)
+                {
+                    bestTotal = total;
+                    bestDeck = deck;
+                    bestRentalId = rental.Id;
+                }
+            }
+        }
+
+        return new RentalResult { BestTotal = bestTotal, BestDeck = bestDeck, BestRentalId = bestRentalId, Evaluated = evaluated };
+    }
 }

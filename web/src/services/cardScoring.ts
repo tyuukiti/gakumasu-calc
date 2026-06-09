@@ -2898,5 +2898,160 @@ export function selectMultiplePatternsHif(
     results.push(result);
   }
 
+  // cross-seed 大域最適化: 各パターンの greedy は属性偏重の局所最適へ収束しやすく、特に型制約の
+  // ない「フリー5」は Da偏重 basin に落ちて balanced 最適へ単一スワップで渡れないことがある。
+  // 一方 Vo/Vi 偏重パターンのデッキを種に、型制約なし(SP枚数+必須のみ)で joint 単一スワップ
+  // 山登りすると balanced 最適へ届く。全パターンのデッキを種に山登りし、得た大域最良を
+  // 「フリー5」枠へ反映する (現フリー5を上回る場合のみ・単調改善)。
+  crossSeedFreeDeck(
+    results, plan, allCards, lessonAllocation, mainStats, spCounts, planType,
+    additionalCounts, uncapLevels, rentalPool, requiredCardIds,
+    character ?? null, memoryBonuses ?? null, turnChoicesOverride, overflowPenalty,
+  );
+
   return results;
+}
+
+/**
+ * HIFパターン群の「フリー5」枠を、全パターンのデッキを種にした joint 単一スワップ山登りで
+ * 求めた大域最良デッキに置き換える (改善時のみ)。属性偏重 greedy の basin を跨いで
+ * balanced 最適を拾うための cross-seed。制約は SP枚数 + 必須カードのみ (フリー5は型制約なし)。
+ * レンタル枠は1枚を4凸借用として評価する (rentalPool 指定時)。
+ */
+function crossSeedFreeDeck(
+  results: DeckResult[],
+  plan: TrainingPlan,
+  ownedCards: SupportCard[],
+  lessonAllocation: Record<string, number>,
+  mainStats: string[],
+  spCounts: Record<string, number> | undefined,
+  planType: string | undefined,
+  additionalCounts: AdditionalCounts | undefined,
+  uncapLevels: Record<string, number> | undefined,
+  rentalPool: SupportCard[] | undefined,
+  requiredCardIds: string[] | undefined,
+  character: Character | null,
+  memoryBonuses: MemoryBonus[] | null,
+  turnChoicesOverride: TurnChoice[] | undefined,
+  overflowPenalty: OverflowPenaltyConfig | undefined,
+): void {
+  if (results.length === 0) return;
+  const freeLabel = generateLabel({}, 5);
+  const freeIdx = results.findIndex((r) => r.label === freeLabel);
+  if (freeIdx < 0) return;
+
+  const statCap = plan.status_limit;
+  const turnChoices = turnChoicesOverride ?? buildTurnChoices(plan, mainStats);
+  const requiredSet = new Set(requiredCardIds ?? []);
+
+  // 共有コンテキスト (raw寄与ランキング & 最終 DeckResult 生成で使用)
+  const triggerCounts = countTriggers(plan, lessonAllocation, mainStats, turnChoicesOverride);
+  if (additionalCounts != null) {
+    for (const [k, v] of Object.entries(additionalCountsToRecord(additionalCounts))) {
+      if (v > 0) triggerCounts[k] = (triggerCounts[k] ?? 0) + v;
+    }
+  }
+  const baseStats = estimateBaseStats(plan, lessonAllocation);
+  const lessonStatTotals = calculateLessonStatTotals(plan, lessonAllocation);
+  const triggerBonusInfo = computeTriggerBonusInfo(ownedCards, uncapLevels);
+
+  const planOk = (c: SupportCard) =>
+    planType == null || planType === '' || c.plan == null || c.plan === '' || c.plan === planType || c.plan === 'free';
+
+  // 所持枠 / レンタル枠の候補を raw寄与上位に絞る (計算量削減)
+  const TOP_N = 40;
+  const rawTotalOf = (c: SupportCard, asRental: boolean): number => {
+    const uc: Record<string, number> = { ...(uncapLevels ?? {}) };
+    if (asRental) uc[c.id] = 4;
+    const cs = calculateCardContribution(c, triggerCounts, lessonAllocation, lessonStatTotals, uc, triggerBonusInfo);
+    return cs.raw_vo + cs.raw_da + cs.raw_vi;
+  };
+  const rankTopN = (pool: SupportCard[], asRental: boolean): SupportCard[] =>
+    pool.filter(planOk).map((c) => ({ c, s: rawTotalOf(c, asRental) }))
+      .sort((a, b) => b.s - a.s).slice(0, TOP_N).map((x) => x.c);
+  const ownedRanked = rankTopN(ownedCards, false);
+  const rentalRanked = rankTopN(rentalPool ?? ownedCards, true);
+
+  const coversStat = (card: SupportCard, stat: string) =>
+    card.effects.some((e) => e.trigger === 'equip' && e.value_type === 'sp_rate' && (e.stat === stat || e.stat === 'all'));
+  const meetsSp = (cards: SupportCard[]) => {
+    if (spCounts == null) return true;
+    for (const [s, n] of Object.entries(spCounts)) {
+      if (n <= 0) continue;
+      if (cards.filter((c) => coversStat(c, s)).length < n) return false;
+    }
+    return true;
+  };
+  const hasRequired = (cards: SupportCard[]) => {
+    for (const id of requiredSet) if (!cards.some((c) => c.id === id)) return false;
+    return true;
+  };
+
+  const evalTotal = (cards: SupportCard[], rentalIdx: number): number => {
+    const uc: Record<string, number> = { ...(uncapLevels ?? {}) };
+    if (rentalIdx >= 0) uc[cards[rentalIdx].id] = 4;
+    const fs = calculate(plan, cards, turnChoices, uc, additionalCounts, character, memoryBonuses).final_status;
+    let total = Math.min(fs.vo, statCap) + Math.min(fs.da, statCap) + Math.min(fs.vi, statCap);
+    if (overflowPenalty) {
+      const o = Math.max(0, fs.vo - statCap) + Math.max(0, fs.da - statCap) + Math.max(0, fs.vi - statCap);
+      if (o > overflowPenalty.threshold) total -= o * 2;
+    }
+    return total;
+  };
+
+  // joint 単一スワップ山登り (所持枠は ownedRanked, レンタル枠は rentalRanked から; 改善時のみ採用)
+  const hillClimb = (start: SupportCard[], rentalIdx: number): { cards: SupportCard[]; total: number } => {
+    let cur = [...start];
+    let curTotal = evalTotal(cur, rentalIdx);
+    let improved = true;
+    let guard = 0;
+    while (improved && guard++ < 20) {
+      improved = false;
+      for (let slot = 0; slot < cur.length; slot++) {
+        if (requiredSet.has(cur[slot].id)) continue; // 必須カードは固定
+        const pool = slot === rentalIdx ? rentalRanked : ownedRanked;
+        for (const cand of pool) {
+          if (cur.some((c, i) => i !== slot && c.id === cand.id)) continue;
+          const trial = [...cur];
+          trial[slot] = cand;
+          if (!meetsSp(trial) || !hasRequired(trial)) continue;
+          const t = evalTotal(trial, rentalIdx);
+          if (t > curTotal + 1e-6) { cur = trial; curTotal = t; improved = true; }
+        }
+      }
+    }
+    return { cards: cur, total: curTotal };
+  };
+
+  // 全パターンのデッキを種に大域最良を探索
+  let best: { cards: SupportCard[]; rentalIdx: number; total: number } | null = null;
+  for (const r of results) {
+    const cards = r.selected_cards.map((cs) => cs.card);
+    const rentalIdx = r.selected_cards.findIndex((cs) => cs.is_rental);
+    const hc = hillClimb(cards, rentalIdx);
+    if (best == null || hc.total > best.total) best = { cards: hc.cards, rentalIdx, total: hc.total };
+  }
+  if (best == null) return;
+
+  const free = results[freeIdx];
+  const freeRentalIdx = free.selected_cards.findIndex((cs) => cs.is_rental);
+  const freeTotal = evalTotal(free.selected_cards.map((cs) => cs.card), freeRentalIdx);
+  if (best.total <= freeTotal + 1e-6) return; // 改善なし
+
+  // 大域最良デッキを DeckResult 化 (selectOptimalDeckOnce の確定処理と同一手順)
+  const rentalId = best.rentalIdx >= 0 ? best.cards[best.rentalIdx].id : null;
+  const ucEff: Record<string, number> = { ...(uncapLevels ?? {}) };
+  if (rentalId != null) ucEff[rentalId] = 4;
+  const selected: CardScore[] = best.cards.map((card) => {
+    const cs = calculateCardContribution(card, triggerCounts, lessonAllocation, lessonStatTotals, ucEff, triggerBonusInfo);
+    return { ...cs, is_rental: card.id === rentalId, is_required: requiredSet.has(card.id) };
+  });
+  recomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
+  recalculateWithCap(selected, baseStats, statCap);
+  selected.sort((a, b) => b.total_value - a.total_value);
+  results[freeIdx] = {
+    label: free.label,
+    selected_cards: selected,
+    total_value: selected.reduce((s, c) => s + c.total_value, 0),
+  };
 }
