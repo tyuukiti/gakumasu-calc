@@ -289,6 +289,8 @@ templates:
 
 - name: センス
   plan_id: nia
+  week_actions:
+    25: consultation
   counts:
     p_drink_acquire: 15
     p_item_acquire: 6
@@ -310,6 +312,8 @@ templates:
 
 - name: ロジック（好印象）
   plan_id: nia
+  week_actions:
+    25: consultation
   counts:
     p_drink_acquire: 15
     p_item_acquire: 6
@@ -332,6 +336,8 @@ templates:
 
 - name: ロジック（やる気）
   plan_id: nia
+  week_actions:
+    25: consultation
   counts:
     p_drink_acquire: 15
     p_item_acquire: 6
@@ -354,6 +360,8 @@ templates:
 
 - name: アノマリー（強気）
   plan_id: nia
+  week_actions:
+    25: consultation
   counts:
     p_drink_acquire: 15
     p_item_acquire: 6
@@ -376,6 +384,8 @@ templates:
 
 - name: アノマリー（全力）
   plan_id: nia
+  week_actions:
+    25: consultation
   counts:
     p_drink_acquire: 15
     p_item_acquire: 6
