@@ -121,7 +121,7 @@ export default function HifBulkSettings() {
           <button
             type="button"
             onClick={() => applyExam('vo_all')}
-            className="px-2 py-1 border rounded text-xs font-semibold cursor-pointer hover:opacity-80"
+            className="min-w-[84px] px-2 py-1 border rounded text-xs font-semibold cursor-pointer hover:opacity-80"
             style={{ background: STAT_BG.vo, color: STAT_TEXT.vo, borderColor: STAT_TEXT.vo }}
           >
             Vo 全振り
@@ -129,7 +129,7 @@ export default function HifBulkSettings() {
           <button
             type="button"
             onClick={() => applyExam('da_all')}
-            className="px-2 py-1 border rounded text-xs font-semibold cursor-pointer hover:opacity-80"
+            className="min-w-[84px] px-2 py-1 border rounded text-xs font-semibold cursor-pointer hover:opacity-80"
             style={{ background: STAT_BG.da, color: STAT_TEXT.da, borderColor: STAT_TEXT.da }}
           >
             Da 全振り
@@ -137,7 +137,7 @@ export default function HifBulkSettings() {
           <button
             type="button"
             onClick={() => applyExam('vi_all')}
-            className="px-2 py-1 border rounded text-xs font-semibold cursor-pointer hover:opacity-80"
+            className="min-w-[84px] px-2 py-1 border rounded text-xs font-semibold cursor-pointer hover:opacity-80"
             style={{ background: STAT_BG.vi, color: STAT_TEXT.vi, borderColor: STAT_TEXT.vi }}
           >
             Vi 全振り
@@ -147,20 +147,24 @@ export default function HifBulkSettings() {
               key={preset}
               type="button"
               onClick={() => applyExam(preset)}
-              title={`${STAT_LABEL[a]}・${STAT_LABEL[b]} 2分割`}
-              className="px-2 py-1 border border-gray-300 rounded text-xs font-semibold cursor-pointer hover:opacity-80"
+              title={`${STAT_LABEL[a]}・${STAT_LABEL[b]} 2極化`}
+              className="min-w-[84px] px-2 py-1 rounded text-xs font-semibold cursor-pointer hover:opacity-80"
               style={{
-                background: `linear-gradient(90deg, ${STAT_BG[a]} 0 50%, ${STAT_BG[b]} 50% 100%)`,
+                border: '1px solid transparent',
+                background:
+                  `linear-gradient(90deg, ${STAT_BG[a]} 0 50%, ${STAT_BG[b]} 50% 100%) padding-box, ` +
+                  `linear-gradient(90deg, ${STAT_TEXT[a]} 0 50%, ${STAT_TEXT[b]} 50% 100%) border-box`,
               }}
             >
               <span style={{ color: STAT_TEXT[a] }}>{STAT_LABEL[a]}</span>
               <span style={{ color: STAT_TEXT[b] }}>{STAT_LABEL[b]}</span>
+              <span className="text-gray-600">2極</span>
             </button>
           ))}
           <button
             type="button"
             onClick={() => applyExam('equal')}
-            className="px-2 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] cursor-pointer"
+            className="min-w-[84px] px-2 py-1 bg-white border border-gray-300 rounded text-xs font-semibold text-gray-700 hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] cursor-pointer"
           >
             均等3分割
           </button>

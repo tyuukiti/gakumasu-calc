@@ -135,7 +135,7 @@
                                 <Button Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_da"
                                         ToolTip="Vo・Da 2分割"
                                         Style="{StaticResource TintedOutlineButton}"
-                                        BorderBrush="#BDBDBD" Margin="0,0,4,4">
+                                        Margin="0,0,4,4">
                                     <Button.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                             <GradientStop Color="#FFE0EC" Offset="0.0"/>
@@ -144,12 +144,20 @@
                                             <GradientStop Color="#E0EEFF" Offset="1.0"/>
                                         </LinearGradientBrush>
                                     </Button.Background>
-                                    <TextBlock><Run Text="Vo" Foreground="{StaticResource VoBrushDark}"/><Run Text="Da" Foreground="{StaticResource DaBrushDark}"/></TextBlock>
+                                    <Button.BorderBrush>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#A64559" Offset="0.0"/>
+                                            <GradientStop Color="#A64559" Offset="0.5"/>
+                                            <GradientStop Color="#4567A6" Offset="0.5"/>
+                                            <GradientStop Color="#4567A6" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </Button.BorderBrush>
+                                    <TextBlock><Run Text="Vo" Foreground="{StaticResource VoBrushDark}"/><Run Text="Da" Foreground="{StaticResource DaBrushDark}"/><Run Text="2極" Foreground="#555555"/></TextBlock>
                                 </Button>
                                 <Button Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="da_vi"
                                         ToolTip="Da・Vi 2分割"
                                         Style="{StaticResource TintedOutlineButton}"
-                                        BorderBrush="#BDBDBD" Margin="0,0,4,4">
+                                        Margin="0,0,4,4">
                                     <Button.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                             <GradientStop Color="#E0EEFF" Offset="0.0"/>
@@ -158,12 +166,20 @@
                                             <GradientStop Color="#FFF9E0" Offset="1.0"/>
                                         </LinearGradientBrush>
                                     </Button.Background>
-                                    <TextBlock><Run Text="Da" Foreground="{StaticResource DaBrushDark}"/><Run Text="Vi" Foreground="{StaticResource ViBrushDark}"/></TextBlock>
+                                    <Button.BorderBrush>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#4567A6" Offset="0.0"/>
+                                            <GradientStop Color="#4567A6" Offset="0.5"/>
+                                            <GradientStop Color="#A68945" Offset="0.5"/>
+                                            <GradientStop Color="#A68945" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </Button.BorderBrush>
+                                    <TextBlock><Run Text="Da" Foreground="{StaticResource DaBrushDark}"/><Run Text="Vi" Foreground="{StaticResource ViBrushDark}"/><Run Text="2極" Foreground="#555555"/></TextBlock>
                                 </Button>
                                 <Button Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_vi"
                                         ToolTip="Vo・Vi 2分割"
                                         Style="{StaticResource TintedOutlineButton}"
-                                        BorderBrush="#BDBDBD" Margin="0,0,4,4">
+                                        Margin="0,0,4,4">
                                     <Button.Background>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                             <GradientStop Color="#FFE0EC" Offset="0.0"/>
@@ -172,7 +188,15 @@
                                             <GradientStop Color="#FFF9E0" Offset="1.0"/>
                                         </LinearGradientBrush>
                                     </Button.Background>
-                                    <TextBlock><Run Text="Vo" Foreground="{StaticResource VoBrushDark}"/><Run Text="Vi" Foreground="{StaticResource ViBrushDark}"/></TextBlock>
+                                    <Button.BorderBrush>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#A64559" Offset="0.0"/>
+                                            <GradientStop Color="#A64559" Offset="0.5"/>
+                                            <GradientStop Color="#A68945" Offset="0.5"/>
+                                            <GradientStop Color="#A68945" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </Button.BorderBrush>
+                                    <TextBlock><Run Text="Vo" Foreground="{StaticResource VoBrushDark}"/><Run Text="Vi" Foreground="{StaticResource ViBrushDark}"/><Run Text="2極" Foreground="#555555"/></TextBlock>
                                 </Button>
                                 <Button Content="均等3分割"
                                         Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="equal"

@@ -116,6 +116,11 @@
         <Setter Property="Padding" Value="10,4"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Cursor" Value="Hand"/>
+        <!-- プリセットボタンを同一サイズで揃える -->
+        <Setter Property="MinWidth" Value="82"/>
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
