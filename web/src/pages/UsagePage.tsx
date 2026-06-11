@@ -120,6 +120,30 @@ export default function UsagePage() {
         />
       </Section>
 
+      <Section title="ご要望・不具合の報告">
+        <p className="text-sm text-gray-700 leading-relaxed">
+          ご要望や不具合の報告は <span className="font-semibold">GitHub の Issue</span> でお知らせください。GitHubの操作が難しい場合は、X（旧Twitter）へのご連絡でも構いません。
+        </p>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <a
+            href="https://github.com/tyuukiti/gakumasu-calc/issues/new"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-[var(--color-accent)] text-white rounded text-sm font-bold hover:opacity-90"
+          >
+            GitHubでIssueを立てる
+          </a>
+          <a
+            href="https://x.com/nakayoshi_2nd"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm font-bold hover:bg-gray-50"
+          >
+            X（@中吉）に連絡
+          </a>
+        </div>
+      </Section>
+
       <div className="text-xs text-gray-500 leading-relaxed px-1">
         <p>※ 表示されるのは最適行動を前提とした理論値の目安で、実際のプレイ結果とは差が出ることがあります。</p>
         <p>※ カード・シナリオのデータはゲームの更新に合わせて順次追加・調整しています。</p>
