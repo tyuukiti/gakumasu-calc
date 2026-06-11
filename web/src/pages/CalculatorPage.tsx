@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useCalcStore } from '../stores/calcStore';
 import PlanSelector from '../components/calculator/PlanSelector';
 import PlanTypeSelector from '../components/calculator/PlanTypeSelector';
@@ -15,21 +16,36 @@ import PatternResultList from '../components/calculator/PatternResultList';
 import DeckCardList from '../components/calculator/DeckCardList';
 import WeekBreakdownTable from '../components/calculator/WeekBreakdownTable';
 
-export default function CalculatorPage() {
+interface CalculatorPageProps {
+  /** 指定するとそのプランに固定し、プラン選択ドロップダウンを隠す */
+  fixedPlanId?: string;
+  /** 見出しに表示するシナリオ名 */
+  heading?: string;
+}
+
+export default function CalculatorPage({ fixedPlanId, heading }: CalculatorPageProps) {
   const {
     executeCalculate,
     calculationResult,
     deckResults,
     errorMessage,
+    setSelectedPlanId,
   } = useCalcStore();
+
+  // タブでプランを固定する場合、マウント時/タブ切替時に選択プランを設定する
+  useEffect(() => {
+    if (fixedPlanId) setSelectedPlanId(fixedPlanId);
+  }, [fixedPlanId, setSelectedPlanId]);
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">育成ステータス理論値計算</h2>
+      <h2 className="text-xl font-bold mb-4">
+        {heading ? `${heading} 育成ステータス理論値計算` : '育成ステータス理論値計算'}
+      </h2>
 
       {/* 設定セクション */}
       <div className="bg-white rounded-lg p-4 shadow-sm mb-4 space-y-4">
-        <PlanSelector />
+        {!fixedPlanId && <PlanSelector />}
         <PlanTypeSelector />
 
         <StatRoleConfig />

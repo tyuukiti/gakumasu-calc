@@ -1,5 +1,6 @@
-using System;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace GakumasuCalc.Views;
 
@@ -11,23 +12,20 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// プリセット ComboBox のドロップダウン閉鎖時。
-    /// 同じ項目を再選択した場合は SelectionChanged が発火しないため、
-    /// ここで明示的に再読み込みを呼ぶ。
+    /// メインタブ切り替え時、初レジェンド/NIA タブに対応する育成プランを固定する。
+    /// HIF タブ (Tag なし) は HifVm を使うため SelectedPlan を変更しない。
     /// </summary>
-    private void OnMemoryPresetDropDownClosed(object sender, EventArgs e)
+    private void OnMainTabChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (DataContext is ViewModels.MainViewModel vm)
-            vm.ReloadSelectedMemoryPreset();
-    }
+        // タブ内 ComboBox 等のバブリングを除外し、メインタブ切り替えだけを拾う
+        if (e.Source is not TabControl tc) return;
+        if (DataContext is not ViewModels.MainViewModel vm) return;
 
-    /// <summary>
-    /// イベント回数プリセット ComboBox のドロップダウン閉鎖時。
-    /// 同じ項目を再選択した場合も明示的に再読み込みする。
-    /// </summary>
-    private void OnEventCountPresetDropDownClosed(object sender, EventArgs e)
-    {
-        if (DataContext is ViewModels.MainViewModel vm)
-            vm.ReloadSelectedEventCountPreset();
+        var planId = (tc.SelectedItem as TabItem)?.Tag as string;
+        if (string.IsNullOrEmpty(planId)) return;
+
+        var plan = vm.AvailablePlans.FirstOrDefault(p => p.Id == planId);
+        if (plan != null && !ReferenceEquals(vm.SelectedPlan, plan))
+            vm.SelectedPlan = plan;
     }
 }

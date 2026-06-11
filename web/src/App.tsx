@@ -1,25 +1,27 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAppStore } from './stores/appStore'
 import { useCalcStore } from './stores/calcStore'
 import CalculatorPage from './pages/CalculatorPage'
 import InventoryPage from './pages/InventoryPage'
 import HifPage from './pages/HifPage'
+import UsagePage from './pages/UsagePage'
+
+// デフォルト表示タブ。新シナリオが増えたらここを変更する。
+const DEFAULT_PATH = '/hif'
 
 function Header() {
+  const navClass = ({ isActive }: { isActive: boolean }) =>
+    `hover:opacity-80 ${isActive ? 'border-b-2 border-white' : 'opacity-70'}`
   return (
     <header className="bg-[var(--color-accent)] text-white px-6 py-3 flex items-center gap-6">
       <h1 className="text-lg font-bold">学マス 育成計算ツール</h1>
       <nav className="flex gap-4">
-        <NavLink to="/" end className={({ isActive }) =>
-          `hover:opacity-80 ${isActive ? 'border-b-2 border-white' : 'opacity-70'}`
-        }>計算ツール</NavLink>
-        <NavLink to="/hif" className={({ isActive }) =>
-          `hover:opacity-80 ${isActive ? 'border-b-2 border-white' : 'opacity-70'}`
-        }>HIF</NavLink>
-        <NavLink to="/inventory" className={({ isActive }) =>
-          `hover:opacity-80 ${isActive ? 'border-b-2 border-white' : 'opacity-70'}`
-        }>所持管理</NavLink>
+        <NavLink to="/hif" className={navClass}>HIF</NavLink>
+        <NavLink to="/legend" className={navClass}>初レジェンド</NavLink>
+        <NavLink to="/nia" className={navClass}>NIA</NavLink>
+        <NavLink to="/inventory" className={navClass}>所持管理</NavLink>
+        <NavLink to="/usage" className={navClass}>使い方</NavLink>
       </nav>
     </header>
   )
@@ -84,9 +86,12 @@ export default function App() {
       <Header />
       <main className="max-w-5xl mx-auto px-4 py-6">
         <Routes>
-          <Route path="/" element={<CalculatorPage />} />
+          <Route path="/" element={<Navigate to={DEFAULT_PATH} replace />} />
           <Route path="/hif" element={<HifPage />} />
+          <Route path="/legend" element={<CalculatorPage fixedPlanId="hatsu_legend" heading="初レジェンド" />} />
+          <Route path="/nia" element={<CalculatorPage fixedPlanId="nia" heading="NIA" />} />
           <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/usage" element={<UsagePage />} />
         </Routes>
       </main>
       <Footer />
