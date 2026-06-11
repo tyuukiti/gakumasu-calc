@@ -62,84 +62,166 @@
                 </StackPanel>
             </Border>
 
-            <!-- 属性設定 (Web版と同じ薄背景カード) -->
+            <!-- スケジュール調整 (日程方式: 初レジェンド / NIA) -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
-                    <TextBlock Text="属性設定" Style="{StaticResource SectionHeader}"/>
+                    <TextBlock Text="スケジュール調整" Style="{StaticResource SectionHeader}"/>
+
+                    <!-- 一括設定: レッスン配分 -->
+                    <Border Background="#F7F7F7" BorderBrush="#E0E0E0" BorderThickness="1"
+                            CornerRadius="4" Padding="10,8" Margin="0,0,0,6">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="レッスン配分:" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                            <TextBlock Text="メイン1" FontSize="11" Foreground="#777" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                            <ComboBox ItemsSource="{Binding ScheduleStatOptions}" SelectedValue="{Binding ScheduleBulkMain1}"
+                                      SelectedValuePath="Value" DisplayMemberPath="Label"
+                                      FontSize="12" Padding="6,3" MinWidth="80" VerticalAlignment="Center"/>
+                            <TextBlock Text="メイン2" FontSize="11" Foreground="#777" VerticalAlignment="Center" Margin="10,0,4,0"/>
+                            <ComboBox ItemsSource="{Binding ScheduleMain2Options}" SelectedValue="{Binding ScheduleBulkMain2}"
+                                      SelectedValuePath="Value" DisplayMemberPath="Label"
+                                      FontSize="12" Padding="6,3" MinWidth="80" VerticalAlignment="Center"/>
+                            <Button Content="全レッスンに適用" Command="{Binding ApplyScheduleBulkMainCommand}"
+                                    Style="{StaticResource SecondaryButton}" FontSize="11" Padding="10,4" Margin="12,0,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 一括設定: 授業 -->
+                    <Border Background="#F7F7F7" BorderBrush="#E0E0E0" BorderThickness="1"
+                            CornerRadius="4" Padding="10,8" Margin="0,0,0,6">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="授業:" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                            <TextBlock Text="属性" FontSize="11" Foreground="#777" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                            <ComboBox ItemsSource="{Binding ScheduleStatOptions}" SelectedValue="{Binding ScheduleBulkClassStat}"
+                                      SelectedValuePath="Value" DisplayMemberPath="Label"
+                                      FontSize="12" Padding="6,3" MinWidth="80" VerticalAlignment="Center"/>
+                            <Button Content="全授業に適用" Command="{Binding ApplyScheduleBulkClassCommand}"
+                                    Style="{StaticResource SecondaryButton}" FontSize="11" Padding="10,4" Margin="12,0,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- プリセット -->
+                    <Border Background="#F7F7F7" BorderBrush="#E0E0E0" BorderThickness="1"
+                            CornerRadius="4" Padding="10,8" Margin="0,0,0,6">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="プリセット" FontSize="12" FontWeight="SemiBold" Foreground="#555" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding SchedulePresetCountText}" FontSize="11" Foreground="#999"
+                                           VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <ComboBox ItemsSource="{Binding SchedulePresets}" SelectedItem="{Binding SelectedSchedulePreset}"
+                                          DisplayMemberPath="Name" FontSize="12" Padding="6,3" MinWidth="220" VerticalAlignment="Center"/>
+                                <Button Content="削除" Command="{Binding DeleteSchedulePresetCommand}"
+                                        Style="{StaticResource SecondaryButton}" FontSize="11" Padding="10,3" Margin="8,0,0,0"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <TextBox Text="{Binding NewSchedulePresetName, UpdateSourceTrigger=PropertyChanged}"
+                                         Width="220" FontSize="12" Padding="6,3" VerticalAlignment="Center"
+                                         ToolTip="保存名 (同名は上書き)"/>
+                                <Button Content="現在のスケジュールを保存" Command="{Binding SaveSchedulePresetCommand}"
+                                        Style="{StaticResource PrimaryButton}" FontSize="11" Padding="10,3" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 個別調整 (週ごと) -->
+                    <Expander Header="個別調整 (週ごと)" IsExpanded="False" Margin="0,4,0,0">
+                        <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0">
+                            <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding TurnChoices}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Padding="8,4" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="70"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding WeekLabel}"
+                                                               FontSize="12" FontWeight="SemiBold"
+                                                               VerticalAlignment="Center" Foreground="#555"/>
+                                                    <!-- 固定イベント -->
+                                                    <TextBlock Grid.Column="1" Text="{Binding EventName}"
+                                                               FontSize="12" Foreground="#999" FontStyle="Italic"
+                                                               VerticalAlignment="Center"
+                                                               Visibility="{Binding IsFixedEvent, Converter={StaticResource BoolToVis}}"/>
+                                                    <!-- アクション選択 -->
+                                                    <ComboBox Grid.Column="1"
+                                                              ItemsSource="{Binding AvailableActions}"
+                                                              SelectedItem="{Binding SelectedAction}"
+                                                              FontSize="11" Padding="6,3" MinWidth="120"
+                                                              Visibility="{Binding IsFixedEvent, Converter={StaticResource InverseBoolToVis}}">
+                                                        <ComboBox.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Converter={StaticResource ActionToStr}}"/>
+                                                            </DataTemplate>
+                                                        </ComboBox.ItemTemplate>
+                                                    </ComboBox>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+                    </Expander>
+                </StackPanel>
+            </Border>
+
+            <!-- SP率カード枚数 (属性設定の撤去で失われる入力を独立カードへ移設) -->
+            <Border Style="{StaticResource SectionCard}">
+                <StackPanel>
+                    <TextBlock Text="SP率カード枚数" Style="{StaticResource SectionHeader}"/>
 
                     <!-- Vocal -->
-                    <Border Background="{StaticResource VoBgBrush}" CornerRadius="6"
-                            Padding="12,8" Margin="0,0,0,6">
+                    <Border Background="{StaticResource VoBgBrush}" CornerRadius="6" Padding="12,8" Margin="0,0,0,6">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Vocal" FontSize="13" FontWeight="Bold"
                                        Foreground="{StaticResource VoBrushDark}" VerticalAlignment="Center"/>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding RoleOptions}"
-                                      SelectedItem="{Binding VoRole}"
-                                      FontSize="12" Padding="6,4" Width="85" HorizontalAlignment="Left"/>
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
-                                        VerticalAlignment="Center">
-                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
-                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBox Text="{Binding VoSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                         Style="{StaticResource NumericTextBox}"
-                                         Width="56" FontSize="13" Padding="6,4"
+                                         Style="{StaticResource NumericTextBox}" Width="56" FontSize="13" Padding="6,4"
                                          HorizontalContentAlignment="Center"/>
                             </StackPanel>
                         </Grid>
                     </Border>
 
                     <!-- Dance -->
-                    <Border Background="{StaticResource DaBgBrush}" CornerRadius="6"
-                            Padding="12,8" Margin="0,0,0,6">
+                    <Border Background="{StaticResource DaBgBrush}" CornerRadius="6" Padding="12,8" Margin="0,0,0,6">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Dance" FontSize="13" FontWeight="Bold"
                                        Foreground="{StaticResource DaBrushDark}" VerticalAlignment="Center"/>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding RoleOptions}"
-                                      SelectedItem="{Binding DaRole}"
-                                      FontSize="12" Padding="6,4" Width="85" HorizontalAlignment="Left"/>
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
-                                        VerticalAlignment="Center">
-                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
-                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBox Text="{Binding DaSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                         Style="{StaticResource NumericTextBox}"
-                                         Width="56" FontSize="13" Padding="6,4"
+                                         Style="{StaticResource NumericTextBox}" Width="56" FontSize="13" Padding="6,4"
                                          HorizontalContentAlignment="Center"/>
                             </StackPanel>
                         </Grid>
                     </Border>
 
                     <!-- Visual -->
-                    <Border Background="{StaticResource ViBgBrush}" CornerRadius="6"
-                            Padding="12,8" Margin="0,0,0,2">
+                    <Border Background="{StaticResource ViBgBrush}" CornerRadius="6" Padding="12,8" Margin="0,0,0,2">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="Visual" FontSize="13" FontWeight="Bold"
                                        Foreground="{StaticResource ViBrushDark}" VerticalAlignment="Center"/>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding RoleOptions}"
-                                      SelectedItem="{Binding ViRole}"
-                                      FontSize="12" Padding="6,4" Width="85" HorizontalAlignment="Left"/>
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"
-                                        VerticalAlignment="Center">
-                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
-                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBox Text="{Binding ViSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                         Style="{StaticResource NumericTextBox}"
-                                         Width="56" FontSize="13" Padding="6,4"
+                                         Style="{StaticResource NumericTextBox}" Width="56" FontSize="13" Padding="6,4"
                                          HorizontalContentAlignment="Center"/>
                             </StackPanel>
                         </Grid>
@@ -1140,63 +1222,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ===== ターン選択 (折りたたみ式) ===== -->
-            <Border Style="{StaticResource SectionCard}"
-                    Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
-                <Expander IsExpanded="False">
-                    <Expander.Header>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="週別内訳・ターン選択" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="#333" VerticalAlignment="Center"/>
-                            <Button Content="レッスン再計算" Command="{Binding RecalcLessonCommand}"
-                                    Style="{StaticResource SecondaryButton}" FontSize="11" Padding="10,3"
-                                    Margin="12,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Expander.Header>
-                    <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0">
-                        <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding TurnChoices}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Padding="8,4" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="70"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-
-                                                <TextBlock Grid.Column="0" Text="{Binding WeekLabel}"
-                                                           FontSize="12" FontWeight="SemiBold"
-                                                           VerticalAlignment="Center" Foreground="#555"/>
-
-                                                <!-- 固定イベント -->
-                                                <TextBlock Grid.Column="1" Text="{Binding EventName}"
-                                                           FontSize="12" Foreground="#999" FontStyle="Italic"
-                                                           VerticalAlignment="Center"
-                                                           Visibility="{Binding IsFixedEvent, Converter={StaticResource BoolToVis}}"/>
-
-                                                <!-- アクション選択 (ドロップダウン) -->
-                                                <ComboBox Grid.Column="1"
-                                                          ItemsSource="{Binding AvailableActions}"
-                                                          SelectedItem="{Binding SelectedAction}"
-                                                          FontSize="11" Padding="6,3" MinWidth="120"
-                                                          Visibility="{Binding IsFixedEvent, Converter={StaticResource InverseBoolToVis}}">
-                                                    <ComboBox.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <TextBlock Text="{Binding Converter={StaticResource ActionToStr}}"/>
-                                                        </DataTemplate>
-                                                    </ComboBox.ItemTemplate>
-                                                </ComboBox>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Border>
-                </Expander>
-            </Border>
+            <!-- 週別ターン選択は上部「スケジュール調整」へ移設 (日程方式) -->
 
             <!-- バージョン情報 + 手動アップデート確認 -->
             <Border Margin="0,4,0,16">

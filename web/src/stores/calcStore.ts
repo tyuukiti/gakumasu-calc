@@ -19,7 +19,7 @@ import type { PlanType, RoleType, ActionType } from '../types/enums';
 import type { CalculationResult, DeckResult } from '../types/results';
 import type { CardInventoryEntry } from '../types/inventory';
 import { useAppStore } from './appStore';
-import { selectMultiplePatterns } from '../services/cardScoring';
+import { selectMultiplePatterns, selectMultiplePatternsHif } from '../services/cardScoring';
 import { calculate } from '../services/statusCalculation';
 import { applyCharacterToggles } from '../services/characterBonus';
 import { trackEvent, startTimer, endTimer, incrementCounter, trackFunnelStep } from '../utils/analytics';
@@ -134,6 +134,51 @@ function persistEventCountPresets(presets: EventCountPreset[]) {
   }
 }
 
+/** 日程（スケジュール）を主入力にするシナリオの planId 集合。HIF は専用の hifStore で扱うため含めない。 */
+export const SCHEDULE_PLAN_IDS = new Set<string>(['hatsu_legend', 'nia']);
+
+/**
+ * 日程方式の1週分の選択。HIF と違い公開レッスン(sub_stat)・試験配分は無いので action のみ。
+ */
+export interface ScheduleChoice {
+  action: ActionType;
+}
+
+/** 日程プリセット (個別調整した結果を名前付きで保存・読込) */
+export interface SchedulePreset {
+  name: string;
+  scheduleChoices: Record<number, ScheduleChoice>;
+}
+
+const SCHEDULE_CHOICE_PRESETS_KEY = 'scheduleChoicePresets';
+/** 日程プリセットの保存可能件数上限（プランごと）。 */
+export const MAX_SCHEDULE_PRESETS = 10;
+
+/** localStorage から planId→プリセット配列のマップを読み込む。 */
+function loadSchedulePresetsByPlan(): Record<string, SchedulePreset[]> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(SCHEDULE_CHOICE_PRESETS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, SchedulePreset[]>;
+    }
+  } catch {
+    /* 破損時は空 */
+  }
+  return {};
+}
+
+function persistSchedulePresetsByPlan(map: Record<string, SchedulePreset[]>) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SCHEDULE_CHOICE_PRESETS_KEY, JSON.stringify(map));
+  } catch (e) {
+    console.warn('スケジュールプリセットの保存に失敗:', e);
+  }
+}
+
 interface CalcState {
   selectedPlanId: string;
   selectedPlanType: PlanType;
@@ -175,6 +220,18 @@ interface CalcState {
   // internal state for re-applying patterns
   _lastMainStats: string[];
   _lastLessonWeekCount: number;
+  /** 日程方式プランで選出/再計算に使う、ユーザ確定済みの TurnChoice。 */
+  _lastTurnChoices: TurnChoice[];
+
+  /** 日程方式: planId → week → 選択。calcStore は両タブ共有のため planId キーで保持する。 */
+  scheduleChoices: Record<string, Record<number, ScheduleChoice>>;
+  /** 一括メイン属性配分（main1/main2、異値）。 */
+  scheduleBulkMain1: 'vo' | 'da' | 'vi';
+  scheduleBulkMain2: 'vo' | 'da' | 'vi';
+  /** 一括授業属性。 */
+  scheduleBulkClassStat: 'vo' | 'da' | 'vi';
+  /** 日程プリセット（planId → プリセット配列、localStorage 永続化）。 */
+  schedulePresetsByPlan: Record<string, SchedulePreset[]>;
 
   setSelectedPlanId: (id: string) => void;
   setSelectedPlanType: (type: PlanType) => void;
@@ -205,6 +262,24 @@ interface CalcState {
   deleteEventCountPreset: (name: string) => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
+
+  // --- 日程方式 (初レジェンド / NIA) ---
+  /** 1週分の選択を設定。 */
+  setScheduleChoice: (planId: string, week: number, choice: ScheduleChoice) => void;
+  /** 未設定の週を現行の自動配分でシード（既存の選択は上書きしない）。 */
+  seedScheduleDefaults: (planId: string) => void;
+  setScheduleBulkMain1: (stat: 'vo' | 'da' | 'vi') => void;
+  setScheduleBulkMain2: (stat: 'vo' | 'da' | 'vi') => void;
+  setScheduleBulkClassStat: (stat: 'vo' | 'da' | 'vi') => void;
+  /** 全レッスン週に main1/main2 配分を一括適用。 */
+  applyScheduleBulkDistribution: (planId: string) => void;
+  /** 全授業週に bulkClassStat を一括適用。 */
+  applyScheduleBulkClass: (planId: string) => void;
+  /** 現在の日程を名前付きで保存（同名上書き、空は保存しない、上限あり）。 */
+  saveSchedulePreset: (planId: string, name: string) => void;
+  /** プリセットを読み込み現在の日程に反映（要・計算実行）。 */
+  loadSchedulePreset: (planId: string, name: string) => void;
+  deleteSchedulePreset: (planId: string, name: string) => void;
 }
 
 function getCandidateCards(
@@ -243,36 +318,89 @@ function buildUncapLevels(
   return levels;
 }
 
-function autoAssignTurnChoices(
-  plan: TrainingPlan,
-  mainStats: string[],
-  template?: EventCountTemplate | null,
-): TurnChoice[] {
-  const subStat = ['vo', 'da', 'vi'].find((s) => !mainStats.includes(s)) ?? 'vi';
-  const subClassAction: ActionType = `${subStat}_class` as ActionType;
+interface CardSelectionContext {
+  candidateCards: SupportCard[];
+  uncapLevels: Record<string, number>;
+  rentalPool?: SupportCard[];
+  requiredCardIds?: string[];
+}
 
-  const choices: TurnChoice[] = [];
+/**
+ * 候補カード・凸レベル・レンタルプール・必須カードを構築（所持/コンテスト/除外/必須フィルタ込み）。
+ * 日程方式の executeCalculate 分岐で使う。ロール経路は従来どおりインラインのまま。
+ */
+function prepareCardSelectionContext(
+  state: CalcState,
+  allCards: SupportCard[],
+  inventory: CardInventoryEntry[],
+): { ctx?: CardSelectionContext; error?: string } {
+  let candidateCards = getCandidateCards(allCards, inventory, state.ownedOnly, state.contestMode);
+  const uncapLevels = buildUncapLevels(allCards, inventory, state.ownedOnly);
 
-  // Categorize weeks
+  let rentalPool: SupportCard[] | undefined;
+  if (state.ownedOnly) {
+    rentalPool = state.contestMode
+      ? allCards.filter((c) => c.tag !== 'skill' && c.tag !== 'exam_item')
+      : allCards;
+  }
+
+  if (state.excludedCardIds.length > 0) {
+    const excludedSet = new Set(state.excludedCardIds);
+    candidateCards = candidateCards.filter((c) => !excludedSet.has(c.id));
+    if (rentalPool != null) rentalPool = rentalPool.filter((c) => !excludedSet.has(c.id));
+  }
+
+  const requiredCardIds = state.requiredCardIds.length > 0 ? state.requiredCardIds : undefined;
+  if (requiredCardIds != null) {
+    const requiredIdSet = new Set(requiredCardIds);
+    const candidateIdSet = new Set(candidateCards.map((c) => c.id));
+    if (state.ownedOnly) {
+      const ownedIdSet = new Set(inventory.filter((e) => e.owned).map((e) => e.card_id));
+      for (const card of allCards) {
+        if (requiredIdSet.has(card.id) && ownedIdSet.has(card.id) && !candidateIdSet.has(card.id)) {
+          candidateCards.push(card);
+        }
+      }
+      if (rentalPool != null) {
+        const rentalIdSet = new Set(rentalPool.map((c) => c.id));
+        for (const card of allCards) {
+          if (requiredIdSet.has(card.id) && !rentalIdSet.has(card.id)) rentalPool.push(card);
+        }
+      }
+    } else {
+      for (const card of allCards) {
+        if (requiredIdSet.has(card.id) && !candidateIdSet.has(card.id)) candidateCards.push(card);
+      }
+    }
+  }
+
+  if (requiredCardIds != null && state.ownedOnly) {
+    const ownedIds = new Set(inventory.filter((e) => e.owned).map((e) => e.card_id));
+    const notOwnedCount = requiredCardIds.filter((id) => !ownedIds.has(id)).length;
+    if (notOwnedCount > 1) {
+      return { error: '未所持の必須カードは最大1枚です（レンタル枠使用）' };
+    }
+  }
+
+  return { ctx: { candidateCards, uncapLevels, rentalPool, requiredCardIds } };
+}
+
+/**
+ * レッスン週へのメイン属性配分を決める純粋関数。中間試験前は main1:main2=1:1 で交互、
+ * 試験後は 2:1 (main1多め)。単一メインは全レッスンをそれに割り当て。固定週はスキップ。
+ * 戻り値は week → レッスンアクション（レッスン週のみ）。
+ * autoAssignTurnChoices / 日程シード / 一括配分が共通で使う単一ソース。
+ */
+function distributeLessons(plan: TrainingPlan, mainStats: string[]): Record<number, ActionType> {
+  const out: Record<number, ActionType> = {};
   const lessonWeeks: { week: number; available_actions: string[] }[] = [];
-  const otherWeeks: { week: number; available_actions: string[]; type: string }[] = [];
-
   for (const week of plan.schedule) {
     const isFixed = week.type === 'fixed_event' || week.type === 'exam' || week.type === 'audition';
-    if (isFixed) {
-      // Fixed events don't need a TurnChoice
-      continue;
-    }
-
+    if (isFixed) continue;
     const hasLesson = week.available_actions.some((a) =>
       a === 'vo_lesson' || a === 'da_lesson' || a === 'vi_lesson',
     );
-
-    if (hasLesson) {
-      lessonWeeks.push({ week: week.week, available_actions: week.available_actions });
-    } else {
-      otherWeeks.push({ week: week.week, available_actions: week.available_actions, type: week.type });
-    }
+    if (hasLesson) lessonWeeks.push({ week: week.week, available_actions: week.available_actions });
   }
 
   // Find mid-exam week
@@ -293,11 +421,8 @@ function autoAssignTurnChoices(
     for (const w of beforeMid) {
       const action = toggle ? main2Action : main1Action;
       const fallback = toggle ? main1Action : main2Action;
-      if (w.available_actions.includes(action)) {
-        choices.push({ week: w.week, chosen_action: action });
-      } else if (w.available_actions.includes(fallback)) {
-        choices.push({ week: w.week, chosen_action: fallback });
-      }
+      if (w.available_actions.includes(action)) out[w.week] = action;
+      else if (w.available_actions.includes(fallback)) out[w.week] = fallback;
       toggle = !toggle;
     }
 
@@ -306,20 +431,81 @@ function autoAssignTurnChoices(
     for (const w of afterMid) {
       const action = (afterCount % 3 === 1) ? main2Action : main1Action;
       const fallback = action === main2Action ? main1Action : main2Action;
-      if (w.available_actions.includes(action)) {
-        choices.push({ week: w.week, chosen_action: action });
-      } else if (w.available_actions.includes(fallback)) {
-        choices.push({ week: w.week, chosen_action: fallback });
-      }
+      if (w.available_actions.includes(action)) out[w.week] = action;
+      else if (w.available_actions.includes(fallback)) out[w.week] = fallback;
       afterCount++;
     }
   } else if (mainStats.length === 1) {
     const onlyAction: ActionType = `${mainStats[0]}_lesson` as ActionType;
     for (const w of lessonWeeks) {
-      if (w.available_actions.includes(onlyAction)) {
-        choices.push({ week: w.week, chosen_action: onlyAction });
-      }
+      if (w.available_actions.includes(onlyAction)) out[w.week] = onlyAction;
     }
+  }
+
+  return out;
+}
+
+/** TurnChoice 配列から mainStats を自動推論（レッスン日の出現数 desc 上位2属性、vo>da>vi タイブレーク）。 */
+function inferMainStats(turnChoices: TurnChoice[]): [string, string] {
+  const counts: Record<string, number> = { vo: 0, da: 0, vi: 0 };
+  for (const tc of turnChoices) {
+    const a = tc.chosen_action as string;
+    if (a === 'vo_lesson') counts.vo++;
+    else if (a === 'da_lesson') counts.da++;
+    else if (a === 'vi_lesson') counts.vi++;
+  }
+  const order: Array<'vo' | 'da' | 'vi'> = ['vo', 'da', 'vi'];
+  const sorted = order
+    .map((s) => ({ s, c: counts[s] }))
+    .sort((a, b) => (b.c - a.c) || (order.indexOf(a.s) - order.indexOf(b.s)));
+  return [sorted[0].s, sorted[1].s];
+}
+
+/**
+ * ユーザの日程選択（scheduleChoices[planId]）から計算エンジンに渡す TurnChoice[] を構築。
+ * 固定イベント(fixed_event/exam/audition)と選択肢なしの週はスキップ。
+ */
+function buildTurnChoicesFromSchedule(
+  plan: TrainingPlan,
+  sched: Record<number, ScheduleChoice>,
+): TurnChoice[] {
+  const turnChoices: TurnChoice[] = [];
+  for (const w of plan.schedule) {
+    if (w.type === 'audition' || w.type === 'fixed_event' || w.type === 'exam') continue;
+    if (w.available_actions.length === 0) continue;
+    const choice = sched[w.week];
+    if (!choice) continue;
+    turnChoices.push({ week: w.week, chosen_action: choice.action });
+  }
+  return turnChoices;
+}
+
+function autoAssignTurnChoices(
+  plan: TrainingPlan,
+  mainStats: string[],
+  template?: EventCountTemplate | null,
+): TurnChoice[] {
+  const subStat = ['vo', 'da', 'vi'].find((s) => !mainStats.includes(s)) ?? 'vi';
+  const subClassAction: ActionType = `${subStat}_class` as ActionType;
+
+  const choices: TurnChoice[] = [];
+
+  // レッスン週: 配分は distributeLessons に集約（シード/一括設定と同一ソース）
+  const lessonAssignment = distributeLessons(plan, mainStats);
+  for (const [weekStr, action] of Object.entries(lessonAssignment)) {
+    choices.push({ week: Number(weekStr), chosen_action: action });
+  }
+
+  // 非レッスン週を収集（固定イベントは TurnChoice 不要）
+  const otherWeeks: { week: number; available_actions: string[]; type: string }[] = [];
+  for (const week of plan.schedule) {
+    const isFixed = week.type === 'fixed_event' || week.type === 'exam' || week.type === 'audition';
+    if (isFixed) continue;
+    const hasLesson = week.available_actions.some((a) =>
+      a === 'vo_lesson' || a === 'da_lesson' || a === 'vi_lesson',
+    );
+    if (hasLesson) continue;
+    otherWeeks.push({ week: week.week, available_actions: week.available_actions, type: week.type });
   }
 
   // Non-lesson weeks: template override > class (sub) > activity_supply > outing > consultation > special_training
@@ -375,11 +561,17 @@ function applySelectedPatternImpl(
   const pattern = state.deckResults[index];
   const mainStats = state._lastMainStats;
 
-  // Auto-assign turn choices (respect selected template's week_actions if any)
-  const template = state.selectedTemplateName
-    ? templates.find((t) => t.name === state.selectedTemplateName && t.plan_id === plan.id) ?? null
-    : null;
-  const turnChoices = autoAssignTurnChoices(plan, mainStats, template);
+  // 日程方式のプランはユーザが明示した日程をそのまま使う（autoAssign で上書きしない）。
+  // それ以外はロール由来の自動配分（選択中テンプレの week_actions を尊重）。
+  let turnChoices: TurnChoice[];
+  if (SCHEDULE_PLAN_IDS.has(plan.id)) {
+    turnChoices = state._lastTurnChoices;
+  } else {
+    const template = state.selectedTemplateName
+      ? templates.find((t) => t.name === state.selectedTemplateName && t.plan_id === plan.id) ?? null
+      : null;
+    turnChoices = autoAssignTurnChoices(plan, mainStats, template);
+  }
 
   // Build uncap levels
   const { cards: allCards, inventory } = useAppStore.getState();
@@ -469,6 +661,13 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   errorMessage: null,
   _lastMainStats: [],
   _lastLessonWeekCount: 0,
+  _lastTurnChoices: [],
+
+  scheduleChoices: {},
+  scheduleBulkMain1: 'vo',
+  scheduleBulkMain2: 'da',
+  scheduleBulkClassStat: 'vo',
+  schedulePresetsByPlan: loadSchedulePresetsByPlan(),
 
   setSelectedPlanId: (id) =>
     set({
@@ -787,6 +986,135 @@ export const useCalcStore = create<CalcState>((set, get) => ({
     set({ eventCountPresets: newPresets });
   },
 
+  setScheduleChoice: (planId, week, choice) => {
+    const state = get();
+    const existing = state.scheduleChoices[planId] ?? {};
+    set({
+      scheduleChoices: {
+        ...state.scheduleChoices,
+        [planId]: { ...existing, [week]: choice },
+      },
+    });
+  },
+
+  seedScheduleDefaults: (planId) => {
+    const state = get();
+    const { plans, templates } = useAppStore.getState();
+    const plan = plans.find((p) => p.id === planId);
+    if (!plan) return;
+    const template = state.selectedTemplateName
+      ? templates.find((t) => t.name === state.selectedTemplateName && t.plan_id === planId) ?? null
+      : null;
+    const autoChoices = autoAssignTurnChoices(
+      plan,
+      [state.scheduleBulkMain1, state.scheduleBulkMain2],
+      template,
+    );
+    const existing = state.scheduleChoices[planId] ?? {};
+    const next: Record<number, ScheduleChoice> = { ...existing };
+    let changed = false;
+    for (const tc of autoChoices) {
+      // 未設定の週だけ埋める（ユーザ編集を上書きしない）
+      if (next[tc.week] === undefined) {
+        next[tc.week] = { action: tc.chosen_action };
+        changed = true;
+      }
+    }
+    if (changed) {
+      set({ scheduleChoices: { ...state.scheduleChoices, [planId]: next } });
+    }
+  },
+
+  setScheduleBulkMain1: (stat) => {
+    const state = get();
+    // main1 と main2 は異値を保つ
+    const main2 = state.scheduleBulkMain2 === stat
+      ? (['vo', 'da', 'vi'] as const).find((x) => x !== stat)!
+      : state.scheduleBulkMain2;
+    set({ scheduleBulkMain1: stat, scheduleBulkMain2: main2 });
+  },
+
+  setScheduleBulkMain2: (stat) => {
+    const state = get();
+    if (stat === state.scheduleBulkMain1) return;
+    set({ scheduleBulkMain2: stat });
+  },
+
+  setScheduleBulkClassStat: (stat) => set({ scheduleBulkClassStat: stat }),
+
+  applyScheduleBulkDistribution: (planId) => {
+    const state = get();
+    if (state.scheduleBulkMain1 === state.scheduleBulkMain2) return;
+    const plan = useAppStore.getState().plans.find((p) => p.id === planId);
+    if (!plan) return;
+    const assignment = distributeLessons(plan, [state.scheduleBulkMain1, state.scheduleBulkMain2]);
+    const existing = state.scheduleChoices[planId] ?? {};
+    const next: Record<number, ScheduleChoice> = { ...existing };
+    for (const [weekStr, action] of Object.entries(assignment)) {
+      next[Number(weekStr)] = { action };
+    }
+    set({ scheduleChoices: { ...state.scheduleChoices, [planId]: next } });
+  },
+
+  applyScheduleBulkClass: (planId) => {
+    const state = get();
+    const plan = useAppStore.getState().plans.find((p) => p.id === planId);
+    if (!plan) return;
+    const action = `${state.scheduleBulkClassStat}_class` as ActionType;
+    const existing = state.scheduleChoices[planId] ?? {};
+    const next: Record<number, ScheduleChoice> = { ...existing };
+    for (const w of plan.schedule) {
+      const acts = w.available_actions;
+      if (acts.length > 0 && acts.every((a) => a.endsWith('_class')) && acts.includes(action)) {
+        next[w.week] = { action };
+      }
+    }
+    set({ scheduleChoices: { ...state.scheduleChoices, [planId]: next } });
+  },
+
+  saveSchedulePreset: (planId, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const state = get();
+    const sched = state.scheduleChoices[planId] ?? {};
+    if (Object.keys(sched).length === 0) return; // 空は保存しない
+    const snapshot: Record<number, ScheduleChoice> = {};
+    for (const [k, v] of Object.entries(sched)) snapshot[Number(k)] = { ...v };
+    const planPresets = state.schedulePresetsByPlan[planId] ?? [];
+    const idx = planPresets.findIndex((p) => p.name === trimmed);
+    let nextPlanPresets: SchedulePreset[];
+    if (idx >= 0) {
+      nextPlanPresets = planPresets.map((p, i) =>
+        i === idx ? { name: trimmed, scheduleChoices: snapshot } : p,
+      );
+    } else {
+      if (planPresets.length >= MAX_SCHEDULE_PRESETS) return;
+      nextPlanPresets = [...planPresets, { name: trimmed, scheduleChoices: snapshot }];
+    }
+    const nextMap = { ...state.schedulePresetsByPlan, [planId]: nextPlanPresets };
+    persistSchedulePresetsByPlan(nextMap);
+    set({ schedulePresetsByPlan: nextMap });
+  },
+
+  loadSchedulePreset: (planId, name) => {
+    const state = get();
+    const preset = (state.schedulePresetsByPlan[planId] ?? []).find((p) => p.name === name);
+    if (!preset) return;
+    const choices: Record<number, ScheduleChoice> = {};
+    for (const [k, v] of Object.entries(preset.scheduleChoices)) choices[Number(k)] = { ...v };
+    set({ scheduleChoices: { ...state.scheduleChoices, [planId]: choices } });
+  },
+
+  deleteSchedulePreset: (planId, name) => {
+    const state = get();
+    const planPresets = state.schedulePresetsByPlan[planId] ?? [];
+    const next = planPresets.filter((p) => p.name !== name);
+    if (next.length === planPresets.length) return;
+    const nextMap = { ...state.schedulePresetsByPlan, [planId]: next };
+    persistSchedulePresetsByPlan(nextMap);
+    set({ schedulePresetsByPlan: nextMap });
+  },
+
   executeCalculate: () => {
     try {
       const state = get();
@@ -796,6 +1124,140 @@ export const useCalcStore = create<CalcState>((set, get) => ({
       if (!plan) {
         set({ errorMessage: '育成プランを選択してください' });
         trackEvent('calculation_error', { error_message: '育成プランを選択してください' });
+        return;
+      }
+
+      // ===== 日程方式 (初レジェンド / NIA): ユーザの日程を主入力にして HIF スコアラーで選出 =====
+      if (SCHEDULE_PLAN_IDS.has(plan.id)) {
+        const sched = state.scheduleChoices[plan.id] ?? {};
+        const turnChoices = buildTurnChoicesFromSchedule(plan, sched);
+        if (turnChoices.length === 0) {
+          set({ errorMessage: 'スケジュールが未設定です' });
+          trackEvent('calculation_error', { error_message: 'スケジュールが未設定です' });
+          return;
+        }
+
+        const [main1, main2] = inferMainStats(turnChoices);
+        const mainStats: string[] = [main1, main2];
+
+        const lessonAllocation: Record<string, number> = { vo: 0, da: 0, vi: 0 };
+        for (const tc of turnChoices) {
+          if (tc.chosen_action === 'vo_lesson') lessonAllocation.vo++;
+          else if (tc.chosen_action === 'da_lesson') lessonAllocation.da++;
+          else if (tc.chosen_action === 'vi_lesson') lessonAllocation.vi++;
+        }
+
+        const spCounts: Record<string, number> = {};
+        if (state.voSpCount > 0) spCounts['vo'] = state.voSpCount;
+        if (state.daSpCount > 0) spCounts['da'] = state.daSpCount;
+        if (state.viSpCount > 0) spCounts['vi'] = state.viSpCount;
+
+        const prepared = prepareCardSelectionContext(state, allCards, inventory);
+        if (prepared.error || !prepared.ctx) {
+          set({ errorMessage: prepared.error ?? '候補カードの構築に失敗しました' });
+          trackEvent('calculation_error', { error_message: prepared.error ?? 'card context' });
+          return;
+        }
+        const { candidateCards, uncapLevels, rentalPool, requiredCardIds } = prepared.ctx;
+
+        // キャラ補正・メモリーを選出にも渡し、表示結果と一致させる
+        const character = state.selectedCharacterId
+          ? useAppStore.getState().characters.find((c) => c.id === state.selectedCharacterId) ?? null
+          : null;
+        const effectiveChar = applyCharacterToggles(
+          character,
+          state.uncap3BonusEnabled,
+          state.step4BonusEnabled,
+        );
+
+        startTimer('calculation');
+
+        const patterns = selectMultiplePatternsHif(
+          plan,
+          candidateCards,
+          mainStats,
+          lessonAllocation,
+          spCounts,
+          state.selectedPlanType,
+          state.additionalCounts,
+          uncapLevels,
+          rentalPool,
+          requiredCardIds,
+          effectiveChar,
+          state.memoryBonuses,
+          turnChoices,
+          undefined, // overflow罰則は HIF 専用 (これらのプランでは未使用)
+        );
+
+        // 選出はキャラ補正込みのキャップ後合計で比較 (total_value はキャラ非考慮のため)
+        const cap = plan.status_limit;
+        let bestIndex = 0;
+        let bestTotal = -Infinity;
+        for (let i = 0; i < patterns.length; i++) {
+          const p = patterns[i];
+          const cards = p.selected_cards.map((cs) => cs.card);
+          const uc: Record<string, number> = { ...uncapLevels };
+          for (const cs of p.selected_cards) {
+            if (cs.is_rental) uc[cs.card.id] = 4;
+          }
+          const fs = calculate(
+            plan,
+            cards,
+            turnChoices,
+            uc,
+            state.additionalCounts,
+            effectiveChar,
+            state.memoryBonuses,
+          ).final_status;
+          const cappedTotal = Math.min(fs.vo, cap) + Math.min(fs.da, cap) + Math.min(fs.vi, cap);
+          p.total_value = cappedTotal;
+          if (cappedTotal > bestTotal) {
+            bestTotal = cappedTotal;
+            bestIndex = i;
+          }
+        }
+
+        if (patterns.length === 0) {
+          set({ errorMessage: '有効な編成パターンが見つかりませんでした' });
+          trackEvent('calculation_error', { error_message: '有効な編成パターンが見つかりませんでした' });
+          return;
+        }
+
+        const calcTimeMs = endTimer('calculation');
+        const sessionCalcCount = incrementCounter('calculation');
+
+        set({
+          deckResults: patterns,
+          _lastMainStats: mainStats,
+          _lastTurnChoices: turnChoices,
+          errorMessage: null,
+        });
+        const updates = applySelectedPatternImpl(
+          { ...get(), deckResults: patterns, _lastMainStats: mainStats, _lastTurnChoices: turnChoices },
+          bestIndex,
+        );
+        set(updates as Partial<CalcState>);
+
+        const finalResult = updates.calculationResult;
+        trackEvent('calculation_executed', {
+          plan_id: plan.id,
+          plan_type: state.selectedPlanType,
+          main_stats: mainStats.join(','),
+          schedule_mode: true,
+          schedule_filled: turnChoices.length,
+          lesson_allocation: `${lessonAllocation.vo}/${lessonAllocation.da}/${lessonAllocation.vi}`,
+          owned_only: state.ownedOnly,
+          contest_mode: state.contestMode,
+          patterns_count: patterns.length,
+          calc_time_ms: calcTimeMs,
+          session_calc_count: sessionCalcCount,
+          result_total: finalResult
+            ? finalResult.final_status.vo + finalResult.final_status.da + finalResult.final_status.vi
+            : 0,
+          best_pattern_label: patterns[bestIndex]?.label ?? '',
+          candidate_cards_count: candidateCards.length,
+        });
+        trackFunnelStep('calculator', 3, 'calculation_done');
         return;
       }
 

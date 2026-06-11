@@ -81,6 +81,16 @@ public class MainViewModel : ViewModelBase
     private TrainingPlan? _hifDynamicPlan;
     private List<TurnChoice> _hifTurnChoices = new();
 
+    // 日程方式 (初レジェンド / NIA) 計算用の状態
+    private bool _isScheduleMode;
+    private List<TurnChoice> _scheduleTurnChoices = new();
+    /// <summary>タブ切替で日程編集を失わないための planId→(week→action) キャッシュ。</summary>
+    private readonly Dictionary<string, Dictionary<int, ActionType>> _scheduleSelectionCache = new();
+    /// <summary>日程方式プランごとのプリセット永続化サービス。</summary>
+    private readonly Dictionary<string, SchedulePresetService> _schedulePresetServices = new();
+    /// <summary>現在の選択プランが日程方式 (初レジェンド / NIA) かどうか。</summary>
+    private bool IsExplicitSchedulePlan => _selectedPlan?.Id is "hatsu_legend" or "nia";
+
     public ObservableCollection<TrainingPlan> AvailablePlans { get; } = new();
     public ObservableCollection<TurnChoiceViewModel> TurnChoices { get; } = new();
     public ObservableCollection<DeckCardViewModel> DeckCards { get; } = new();
@@ -748,6 +758,8 @@ public class MainViewModel : ViewModelBase
         get => _selectedPlan;
         set
         {
+            // プラン切替前に、現在の日程編集をキャッシュ（タブ往復で編集を保持）
+            CacheScheduleSelections();
             if (SetProperty(ref _selectedPlan, value))
                 OnPlanChanged();
         }
@@ -1000,6 +1012,11 @@ public class MainViewModel : ViewModelBase
         HifVm = new HifViewModel(
             new HifSchedulePresetService(Path.Combine(dataDir, "HifSchedulePresets", "hif_schedule_presets.yaml")),
             new HifBonusLevelsService(Path.Combine(dataDir, "HifBonusLevels", "hif_bonus_levels.yaml")));
+        // 日程方式プラン (初レジェンド / NIA) のプリセットはプランごとに別ファイル
+        _schedulePresetServices["hatsu_legend"] =
+            new SchedulePresetService(Path.Combine(dataDir, "SchedulePresets", "hatsu_legend.yaml"));
+        _schedulePresetServices["nia"] =
+            new SchedulePresetService(Path.Combine(dataDir, "SchedulePresets", "nia.yaml"));
         _versionCheckService = new VersionCheckService();
         _calculationService = new StatusCalculationService();
         _scoringService = new CardScoringService();
@@ -1057,6 +1074,11 @@ public class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsUpdateBannerVisible));
         });
         HifCalculateCommand = new RelayCommand(_ => ExecuteHifCalculate());
+        ApplyScheduleBulkMainCommand = new RelayCommand(_ => ExecuteApplyScheduleBulkMain());
+        ApplyScheduleBulkClassCommand = new RelayCommand(_ => ExecuteApplyScheduleBulkClass());
+        SaveSchedulePresetCommand = new RelayCommand(_ => ExecuteSaveSchedulePreset());
+        DeleteSchedulePresetCommand = new RelayCommand(_ => ExecuteDeleteSchedulePreset(),
+            _ => _selectedSchedulePreset != null);
 
         CurrentVersion = VersionCheckService.GetCurrentVersion();
 
@@ -1102,14 +1124,506 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    // ===================== 日程方式 (初レジェンド / NIA) =====================
+
+    /// <summary>レッスン週のみ main1/main2 配分を TurnChoices に適用 (中間前1:1・後2:1)。シード/一括配分で共通利用。</summary>
+    private void DistributeLessonsInto(List<string> mainStats)
+    {
+        if (mainStats.Count < 2)
+        {
+            var onlyAction = (mainStats.Count > 0 ? mainStats[0] : "vo") switch
+            {
+                "vo" => ActionType.VoLesson,
+                "da" => ActionType.DaLesson,
+                _ => ActionType.ViLesson
+            };
+            foreach (var tc in TurnChoices)
+            {
+                if (!tc.IsFixedEvent && tc.AvailableActions.Contains(onlyAction))
+                    tc.SelectedAction = onlyAction;
+            }
+            return;
+        }
+
+        var main1Action = mainStats[0] switch
+        {
+            "vo" => ActionType.VoLesson,
+            "da" => ActionType.DaLesson,
+            _ => ActionType.ViLesson
+        };
+        var main2Action = mainStats[1] switch
+        {
+            "vo" => ActionType.VoLesson,
+            "da" => ActionType.DaLesson,
+            _ => ActionType.ViLesson
+        };
+
+        // 中間試験の週を探す (無ければ 10 をフォールバック)
+        var midExamWeek = _selectedPlan?.Schedule
+            .Where(w => w.IsFixedEvent && w.EventName == "中間試験")
+            .Select(w => w.Week)
+            .FirstOrDefault() ?? 10;
+
+        var lessonTurns = TurnChoices
+            .Where(tc => !tc.IsFixedEvent && tc.AvailableActions.Any(a =>
+                a is ActionType.VoLesson or ActionType.DaLesson or ActionType.ViLesson))
+            .OrderBy(tc => tc.Week)
+            .ToList();
+
+        var beforeMid = lessonTurns.Where(tc => tc.Week < midExamWeek).ToList();
+        var afterMid = lessonTurns.Where(tc => tc.Week > midExamWeek).ToList();
+
+        // 中間前: メイン1:メイン2 = 1:1 (交互)
+        bool toggle = false;
+        foreach (var tc in beforeMid)
+        {
+            var action = toggle ? main2Action : main1Action;
+            if (tc.AvailableActions.Contains(action))
+                tc.SelectedAction = action;
+            else if (tc.AvailableActions.Contains(toggle ? main1Action : main2Action))
+                tc.SelectedAction = toggle ? main1Action : main2Action;
+            toggle = !toggle;
+        }
+
+        // 中間後: メイン1:メイン2 = 2:1 (メイン1を多めに)
+        int afterCount = 0;
+        foreach (var tc in afterMid)
+        {
+            var action = (afterCount % 3 == 1) ? main2Action : main1Action;
+            if (tc.AvailableActions.Contains(action))
+                tc.SelectedAction = action;
+            else
+            {
+                var fallback = (action == main2Action) ? main1Action : main2Action;
+                if (tc.AvailableActions.Contains(fallback))
+                    tc.SelectedAction = fallback;
+            }
+            afterCount++;
+        }
+    }
+
+    /// <summary>現在の TurnChoices 選択を planId キャッシュへ保存 (タブ切替後に復元するため)。</summary>
+    private void CacheScheduleSelections()
+    {
+        if (!IsExplicitSchedulePlan || _selectedPlan == null) return;
+        var map = new Dictionary<int, ActionType>();
+        foreach (var tc in TurnChoices)
+            if (!tc.IsFixedEvent) map[tc.Week] = tc.SelectedAction;
+        _scheduleSelectionCache[_selectedPlan.Id] = map;
+    }
+
+    // ----- 一括設定 -----
+    public List<HifStatOption> ScheduleStatOptions { get; } = new()
+    {
+        new() { Value = "vo", Label = "Vocal" },
+        new() { Value = "da", Label = "Dance" },
+        new() { Value = "vi", Label = "Visual" },
+    };
+
+    private string _scheduleBulkMain1 = "vo";
+    public string ScheduleBulkMain1
+    {
+        get => _scheduleBulkMain1;
+        set
+        {
+            if (SetProperty(ref _scheduleBulkMain1, value))
+            {
+                if (_scheduleBulkMain2 == value)
+                    ScheduleBulkMain2 = new[] { "vo", "da", "vi" }.First(s => s != value);
+                OnPropertyChanged(nameof(ScheduleMain2Options));
+            }
+        }
+    }
+
+    private string _scheduleBulkMain2 = "da";
+    public string ScheduleBulkMain2
+    {
+        get => _scheduleBulkMain2;
+        set => SetProperty(ref _scheduleBulkMain2, value);
+    }
+
+    /// <summary>メイン1以外のメイン2候補。</summary>
+    public List<HifStatOption> ScheduleMain2Options =>
+        ScheduleStatOptions.Where(o => o.Value != _scheduleBulkMain1).ToList();
+
+    private string _scheduleBulkClassStat = "vo";
+    public string ScheduleBulkClassStat
+    {
+        get => _scheduleBulkClassStat;
+        set => SetProperty(ref _scheduleBulkClassStat, value);
+    }
+
+    public ICommand ApplyScheduleBulkMainCommand { get; private set; } = null!;
+    public ICommand ApplyScheduleBulkClassCommand { get; private set; } = null!;
+
+    private void ExecuteApplyScheduleBulkMain()
+    {
+        if (_selectedPlan == null || _scheduleBulkMain1 == _scheduleBulkMain2) return;
+        DistributeLessonsInto(new List<string> { _scheduleBulkMain1, _scheduleBulkMain2 });
+        CacheScheduleSelections();
+    }
+
+    private void ExecuteApplyScheduleBulkClass()
+    {
+        if (!TurnChoiceViewModel.TryParseAction($"{_scheduleBulkClassStat}_class", out var targetAction)) return;
+        foreach (var tc in TurnChoices)
+        {
+            if (tc.IsFixedEvent || tc.AvailableActions.Count == 0) continue;
+            bool allClass = tc.AvailableActions.All(a =>
+                a is ActionType.VoClass or ActionType.DaClass or ActionType.ViClass);
+            if (!allClass) continue;
+            if (tc.AvailableActions.Contains(targetAction))
+                tc.SelectedAction = targetAction;
+        }
+        CacheScheduleSelections();
+    }
+
+    // ----- プリセット -----
+    public int MaxSchedulePresets => SchedulePresetService.MaxPresets;
+    public string SchedulePresetCountText => $"{SchedulePresets.Count}/{MaxSchedulePresets}";
+    public ObservableCollection<SchedulePreset> SchedulePresets { get; } = new();
+
+    private SchedulePreset? _selectedSchedulePreset;
+    public SchedulePreset? SelectedSchedulePreset
+    {
+        get => _selectedSchedulePreset;
+        set
+        {
+            if (SetProperty(ref _selectedSchedulePreset, value))
+            {
+                if (value != null)
+                {
+                    LoadSchedulePresetIntoTurnChoices(value);
+                    NewSchedulePresetName = value.Name;
+                }
+            }
+        }
+    }
+
+    private string _newSchedulePresetName = string.Empty;
+    public string NewSchedulePresetName
+    {
+        get => _newSchedulePresetName;
+        set => SetProperty(ref _newSchedulePresetName, value);
+    }
+
+    public ICommand SaveSchedulePresetCommand { get; private set; } = null!;
+    public ICommand DeleteSchedulePresetCommand { get; private set; } = null!;
+
+    private SchedulePresetService? GetCurrentSchedulePresetService()
+    {
+        if (_selectedPlan == null) return null;
+        return _schedulePresetServices.TryGetValue(_selectedPlan.Id, out var svc) ? svc : null;
+    }
+
+    private void LoadSchedulePresetsForCurrentPlan()
+    {
+        // 選択クリアはフィールド直接 (プロパティ経由だと再ロードが走るため)
+        _selectedSchedulePreset = null;
+        OnPropertyChanged(nameof(SelectedSchedulePreset));
+        SchedulePresets.Clear();
+        var svc = GetCurrentSchedulePresetService();
+        if (svc != null)
+        {
+            try { foreach (var p in svc.Load()) SchedulePresets.Add(p); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"スケジュールプリセット読込エラー: {ex.Message}"); }
+        }
+        OnPropertyChanged(nameof(SchedulePresetCountText));
+    }
+
+    private void LoadSchedulePresetIntoTurnChoices(SchedulePreset preset)
+    {
+        var byWeek = preset.Choices.ToDictionary(c => c.Week);
+        foreach (var tc in TurnChoices)
+        {
+            if (tc.IsFixedEvent) continue;
+            if (byWeek.TryGetValue(tc.Week, out var c)
+                && TurnChoiceViewModel.TryParseAction(c.Action, out var act)
+                && tc.AvailableActions.Contains(act))
+                tc.SelectedAction = act;
+        }
+        CacheScheduleSelections();
+    }
+
+    private void ExecuteSaveSchedulePreset()
+    {
+        var svc = GetCurrentSchedulePresetService();
+        if (svc == null) return;
+        var name = NewSchedulePresetName.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+
+        var choices = new List<ScheduleChoiceEntry>();
+        foreach (var tc in TurnChoices)
+        {
+            if (tc.IsFixedEvent || tc.AvailableActions.Count == 0) continue;
+            choices.Add(new ScheduleChoiceEntry { Week = tc.Week, Action = ActionToYaml(tc.SelectedAction) });
+        }
+        if (choices.Count == 0) return;
+
+        var preset = new SchedulePreset { Name = name, Choices = choices };
+        var existing = SchedulePresets.FirstOrDefault(p => p.Name == name);
+        if (existing != null)
+        {
+            SchedulePresets[SchedulePresets.IndexOf(existing)] = preset;
+        }
+        else
+        {
+            if (SchedulePresets.Count >= MaxSchedulePresets)
+            {
+                System.Windows.MessageBox.Show(
+                    $"プリセットは最大{MaxSchedulePresets}件まで保存できます。",
+                    "上限到達", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+            SchedulePresets.Add(preset);
+        }
+
+        try { svc.Save(SchedulePresets.ToList()); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"スケジュールプリセット保存エラー: {ex.Message}"); }
+        OnPropertyChanged(nameof(SchedulePresetCountText));
+        NewSchedulePresetName = string.Empty;
+    }
+
+    private void ExecuteDeleteSchedulePreset()
+    {
+        var svc = GetCurrentSchedulePresetService();
+        if (svc == null || _selectedSchedulePreset == null) return;
+        var target = SchedulePresets.FirstOrDefault(p => p.Name == _selectedSchedulePreset.Name);
+        if (target == null) return;
+        SchedulePresets.Remove(target);
+        try { svc.Save(SchedulePresets.ToList()); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"スケジュールプリセット削除エラー: {ex.Message}"); }
+        SelectedSchedulePreset = null;
+        OnPropertyChanged(nameof(SchedulePresetCountText));
+    }
+
+    private static string ActionToYaml(ActionType a) => a switch
+    {
+        ActionType.VoLesson => "vo_lesson",
+        ActionType.DaLesson => "da_lesson",
+        ActionType.ViLesson => "vi_lesson",
+        ActionType.VoClass => "vo_class",
+        ActionType.DaClass => "da_class",
+        ActionType.ViClass => "vi_class",
+        ActionType.Outing => "outing",
+        ActionType.Rest => "rest",
+        ActionType.Consultation => "consultation",
+        ActionType.ActivitySupply => "activity_supply",
+        ActionType.SpecialTraining => "special_training",
+        _ => "outing",
+    };
+
+    /// <summary>
+    /// 日程方式の計算実行。ユーザ確定の TurnChoices を主入力にし、HIFスコアラー (turnChoicesOverride) で
+    /// カードを選出する。HIF固有の試験配分/公開レッスン/上限パネル/overflow罰則は使わない。
+    /// </summary>
+    private void ExecuteScheduleCalculate()
+    {
+        if (_selectedPlan == null) return;
+
+        var turnChoices = TurnChoices.Where(tc => !tc.IsFixedEvent).Select(tc => tc.ToTurnChoice()).ToList();
+        if (turnChoices.Count == 0)
+        {
+            System.Windows.MessageBox.Show(
+                "スケジュールが未設定です。",
+                "スケジュール未設定", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        _isHifMode = false;
+        _isScheduleMode = true;
+
+        var mainStats = InferMainStatsFromTurnChoices(turnChoices);
+        var lessonWeekCount = _selectedPlan.Schedule.Count(w => w.Lessons.Count > 0);
+
+        var additional = BuildAdditionalCounts();
+        var candidateCards = GetCandidateCards();
+        var uncapLevels = BuildUncapLevels();
+
+        List<SupportCard>? rentalPool = null;
+        if (OwnedOnly)
+        {
+            rentalPool = ContestMode
+                ? _allCards.Where(c => c.Tag is not ("skill" or "exam_item")).ToList()
+                : _allCards;
+        }
+
+        // 除外カードを候補・レンタルプールから除去
+        if (ExcludedCards.Count > 0)
+        {
+            var excludedIdSet = ExcludedCards.Select(c => c.Id).ToHashSet();
+            candidateCards = candidateCards.Where(c => !excludedIdSet.Contains(c.Id)).ToList();
+            if (rentalPool != null)
+                rentalPool = rentalPool.Where(c => !excludedIdSet.Contains(c.Id)).ToList();
+        }
+
+        var requiredCardIds = RequiredCards.Select(c => c.Id).ToList();
+        if (requiredCardIds.Count > 0)
+        {
+            var requiredIdSet = requiredCardIds.ToHashSet();
+            var candidateIdSet = candidateCards.Select(c => c.Id).ToHashSet();
+            if (OwnedOnly)
+            {
+                var ownedIdSet = _inventory.Where(e => e.Owned).Select(e => e.CardId).ToHashSet();
+                foreach (var card in _allCards.Where(c => requiredIdSet.Contains(c.Id) && ownedIdSet.Contains(c.Id)))
+                    if (!candidateIdSet.Contains(card.Id)) candidateCards.Add(card);
+                if (rentalPool != null)
+                {
+                    var rentalIdSet = rentalPool.Select(c => c.Id).ToHashSet();
+                    foreach (var card in _allCards.Where(c => requiredIdSet.Contains(c.Id)))
+                        if (!rentalIdSet.Contains(card.Id)) rentalPool.Add(card);
+                }
+            }
+            else
+            {
+                foreach (var card in _allCards.Where(c => requiredIdSet.Contains(c.Id)))
+                    if (!candidateIdSet.Contains(card.Id)) candidateCards.Add(card);
+            }
+        }
+
+        var spCounts = new Dictionary<string, int>();
+        if (VoSpCount > 0) spCounts["vo"] = VoSpCount;
+        if (DaSpCount > 0) spCounts["da"] = DaSpCount;
+        if (ViSpCount > 0) spCounts["vi"] = ViSpCount;
+
+        if (OwnedOnly && requiredCardIds.Count > 0)
+        {
+            var ownedIds = _inventory.Where(e => e.Owned).Select(e => e.CardId).ToHashSet();
+            int notOwnedCount = requiredCardIds.Count(id => !ownedIds.Contains(id));
+            if (notOwnedCount > 1)
+            {
+                System.Windows.MessageBox.Show(
+                    "未所持の必須カードは最大1枚です（レンタル枠使用）。",
+                    "必須カード設定エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+        }
+
+        _scheduleTurnChoices = turnChoices;
+        _lastMainStats = mainStats;
+        _lastLessonWeekCount = lessonWeekCount;
+
+        var lessonAllocation = new Dictionary<string, int> { ["vo"] = 0, ["da"] = 0, ["vi"] = 0 };
+        foreach (var tc in turnChoices)
+        {
+            switch (tc.ChosenAction)
+            {
+                case ActionType.VoLesson: lessonAllocation["vo"]++; break;
+                case ActionType.DaLesson: lessonAllocation["da"]++; break;
+                case ActionType.ViLesson: lessonAllocation["vi"]++; break;
+            }
+        }
+
+        var effectiveChar = GetEffectiveCharacter();
+        var memoryBonuses = BuildMemoryBonuses();
+
+        var patterns = _scoringService.SelectMultiplePatternsHif(
+            _selectedPlan, candidateCards, mainStats, lessonAllocation,
+            spCounts: spCounts, planType: SelectedPlanType, additionalCounts: additional,
+            uncapLevels: uncapLevels, rentalPool: rentalPool,
+            requiredCardIds: requiredCardIds.Count > 0 ? requiredCardIds : null,
+            character: effectiveChar, memoryBonuses: memoryBonuses,
+            turnChoicesOverride: turnChoices,
+            overflowPenalty: null);
+
+        _deckResults = patterns;
+
+        // 選出はキャラ補正込みのキャップ後合計で比較 (TotalValue はキャラ非考慮のため)
+        var cap = _selectedPlan.StatusLimit;
+        PatternResults.Clear();
+        int bestIndex = 0;
+        int bestTotal = int.MinValue;
+
+        for (int i = 0; i < patterns.Count; i++)
+        {
+            var pattern = patterns[i];
+            var pCards = pattern.SelectedCards.Select(cs => cs.Card).ToList();
+            var pUncap = new Dictionary<string, int>(uncapLevels ?? new());
+            foreach (var cs in pattern.SelectedCards.Where(cs => cs.IsRental))
+                pUncap[cs.Card.Id] = 4;
+            var pFs = _calculationService.Calculate(_selectedPlan, pCards, turnChoices, pUncap, additional, effectiveChar, memoryBonuses).FinalStatus;
+            int cappedTotal = Math.Min(pFs.Vo, cap) + Math.Min(pFs.Da, cap) + Math.Min(pFs.Vi, cap);
+
+            var vm = new PatternResultViewModel { Label = pattern.Label, Index = i };
+            foreach (var cs in pattern.SelectedCards)
+            {
+                var suffix = (cs.IsRental ? "（レンタル）" : "") + (cs.IsRequired ? "（必須）" : "");
+                var displayName = cs.Card.Name + suffix;
+                var breakdown = string.Join("\n", cs.Breakdowns
+                    .Select(b => b.Value == 0 ? $"  {b.Reason}" : $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
+                vm.Cards.Add(new DeckCardViewModel
+                {
+                    CardName = displayName,
+                    CardType = cs.Card.Type,
+                    CardRarity = cs.Card.Rarity,
+                    CardPlan = cs.Card.Plan,
+                    StatValue = cs.TotalValue,
+                    TeamBonusTotal = cs.TeamBonusTotal,
+                    TeamBonusContributors = cs.TeamBonusContributors.Select(c => (c.CardName, c.Value)).ToList(),
+                    Breakdowns = new ObservableCollection<EffectBreakdownViewModel>(
+                        cs.Breakdowns.Select(b => new EffectBreakdownViewModel { Reason = b.Reason, Stat = b.Stat, Value = b.Value })),
+                    RawVo = cs.RawVo,
+                    RawDa = cs.RawDa,
+                    RawVi = cs.RawVi,
+                    DeckLabel = pattern.Label,
+                    BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}",
+                    HasSpRate = cs.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"),
+                });
+            }
+            PatternResults.Add(vm);
+
+            if (cappedTotal > bestTotal)
+            {
+                bestTotal = cappedTotal;
+                bestIndex = i;
+            }
+        }
+
+        OnPropertyChanged(nameof(PatternResults));
+
+        if (PatternResults.Count > 0)
+            SelectedPattern = PatternResults[bestIndex];
+        else
+            System.Windows.MessageBox.Show(
+                "有効な編成パターンが見つかりませんでした。",
+                "計算結果なし", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+    }
+
     private void OnPlanChanged()
     {
+        // モードフラグをリセット (HIF/日程の取り違え防止)
+        _isHifMode = false;
+        _isScheduleMode = false;
+
         TurnChoices.Clear();
         if (_selectedPlan == null) return;
 
         foreach (var week in _selectedPlan.Schedule)
         {
             TurnChoices.Add(new TurnChoiceViewModel(week, _selectedPlan.ActivitySupply));
+        }
+
+        // 日程方式: 編集キャッシュがあれば復元、無ければ既定配分でシード。プリセットも読み込む。
+        if (IsExplicitSchedulePlan && TurnChoices.Count > 0)
+        {
+            if (_scheduleSelectionCache.TryGetValue(_selectedPlan.Id, out var cached))
+            {
+                foreach (var tc in TurnChoices)
+                {
+                    if (!tc.IsFixedEvent && cached.TryGetValue(tc.Week, out var act)
+                        && tc.AvailableActions.Contains(act))
+                        tc.SelectedAction = act;
+                }
+            }
+            else
+            {
+                // 既定シード (今日の自動配分と一致: main1=vo, main2=da)
+                AutoAssignTurnChoices(
+                    new Dictionary<string, int> { ["vo"] = 0, ["da"] = 0, ["vi"] = 0 },
+                    new List<string> { ScheduleBulkMain1, ScheduleBulkMain2 },
+                    null);
+            }
+            LoadSchedulePresetsForCurrentPlan();
         }
 
         FilterEventCountTemplates();
@@ -1124,7 +1638,15 @@ public class MainViewModel : ViewModelBase
     {
         if (_selectedPlan == null) return;
 
+        // 日程方式 (初レジェンド / NIA) はユーザの日程を主入力にする別経路へ
+        if (IsExplicitSchedulePlan)
+        {
+            ExecuteScheduleCalculate();
+            return;
+        }
+
         _isHifMode = false;
+        _isScheduleMode = false;
 
         var lessonWeekCount = _selectedPlan.Schedule.Count(w => w.Lessons.Count > 0);
 
@@ -1312,6 +1834,11 @@ public class MainViewModel : ViewModelBase
         {
             // HIFはユーザが指定したスケジュール選択をそのまま使用
             choices = _hifTurnChoices;
+        }
+        else if (_isScheduleMode)
+        {
+            // 日程方式 (初レジェンド / NIA): ユーザ確定の日程をそのまま使用 (AutoAssign で上書きしない)
+            choices = _scheduleTurnChoices;
         }
         else
         {
@@ -1865,82 +2392,8 @@ public class MainViewModel : ViewModelBase
             _ => ActionType.ViClass
         };
 
-        if (mainStats.Count < 2)
-        {
-            // メインが1つだけの場合は全レッスンをそれに割り当て
-            var onlyAction = mainStats[0] switch
-            {
-                "vo" => ActionType.VoLesson,
-                "da" => ActionType.DaLesson,
-                _ => ActionType.ViLesson
-            };
-            foreach (var tc in TurnChoices)
-            {
-                if (!tc.IsFixedEvent && tc.AvailableActions.Contains(onlyAction))
-                    tc.SelectedAction = onlyAction;
-            }
-        }
-        else
-        {
-            // メイン2属性のレッスンアクション
-            var main1Action = mainStats[0] switch
-            {
-                "vo" => ActionType.VoLesson,
-                "da" => ActionType.DaLesson,
-                _ => ActionType.ViLesson
-            };
-            var main2Action = mainStats[1] switch
-            {
-                "vo" => ActionType.VoLesson,
-                "da" => ActionType.DaLesson,
-                _ => ActionType.ViLesson
-            };
-
-            // 中間試験の週を探す
-            var midExamWeek = _selectedPlan?.Schedule
-                .Where(w => w.IsFixedEvent && w.EventName == "中間試験")
-                .Select(w => w.Week)
-                .FirstOrDefault() ?? 10;
-
-            // レッスン週を中間前後に分ける
-            var lessonTurns = TurnChoices
-                .Where(tc => !tc.IsFixedEvent && tc.AvailableActions.Any(a =>
-                    a is ActionType.VoLesson or ActionType.DaLesson or ActionType.ViLesson))
-                .OrderBy(tc => tc.Week)
-                .ToList();
-
-            var beforeMid = lessonTurns.Where(tc => tc.Week < midExamWeek).ToList();
-            var afterMid = lessonTurns.Where(tc => tc.Week > midExamWeek).ToList();
-
-            // 中間前: メイン1:メイン2 = 1:1 (交互に割り当て)
-            bool toggle = false;
-            foreach (var tc in beforeMid)
-            {
-                var action = toggle ? main2Action : main1Action;
-                if (tc.AvailableActions.Contains(action))
-                    tc.SelectedAction = action;
-                else if (tc.AvailableActions.Contains(toggle ? main1Action : main2Action))
-                    tc.SelectedAction = toggle ? main1Action : main2Action;
-                toggle = !toggle;
-            }
-
-            // 中間後: メイン1:メイン2 = 2:1 (メイン1を多めに)
-            // 3回中: メイン1, メイン2, メイン1 の順 (1回だけの属性を2回目に配置)
-            int afterCount = 0;
-            foreach (var tc in afterMid)
-            {
-                var action = (afterCount % 3 == 1) ? main2Action : main1Action;
-                if (tc.AvailableActions.Contains(action))
-                    tc.SelectedAction = action;
-                else
-                {
-                    var fallback = (action == main2Action) ? main1Action : main2Action;
-                    if (tc.AvailableActions.Contains(fallback))
-                        tc.SelectedAction = fallback;
-                }
-                afterCount++;
-            }
-        }
+        // レッスン週の配分は DistributeLessonsInto に集約 (シード/一括配分と同一ソース)
+        DistributeLessonsInto(mainStats);
 
         // 授業週: サブ属性の授業を選択
         foreach (var tc in TurnChoices)
@@ -2243,6 +2696,8 @@ public class MainViewModel : ViewModelBase
         RequiredCards.Clear();
         ExcludedCards.Clear();
         OnPropertyChanged(nameof(CanAddRequiredCard));
+        // 日程方式: リセットは編集キャッシュも消して既定シードに戻す
+        if (_selectedPlan != null) _scheduleSelectionCache.Remove(_selectedPlan.Id);
         OnPlanChanged();
     }
 

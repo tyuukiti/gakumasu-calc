@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
-import { useCalcStore } from '../stores/calcStore';
+import { useCalcStore, SCHEDULE_PLAN_IDS } from '../stores/calcStore';
 import PlanSelector from '../components/calculator/PlanSelector';
 import PlanTypeSelector from '../components/calculator/PlanTypeSelector';
 import StatRoleConfig from '../components/calculator/StatRoleConfig';
+import ScheduleBulkSettings from '../components/calculator/ScheduleBulkSettings';
+import SchedulePresets from '../components/calculator/SchedulePresets';
+import SchedulePicker from '../components/calculator/SchedulePicker';
+import SpCountConfig from '../components/hif/SpCountConfig';
 import EventCountConfig from '../components/calculator/EventCountConfig';
 import RequiredCardSelector from '../components/calculator/RequiredCardSelector';
 import ExcludedCardSelector from '../components/calculator/ExcludedCardSelector';
@@ -30,12 +34,16 @@ export default function CalculatorPage({ fixedPlanId, heading }: CalculatorPageP
     deckResults,
     errorMessage,
     setSelectedPlanId,
+    selectedPlanId,
   } = useCalcStore();
 
   // タブでプランを固定する場合、マウント時/タブ切替時に選択プランを設定する
   useEffect(() => {
     if (fixedPlanId) setSelectedPlanId(fixedPlanId);
   }, [fixedPlanId, setSelectedPlanId]);
+
+  const planId = fixedPlanId ?? selectedPlanId;
+  const isSchedulePlan = SCHEDULE_PLAN_IDS.has(planId);
 
   return (
     <div>
@@ -48,7 +56,20 @@ export default function CalculatorPage({ fixedPlanId, heading }: CalculatorPageP
         {!fixedPlanId && <PlanSelector />}
         <PlanTypeSelector />
 
-        <StatRoleConfig />
+        {isSchedulePlan ? (
+          <>
+            <ScheduleBulkSettings planId={planId} />
+            {/* スケジュール調整: プリセット + 個別調整 */}
+            <div className="space-y-3 bg-white rounded-md p-3 border border-gray-200">
+              <SchedulePresets planId={planId} />
+              <SchedulePicker planId={planId} />
+            </div>
+            {/* SP枚数設定（Vo/Da/Vi 独立。属性設定の撤去で失われる入力を補う） */}
+            <SpCountConfig />
+          </>
+        ) : (
+          <StatRoleConfig />
+        )}
         <EventCountConfig />
         <RequiredCardSelector />
         <ExcludedCardSelector />
