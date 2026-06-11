@@ -178,6 +178,7 @@ function ExamChoice({ week }: { week: WeekSchedule }) {
     return <span className="text-gray-600 italic">{week.event_name ?? '固定イベント'}</span>;
   }
 
+  // 一括設定のバー/プリセットで配分されるが、ここで試験ごとに手入力で上書きもできる
   return (
     <div className="flex items-center gap-2 flex-wrap text-xs">
       <span className="text-gray-700 italic">{week.event_name}</span>

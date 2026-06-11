@@ -1,5 +1,8 @@
+import { useEffect, useMemo } from 'react';
 import type { ExamAllocationPreset } from '../../stores/hifStore';
 import { useHifStore } from '../../stores/hifStore';
+import { useAppStore } from '../../stores/appStore';
+import ExamRatioBar from './ExamRatioBar';
 
 type Stat = 'vo' | 'da' | 'vi';
 const STATS: Stat[] = ['vo', 'da', 'vi'];
@@ -12,11 +15,11 @@ const STAT_COLOR_VAR: Record<Stat, string> = {
   vi: 'var(--color-vi-text)',
 };
 
-/** 2分割プリセット */
+/** 2分割プリセット (VoDa → VoVi → DaVi の順) */
 const SPLIT_PRESETS: Array<{ preset: ExamAllocationPreset; a: Stat; b: Stat }> = [
   { preset: 'vo_da', a: 'vo', b: 'da' },
-  { preset: 'da_vi', a: 'da', b: 'vi' },
   { preset: 'vo_vi', a: 'vo', b: 'vi' },
+  { preset: 'da_vi', a: 'da', b: 'vi' },
 ];
 
 export default function HifBulkSettings() {
@@ -27,6 +30,25 @@ export default function HifBulkSettings() {
   const applyBulk = useHifStore((s) => s.applyBulkLessonChoice);
   const applyClass = useHifStore((s) => s.applyBulkClassChoice);
   const applyExam = useHifStore((s) => s.applyExamAllocationPreset);
+  const examRatio = useHifStore((s) => s.examRatio);
+  const setExamRatio = useHifStore((s) => s.setExamRatio);
+  const ensureExamAllocations = useHifStore((s) => s.ensureExamAllocations);
+  const examAllocations = useHifStore((s) => s.examAllocations);
+  const plans = useAppStore((s) => s.plans);
+
+  // 初回表示時、試験配分が未設定ならデフォルト比率から materialize
+  useEffect(() => {
+    ensureExamAllocations();
+  }, [ensureExamAllocations, plans]);
+
+  // 試験日 (audition かつ配分プールあり) の一覧
+  const examDays = useMemo(() => {
+    const hifPlan = plans.find((p) => p.id === 'hif');
+    if (!hifPlan) return [];
+    return hifPlan.schedule
+      .filter((w) => w.type === 'audition' && (w.hif_exam_distributed ?? 0) > 0)
+      .map((w) => ({ week: w.week, name: w.event_name ?? `Day ${w.week}`, base: w.hif_exam_base ?? 0 }));
+  }, [plans]);
 
   const subOptions = STATS.filter((s) => s !== bulk.mainStat);
   const validBulk = bulk.mainStat !== bulk.subStat;
@@ -110,67 +132,80 @@ export default function HifBulkSettings() {
         </button>
       </div>
 
-      {/* 試験配分プリセット */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap text-sm bg-gray-50 border border-gray-200 rounded-md p-3">
-        <span className="text-gray-700 shrink-0">試験配分:</span>
-        
+      {/* 試験配分: バー1本で Vo/Da/Vi 比率を決め、全試験に同じ比率で按分 */}
+      <div className="flex flex-col gap-3 text-sm bg-gray-50 border border-gray-200 rounded-md p-3">
         <div className="flex items-center gap-2 flex-wrap">
-          {/* --- 1極グループ --- */}
-          <div className="flex gap-1.5">
-            {STATS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => applyExam(`${s}_all` as ExamAllocationPreset)}
-                className={btnBaseClass}
-              >
-                {/* 属性を示すカラーマッカードット */}
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: STAT_COLOR_VAR[s] }} />
-                {STAT_LABEL[s]} 全振り
-              </button>
-            ))}
-          </div>
+          <span className="text-gray-700 shrink-0">試験配分:</span>
 
-          {/* 境界線 */}
-          <div className="hidden sm:block h-5 w-px bg-gray-300 mx-0.5" />
-
-          {/* --- 2極グループ --- */}
-          <div className="flex gap-1.5">
-            {SPLIT_PRESETS.map(({ preset, a, b }) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => applyExam(preset)}
-                title={`${STAT_LABEL[a]}・${STAT_LABEL[b]} 2極化`}
-                className={btnBaseClass}
-              >
-                {/* 2色並んだツインドットで2極を表現 */}
-                <div className="flex gap-0.5 shrink-0">
-                  <span className="w-1.5 h-3 rounded-l-sm" style={{ backgroundColor: STAT_COLOR_VAR[a] }} />
-                  <span className="w-1.5 h-3 rounded-r-sm" style={{ backgroundColor: STAT_COLOR_VAR[b] }} />
-                </div>
-                <span>{STAT_LABEL[a]}{STAT_LABEL[b]} 2極</span>
-              </button>
-            ))}
-          </div>
-
-          {/* 境界線 */}
-          <div className="hidden sm:block h-5 w-px bg-gray-300 mx-0.5" />
-
-          {/* --- 3分割グループ --- */}
-          <button
-            type="button"
-            onClick={() => applyExam('equal')}
-            className={btnBaseClass}
-          >
-            <div className="flex gap-0.5 shrink-0">
+          {/* プリセット: バー比率を一発で設定 */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex gap-1.5">
               {STATS.map((s) => (
-                <span key={s} className="w-1 h-3 rounded-sm" style={{ backgroundColor: STAT_COLOR_VAR[s] }} />
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => applyExam(`${s}_all` as ExamAllocationPreset)}
+                  className={btnBaseClass}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: STAT_COLOR_VAR[s] }} />
+                  {STAT_LABEL[s]} 全振り
+                </button>
               ))}
             </div>
-            均等 3分割
-          </button>
+            <div className="hidden sm:block h-5 w-px bg-gray-300 mx-0.5" />
+            <div className="flex gap-1.5">
+              {SPLIT_PRESETS.map(({ preset, a, b }) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => applyExam(preset)}
+                  title={`${STAT_LABEL[a]}・${STAT_LABEL[b]} 2極化`}
+                  className={btnBaseClass}
+                >
+                  <div className="flex gap-0.5 shrink-0">
+                    <span className="w-1.5 h-3 rounded-l-sm" style={{ backgroundColor: STAT_COLOR_VAR[a] }} />
+                    <span className="w-1.5 h-3 rounded-r-sm" style={{ backgroundColor: STAT_COLOR_VAR[b] }} />
+                  </div>
+                  <span>{STAT_LABEL[a]}{STAT_LABEL[b]} 2極</span>
+                </button>
+              ))}
+            </div>
+            <div className="hidden sm:block h-5 w-px bg-gray-300 mx-0.5" />
+            <button type="button" onClick={() => applyExam('equal')} className={btnBaseClass}>
+              <div className="flex gap-0.5 shrink-0">
+                {STATS.map((s) => (
+                  <span key={s} className="w-1 h-3 rounded-sm" style={{ backgroundColor: STAT_COLOR_VAR[s] }} />
+                ))}
+              </div>
+              均等 3分割
+            </button>
+          </div>
         </div>
+
+        {/* 比率バー（ハンドルをドラッグして調整 → 全試験に同じ比率で適用） */}
+        <ExamRatioBar ratio={examRatio} onChange={setExamRatio} />
+
+        {/* 適用結果（配分のみ・基礎値は別途+加算） */}
+        {examDays.length > 0 && (
+          <div className="flex flex-col gap-1 text-xs">
+            <span className="text-gray-500">適用結果（配分のみ・基礎値は別途+加算）:</span>
+            {examDays.map((e) => {
+              const a = examAllocations[e.week] ?? { vo: 0, da: 0, vi: 0 };
+              return (
+                <div key={e.week} className="flex items-center gap-2 flex-wrap">
+                  <span className="text-gray-600 italic">{e.name}</span>
+                  <span className="flex gap-2">
+                    {STATS.map((s) => (
+                      <span key={s} style={{ color: STAT_COLOR_VAR[s] }}>
+                        {STAT_LABEL[s]} {a[s]}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

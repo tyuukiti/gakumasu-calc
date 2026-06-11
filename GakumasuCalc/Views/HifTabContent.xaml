@@ -152,17 +152,7 @@
                                             <TextBlock Text="VoDa 2極" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
-                                    <Button Style="{StaticResource PresetButton}" Margin="0,0,6,0" ToolTip="Da・Vi 2極化"
-                                            Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="da_vi">
-                                        <StackPanel Orientation="Horizontal">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
-                                                <Border Width="6" Height="12" Background="{StaticResource DaTextBrush}" CornerRadius="2,0,0,2"/>
-                                                <Border Width="6" Height="12" Background="{StaticResource ViTextBrush}" CornerRadius="0,2,2,0" Margin="2,0,0,0"/>
-                                            </StackPanel>
-                                            <TextBlock Text="DaVi 2極" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Style="{StaticResource PresetButton}" ToolTip="Vo・Vi 2極化"
+                                    <Button Style="{StaticResource PresetButton}" Margin="0,0,6,0" ToolTip="Vo・Vi 2極化"
                                             Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_vi">
                                         <StackPanel Orientation="Horizontal">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
@@ -170,6 +160,16 @@
                                                 <Border Width="6" Height="12" Background="{StaticResource ViTextBrush}" CornerRadius="0,2,2,0" Margin="2,0,0,0"/>
                                             </StackPanel>
                                             <TextBlock Text="VoVi 2極" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource PresetButton}" ToolTip="Da・Vi 2極化"
+                                            Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="da_vi">
+                                        <StackPanel Orientation="Horizontal">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                                                <Border Width="6" Height="12" Background="{StaticResource DaTextBrush}" CornerRadius="2,0,0,2"/>
+                                                <Border Width="6" Height="12" Background="{StaticResource ViTextBrush}" CornerRadius="0,2,2,0" Margin="2,0,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Text="DaVi 2極" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -190,6 +190,56 @@
                                     </StackPanel>
                                 </Button>
                             </WrapPanel>
+
+                            <!-- 試験配分バー: 1本のバーで Vo/Da/Vi 比率を決め、全試験へ同じ比率で按分。
+                                 GridSplitter のドラッグで星形カラム幅(=比率)を変更する (Web版の単一バーと同等) -->
+                            <Grid x:Name="ExamRatioBarGrid" Height="34" Margin="0,2,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition x:Name="ExamVoCol" Width="34*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition x:Name="ExamDaCol" Width="33*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition x:Name="ExamViCol" Width="33*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Background="{StaticResource VoBrush}" CornerRadius="4,0,0,4">
+                                    <TextBlock Text="{Binding HifVm.ExamRatioVoText}" Foreground="White" FontSize="11" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                              Background="White" ShowsPreview="False" Cursor="SizeWE"
+                                              DragStarted="ExamSplitter_DragStarted" DragDelta="ExamSplitter_DragDelta" DragCompleted="ExamSplitter_DragCompleted"/>
+                                <Border Grid.Column="2" Background="{StaticResource DaBrush}">
+                                    <TextBlock Text="{Binding HifVm.ExamRatioDaText}" Foreground="White" FontSize="11" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <GridSplitter Grid.Column="3" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                              Background="White" ShowsPreview="False" Cursor="SizeWE"
+                                              DragStarted="ExamSplitter_DragStarted" DragDelta="ExamSplitter_DragDelta" DragCompleted="ExamSplitter_DragCompleted"/>
+                                <Border Grid.Column="4" Background="{StaticResource ViBrush}" CornerRadius="0,4,4,0">
+                                    <TextBlock Text="{Binding HifVm.ExamRatioViText}" Foreground="White" FontSize="11" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="ハンドルをドラッグ → 全試験に同じ比率で配分" FontSize="10" Foreground="#999" Margin="0,3,0,0"/>
+
+                            <!-- 適用結果（各試験の現在の配分。個別調整での上書きも反映） -->
+                            <TextBlock Text="適用結果（配分のみ・基礎値は別途+加算）:" FontSize="10" Foreground="#999" Margin="0,6,0,2"/>
+                            <ItemsControl ItemsSource="{Binding HifVm.ExamItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                            <TextBlock Text="{Binding EventName}" FontSize="11" FontStyle="Italic" Foreground="#666"
+                                                       Width="92" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Vo" FontSize="11" Foreground="{StaticResource VoTextBrush}" Margin="0,0,2,0"/>
+                                            <TextBlock Text="{Binding ExamVoAlloc}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource VoTextBrush}" Margin="0,0,10,0"/>
+                                            <TextBlock Text="Da" FontSize="11" Foreground="{StaticResource DaTextBrush}" Margin="0,0,2,0"/>
+                                            <TextBlock Text="{Binding ExamDaAlloc}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource DaTextBrush}" Margin="0,0,10,0"/>
+                                            <TextBlock Text="Vi" FontSize="11" Foreground="{StaticResource ViTextBrush}" Margin="0,0,2,0"/>
+                                            <TextBlock Text="{Binding ExamViAlloc}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource ViTextBrush}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </Border>
 
@@ -286,6 +336,7 @@
                                                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
                                                         <TextBlock Text="{Binding ExamBaseText}" FontSize="11" Foreground="#888"
                                                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                        <!-- 一括設定のバー/プリセットで配分されるが、試験ごとに手入力で上書きもできる -->
                                                         <TextBlock Text="Vo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource VoBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
                                                         <TextBox Text="{Binding ExamVoAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
                                                                  Style="{StaticResource NumericTextBox}"
