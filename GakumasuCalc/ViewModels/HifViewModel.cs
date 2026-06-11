@@ -245,6 +245,9 @@ public class HifViewModel : ViewModelBase
                 item.SelectedAction = choice.Action;
             }
         }
+
+        // 読み込んだ per-exam 配分から代表比率を逆算してバー表示へ反映 (配分値はそのまま)
+        DeriveExamRatioFromItems();
     }
 
     private void ExecuteSaveSchedulePreset()
@@ -421,42 +424,104 @@ public class HifViewModel : ViewModelBase
         }
     }
 
-    private void ExecuteApplyExamPreset(string? preset)
+    // ===== 試験配分: 全試験共通の配分比率 (Vo/Da/Vi, 合計100) =====
+    // 単一バー(GridSplitter)で比率を編集し、全試験へ按分して per-exam の ExamVoAlloc 等に展開する。
+    private int _examRatioVo = 34;
+    private int _examRatioDa = 33;
+    private int _examRatioVi = 33;
+
+    public int ExamRatioVo => _examRatioVo;
+    public int ExamRatioDa => _examRatioDa;
+    public int ExamRatioVi => _examRatioVi;
+    public string ExamRatioVoText => $"Vo {_examRatioVo}%";
+    public string ExamRatioDaText => $"Da {_examRatioDa}%";
+    public string ExamRatioViText => $"Vi {_examRatioVi}%";
+
+    /// <summary>バーのドラッグ/プリセット適用で比率が変わったことを View(code-behind) に通知。</summary>
+    public event Action? ExamRatioChanged;
+
+    private void RaiseExamRatioProps()
     {
-        if (string.IsNullOrEmpty(preset)) return;
+        OnPropertyChanged(nameof(ExamRatioVo));
+        OnPropertyChanged(nameof(ExamRatioDa));
+        OnPropertyChanged(nameof(ExamRatioVi));
+        OnPropertyChanged(nameof(ExamRatioVoText));
+        OnPropertyChanged(nameof(ExamRatioDaText));
+        OnPropertyChanged(nameof(ExamRatioViText));
+    }
+
+    /// <summary>比率を合計100に正規化して設定し、全試験の配分を按分し直す。</summary>
+    public void ApplyExamRatio(int vo, int da, int vi)
+    {
+        (_examRatioVo, _examRatioDa, _examRatioVi) = NormalizeRatio(vo, da, vi);
+        RaiseExamRatioProps();
+        MaterializeExamRatio();
+        ExamRatioChanged?.Invoke();
+    }
+
+    /// <summary>現在の比率を、各試験の配分プールに按分して per-exam 配分へ展開。</summary>
+    public void MaterializeExamRatio()
+    {
         foreach (var item in ScheduleItems)
         {
             if (!item.IsExam || item.ExamDistributed <= 0) continue;
-            int d = item.ExamDistributed;
-            switch (preset)
-            {
-                case "vo_all":
-                    item.ExamVoAlloc = d; item.ExamDaAlloc = 0; item.ExamViAlloc = 0;
-                    break;
-                case "da_all":
-                    item.ExamVoAlloc = 0; item.ExamDaAlloc = d; item.ExamViAlloc = 0;
-                    break;
-                case "vi_all":
-                    item.ExamVoAlloc = 0; item.ExamDaAlloc = 0; item.ExamViAlloc = d;
-                    break;
-                case "vo_da":
-                    item.ExamVoAlloc = d - d / 2; item.ExamDaAlloc = d / 2; item.ExamViAlloc = 0;
-                    break;
-                case "da_vi":
-                    item.ExamVoAlloc = 0; item.ExamDaAlloc = d - d / 2; item.ExamViAlloc = d / 2;
-                    break;
-                case "vo_vi":
-                    item.ExamVoAlloc = d - d / 2; item.ExamDaAlloc = 0; item.ExamViAlloc = d / 2;
-                    break;
-                case "equal":
-                    int q = d / 3;
-                    int r = d - q * 3;
-                    item.ExamVoAlloc = q + r;
-                    item.ExamDaAlloc = q;
-                    item.ExamViAlloc = q;
-                    break;
-            }
+            var (vo, da, vi) = SplitByRatio(item.ExamDistributed);
+            item.ExamVoAlloc = vo; item.ExamDaAlloc = da; item.ExamViAlloc = vi;
         }
+    }
+
+    /// <summary>既存の per-exam 配分から代表比率を逆算 (プリセット読込時のバー表示用)。</summary>
+    private void DeriveExamRatioFromItems()
+    {
+        int vo = 0, da = 0, vi = 0;
+        foreach (var item in ScheduleItems)
+        {
+            if (!item.IsExam || item.ExamDistributed <= 0) continue;
+            vo += item.ExamVoAlloc; da += item.ExamDaAlloc; vi += item.ExamViAlloc;
+        }
+        (_examRatioVo, _examRatioDa, _examRatioVi) = NormalizeRatio(vo, da, vi);
+        RaiseExamRatioProps();
+        ExamRatioChanged?.Invoke();
+    }
+
+    /// <summary>整数3値を合計100に正規化 (最大剰余法)。全0なら均等。</summary>
+    private static (int, int, int) NormalizeRatio(int vo, int da, int vi)
+        => DistributeLargestRemainder(100, Math.Max(0, vo), Math.Max(0, da), Math.Max(0, vi), fallbackEqual: true);
+
+    /// <summary>現在比率を pool に按分 (最大剰余法で合計を pool にピッタリ合わせる)。</summary>
+    private (int, int, int) SplitByRatio(int pool)
+        => DistributeLargestRemainder(pool, _examRatioVo, _examRatioDa, _examRatioVi, fallbackEqual: false);
+
+    /// <summary>weights の比で total を Vo/Da/Vi に分配。端数は小数部の大きい属性へ。</summary>
+    private static (int, int, int) DistributeLargestRemainder(int total, int wVo, int wDa, int wVi, bool fallbackEqual)
+    {
+        int wSum = wVo + wDa + wVi;
+        if (wSum <= 0)
+            return fallbackEqual ? (total - 2 * (total / 3), total / 3, total / 3) : (0, 0, 0);
+        double[] raw = { total * (double)wVo / wSum, total * (double)wDa / wSum, total * (double)wVi / wSum };
+        int[] outv = { (int)Math.Floor(raw[0]), (int)Math.Floor(raw[1]), (int)Math.Floor(raw[2]) };
+        int rem = total - (outv[0] + outv[1] + outv[2]);
+        int[] order = { 0, 1, 2 };
+        Array.Sort(order, (a, b) => (raw[b] - Math.Floor(raw[b])).CompareTo(raw[a] - Math.Floor(raw[a])));
+        for (int i = 0; rem > 0; i++, rem--) outv[order[i % 3]]++;
+        return (outv[0], outv[1], outv[2]);
+    }
+
+    private void ExecuteApplyExamPreset(string? preset)
+    {
+        if (string.IsNullOrEmpty(preset)) return;
+        (int vo, int da, int vi) = preset switch
+        {
+            "vo_all" => (100, 0, 0),
+            "da_all" => (0, 100, 0),
+            "vi_all" => (0, 0, 100),
+            "vo_da" => (50, 50, 0),
+            "da_vi" => (0, 50, 50),
+            "vo_vi" => (50, 0, 50),
+            "equal" => (34, 33, 33),
+            _ => (_examRatioVo, _examRatioDa, _examRatioVi),
+        };
+        ApplyExamRatio(vo, da, vi);
     }
 
     /// <summary>
@@ -491,6 +556,10 @@ public class HifViewModel : ViewModelBase
     /// </summary>
     public ObservableCollection<HifScheduleItemViewModel> ScheduleItems { get; } = new();
 
+    /// <summary>配分プールを持つ試験日のみ（一括設定パネルの「適用結果」表示用）。</summary>
+    public IEnumerable<HifScheduleItemViewModel> ExamItems =>
+        ScheduleItems.Where(i => i.IsExam && i.ExamDistributed > 0);
+
     public string? ErrorMessage
     {
         get => _errorMessage;
@@ -510,6 +579,11 @@ public class HifViewModel : ViewModelBase
             var item = HifScheduleItemViewModel.Build(week);
             ScheduleItems.Add(item);
         }
+
+        // 初期表示: デフォルト比率を各試験へ按分して展開
+        MaterializeExamRatio();
+        ExamRatioChanged?.Invoke();
+        OnPropertyChanged(nameof(ExamItems));
     }
 }
 

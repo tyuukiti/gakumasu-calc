@@ -52,6 +52,63 @@ export type ExamAllocationPreset =
   | 'vo_vi'
   | 'equal';
 
+/** 全試験共通の配分比率 (Vo/Da/Vi、合計100)。単一バーUIで編集する。 */
+const DEFAULT_EXAM_RATIO: ExamAllocation = { vo: 34, da: 33, vi: 33 };
+
+/** プリセット種別 → 配分比率 (合計100) */
+function examPresetRatio(preset: ExamAllocationPreset): ExamAllocation {
+  switch (preset) {
+    case 'vo_all': return { vo: 100, da: 0, vi: 0 };
+    case 'da_all': return { vo: 0, da: 100, vi: 0 };
+    case 'vi_all': return { vo: 0, da: 0, vi: 100 };
+    case 'vo_da': return { vo: 50, da: 50, vi: 0 };
+    case 'da_vi': return { vo: 0, da: 50, vi: 50 };
+    case 'vo_vi': return { vo: 50, da: 0, vi: 50 };
+    case 'equal': return { vo: 34, da: 33, vi: 33 };
+    default: return { ...DEFAULT_EXAM_RATIO };
+  }
+}
+
+/**
+ * 比率を実プールに按分。端数は最大剰余法で合計をプールにピッタリ合わせる。
+ * 例: pool=80, ratio={0,50,50} → {vo:0, da:40, vi:40}
+ */
+export function splitExamByRatio(pool: number, ratio: ExamAllocation): ExamAllocation {
+  const total = ratio.vo + ratio.da + ratio.vi || 1;
+  const raw: ExamAllocation = {
+    vo: (pool * ratio.vo) / total,
+    da: (pool * ratio.da) / total,
+    vi: (pool * ratio.vi) / total,
+  };
+  const out: ExamAllocation = { vo: Math.floor(raw.vo), da: Math.floor(raw.da), vi: Math.floor(raw.vi) };
+  let rem = pool - (out.vo + out.da + out.vi);
+  const order = (['vo', 'da', 'vi'] as const)
+    .map((s) => ({ s, f: raw[s] - Math.floor(raw[s]) }))
+    .sort((a, b) => b.f - a.f);
+  for (let i = 0; rem > 0; i++, rem--) out[order[i % 3].s]++;
+  return out;
+}
+
+/** 試験日(audition かつ distributed>0)ごとに比率を按分した配分を生成 */
+function materializeExamAllocations(ratio: ExamAllocation): Record<number, ExamAllocation> {
+  const hifPlan = useAppStore.getState().plans.find((p) => p.id === 'hif');
+  const out: Record<number, ExamAllocation> = {};
+  if (!hifPlan) return out;
+  for (const w of hifPlan.schedule) {
+    const d = w.hif_exam_distributed ?? 0;
+    if (w.type === 'audition' && d > 0) out[w.week] = splitExamByRatio(d, ratio);
+  }
+  return out;
+}
+
+/** 既存の per-exam 配分から代表比率を逆算 (プリセット読込時のバー表示用)。全0なら均等。 */
+function deriveExamRatio(allocs: Record<number, ExamAllocation>): ExamAllocation {
+  let vo = 0, da = 0, vi = 0;
+  for (const a of Object.values(allocs)) { vo += a.vo; da += a.da; vi += a.vi; }
+  if (vo + da + vi <= 0) return { ...DEFAULT_EXAM_RATIO };
+  return splitExamByRatio(100, { vo, da, vi });
+}
+
 /** 公開レッスン日の一括デフォルト（メイン/サブ） */
 export interface BulkLessonDefault {
   mainStat: 'vo' | 'da' | 'vi';
@@ -158,8 +215,10 @@ function persistSchedulePresets(presets: HifSchedulePreset[]) {
 
 interface HifState {
   scheduleChoices: Record<number, HifChoice>;
-  /** 試験日ごとのユーザ配分（基礎値はYAMLの hif_exam_base が別途加算される） */
+  /** 試験日ごとの配分（基礎値はYAMLの hif_exam_base が別途加算される）。examRatio から materialize される。 */
   examAllocations: Record<number, ExamAllocation>;
+  /** 全試験共通の配分比率 (Vo/Da/Vi、合計100)。単一バーUIで編集する。 */
+  examRatio: ExamAllocation;
   deckResults: DeckResult[];
   selectedPatternIndex: number;
   calculationResult: CalculationResult | null;
@@ -185,7 +244,12 @@ interface HifState {
   overflowPenalty: HifOverflowPenaltySettings;
 
   setScheduleChoice: (week: number, choice: HifChoice) => void;
+  /** 配分比率を更新し、全試験の examAllocations を按分し直す（バーのドラッグで呼ばれる） */
+  setExamRatio: (ratio: ExamAllocation) => void;
+  /** 個別調整: 1試験の1属性だけ手入力で上書きする（バー/プリセットの一括設定とは独立） */
   setExamAllocation: (week: number, stat: 'vo' | 'da' | 'vi', value: number) => void;
+  /** examAllocations が未設定なら、現在の examRatio から materialize する（初回表示用） */
+  ensureExamAllocations: () => void;
   setBulkLessonDefault: (def: BulkLessonDefault) => void;
   setBulkClassStat: (stat: 'vo' | 'da' | 'vi') => void;
   /** 全公開レッスン日に bulkLessonDefault を適用 */
@@ -433,6 +497,7 @@ function applySelectedPatternImpl(
 export const useHifStore = create<HifState>((set, get) => ({
   scheduleChoices: {},
   examAllocations: {},
+  examRatio: { ...DEFAULT_EXAM_RATIO },
   bulkLessonDefault: { mainStat: 'vo', subStat: 'da' },
   bulkClassStat: 'vo',
   schedulePresets: loadSchedulePresetsFromStorage(),
@@ -450,11 +515,23 @@ export const useHifStore = create<HifState>((set, get) => ({
   setScheduleChoice: (week, choice) =>
     set((s) => ({ scheduleChoices: { ...s.scheduleChoices, [week]: choice } })),
 
+  setExamRatio: (ratio) =>
+    set(() => ({
+      examRatio: { ...ratio },
+      examAllocations: materializeExamAllocations(ratio),
+    })),
+
   setExamAllocation: (week, stat, value) =>
     set((s) => {
       const current = s.examAllocations[week] ?? { vo: 0, da: 0, vi: 0 };
       const next: ExamAllocation = { ...current, [stat]: Math.max(0, value) };
       return { examAllocations: { ...s.examAllocations, [week]: next } };
+    }),
+
+  ensureExamAllocations: () =>
+    set((s) => {
+      if (Object.keys(s.examAllocations).length > 0) return {};
+      return { examAllocations: materializeExamAllocations(s.examRatio) };
     }),
 
   setBulkLessonDefault: (def) => set({ bulkLessonDefault: def }),
@@ -498,31 +575,8 @@ export const useHifStore = create<HifState>((set, get) => ({
   },
 
   applyExamAllocationPreset: (preset) => {
-    const hifPlan = useAppStore.getState().plans.find((p) => p.id === 'hif');
-    if (!hifPlan) return;
-    const newAllocations: Record<number, ExamAllocation> = { ...get().examAllocations };
-    for (const w of hifPlan.schedule) {
-      const d = w.hif_exam_distributed ?? 0;
-      if (w.type !== 'audition' || d <= 0) continue;
-      if (preset === 'vo_all') newAllocations[w.week] = { vo: d, da: 0, vi: 0 };
-      else if (preset === 'da_all') newAllocations[w.week] = { vo: 0, da: d, vi: 0 };
-      else if (preset === 'vi_all') newAllocations[w.week] = { vo: 0, da: 0, vi: d };
-      else if (preset === 'vo_da') {
-        const h = Math.floor(d / 2);
-        newAllocations[w.week] = { vo: d - h, da: h, vi: 0 };
-      } else if (preset === 'da_vi') {
-        const h = Math.floor(d / 2);
-        newAllocations[w.week] = { vo: 0, da: d - h, vi: h };
-      } else if (preset === 'vo_vi') {
-        const h = Math.floor(d / 2);
-        newAllocations[w.week] = { vo: d - h, da: 0, vi: h };
-      } else if (preset === 'equal') {
-        const q = Math.floor(d / 3);
-        const r = d - q * 3;
-        newAllocations[w.week] = { vo: q + r, da: q, vi: q };
-      }
-    }
-    set({ examAllocations: newAllocations });
+    const ratio = examPresetRatio(preset);
+    set({ examRatio: ratio, examAllocations: materializeExamAllocations(ratio) });
     trackEvent('hif_exam_preset_applied', { preset });
   },
 
@@ -572,7 +626,7 @@ export const useHifStore = create<HifState>((set, get) => ({
     for (const [k, v] of Object.entries(preset.examAllocations)) {
       allocs[Number(k)] = { ...v };
     }
-    set({ scheduleChoices: choices, examAllocations: allocs });
+    set({ scheduleChoices: choices, examAllocations: allocs, examRatio: deriveExamRatio(allocs) });
     trackEvent('hif_schedule_preset_loaded');
   },
 
@@ -616,7 +670,12 @@ export const useHifStore = create<HifState>((set, get) => ({
     set({ overflowPenalty: next });
   },
 
-  resetScheduleChoices: () => set({ scheduleChoices: {}, examAllocations: {} }),
+  resetScheduleChoices: () =>
+    set({
+      scheduleChoices: {},
+      examRatio: { ...DEFAULT_EXAM_RATIO },
+      examAllocations: materializeExamAllocations(DEFAULT_EXAM_RATIO),
+    }),
 
   executeCalculate: () => {
     try {
