@@ -53,8 +53,29 @@
         <Setter Property="Margin" Value="0,0,0,8"/>
     </Style>
 
+    <!-- 全ボタン共通のクリック押下フィードバック (押すと少し縮む)。
+         カスタムボタンの各スタイルは BasedOn でこの挙動を継承する。
+         ※ MaterialDesign 系・スタイル未指定ボタンは元々リップル押下演出を持つ -->
+    <Style x:Key="PressableButtonBase" TargetType="Button">
+        <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+        <Setter Property="RenderTransform">
+            <Setter.Value>
+                <ScaleTransform ScaleX="1" ScaleY="1"/>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="RenderTransform">
+                    <Setter.Value>
+                        <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Primary Button -->
-    <Style x:Key="PrimaryButton" TargetType="Button">
+    <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource PressableButtonBase}">
         <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="FontSize" Value="14"/>
@@ -88,7 +109,7 @@
     </Style>
 
     <!-- Secondary Button -->
-    <Style x:Key="SecondaryButton" TargetType="Button">
+    <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource PressableButtonBase}">
         <Setter Property="Background" Value="#E0E0E0"/>
         <Setter Property="Foreground" Value="#333333"/>
         <Setter Property="FontSize" Value="13"/>
@@ -115,7 +136,7 @@
 
     <!-- Preset Button (白背景+グレー枠+ニュートラル文字、HIF試験配分プリセットで使用。
          属性はボタン内のカラーインジケータ(ドット/バー)で表現し、全ボタンを同一書式に揃える) -->
-    <Style x:Key="PresetButton" TargetType="Button">
+    <Style x:Key="PresetButton" TargetType="Button" BasedOn="{StaticResource PressableButtonBase}">
         <Setter Property="FontSize" Value="11"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="#374151"/>
@@ -151,7 +172,7 @@
     </Style>
 
     <!-- Danger Button (赤背景+白文字、削除アクション用) -->
-    <Style x:Key="DangerButton" TargetType="Button">
+    <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource PressableButtonBase}">
         <Setter Property="Background" Value="#E53935"/>
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="FontSize" Value="13"/>
