@@ -43,7 +43,14 @@ export interface ExamAllocation {
 }
 
 /** 試験配分のプリセット種別 */
-export type ExamAllocationPreset = 'vo_all' | 'da_all' | 'vi_all' | 'equal';
+export type ExamAllocationPreset =
+  | 'vo_all'
+  | 'da_all'
+  | 'vi_all'
+  | 'vo_da'
+  | 'da_vi'
+  | 'vo_vi'
+  | 'equal';
 
 /** 公開レッスン日の一括デフォルト（メイン/サブ） */
 export interface BulkLessonDefault {
@@ -500,7 +507,16 @@ export const useHifStore = create<HifState>((set, get) => ({
       if (preset === 'vo_all') newAllocations[w.week] = { vo: d, da: 0, vi: 0 };
       else if (preset === 'da_all') newAllocations[w.week] = { vo: 0, da: d, vi: 0 };
       else if (preset === 'vi_all') newAllocations[w.week] = { vo: 0, da: 0, vi: d };
-      else if (preset === 'equal') {
+      else if (preset === 'vo_da') {
+        const h = Math.floor(d / 2);
+        newAllocations[w.week] = { vo: d - h, da: h, vi: 0 };
+      } else if (preset === 'da_vi') {
+        const h = Math.floor(d / 2);
+        newAllocations[w.week] = { vo: 0, da: d - h, vi: h };
+      } else if (preset === 'vo_vi') {
+        const h = Math.floor(d / 2);
+        newAllocations[w.week] = { vo: d - h, da: 0, vi: h };
+      } else if (preset === 'equal') {
         const q = Math.floor(d / 3);
         const r = d - q * 3;
         newAllocations[w.week] = { vo: q + r, da: q, vi: q };

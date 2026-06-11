@@ -106,38 +106,90 @@
                                         FontSize="11" Padding="10,4"/>
                             </StackPanel>
 
-                            <!-- 試験配分一括 -->
-                            <StackPanel Orientation="Horizontal">
+                            <!-- 試験配分一括: 全ボタンを白背景+カラーインジケータの同一書式に統一し、
+                                 全振り/2分割/均等をグループ分け表示 (Web版と同デザイン) -->
+                            <WrapPanel>
                                 <TextBlock Text="試験配分:" FontSize="12" Foreground="#555"
-                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <Button Content="Vo 全振り"
-                                        Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_all"
-                                        Style="{StaticResource TintedOutlineButton}"
-                                        Background="{StaticResource VoBgBrush}"
-                                        Foreground="{StaticResource VoBrushDark}"
-                                        BorderBrush="{StaticResource VoBrushDark}"
-                                        Margin="0,0,4,0"/>
-                                <Button Content="Da 全振り"
-                                        Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="da_all"
-                                        Style="{StaticResource TintedOutlineButton}"
-                                        Background="{StaticResource DaBgBrush}"
-                                        Foreground="{StaticResource DaBrushDark}"
-                                        BorderBrush="{StaticResource DaBrushDark}"
-                                        Margin="0,0,4,0"/>
-                                <Button Content="Vi 全振り"
-                                        Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vi_all"
-                                        Style="{StaticResource TintedOutlineButton}"
-                                        Background="{StaticResource ViBgBrush}"
-                                        Foreground="{StaticResource ViBrushDark}"
-                                        BorderBrush="{StaticResource ViBrushDark}"
-                                        Margin="0,0,4,0"/>
-                                <Button Content="均等3分割"
-                                        Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="equal"
-                                        Style="{StaticResource TintedOutlineButton}"
-                                        Background="White"
-                                        Foreground="#555555"
-                                        BorderBrush="#BDBDBD"/>
-                            </StackPanel>
+                                           VerticalAlignment="Center" Margin="0,0,8,4"/>
+
+                                <!-- 1極グループ (単色ドット + 「全振り」) -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <Button Style="{StaticResource PresetButton}" Margin="0,0,6,0"
+                                            Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_all">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Fill="{StaticResource VoTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBlock Text="Vo 全振り" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource PresetButton}" Margin="0,0,6,0"
+                                            Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="da_all">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Fill="{StaticResource DaTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBlock Text="Da 全振り" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource PresetButton}"
+                                            Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vi_all">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Fill="{StaticResource ViTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBlock Text="Vi 全振り" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- 区切り -->
+                                <Border Width="1" Height="20" Background="#D1D5DB" Margin="6,0,6,4" VerticalAlignment="Center"/>
+
+                                <!-- 2極グループ (2色ツインバー + 「2極」) -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <Button Style="{StaticResource PresetButton}" Margin="0,0,6,0" ToolTip="Vo・Da 2極化"
+                                            Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_da">
+                                        <StackPanel Orientation="Horizontal">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                                                <Border Width="6" Height="12" Background="{StaticResource VoTextBrush}" CornerRadius="2,0,0,2"/>
+                                                <Border Width="6" Height="12" Background="{StaticResource DaTextBrush}" CornerRadius="0,2,2,0" Margin="2,0,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Text="VoDa 2極" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource PresetButton}" Margin="0,0,6,0" ToolTip="Da・Vi 2極化"
+                                            Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="da_vi">
+                                        <StackPanel Orientation="Horizontal">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                                                <Border Width="6" Height="12" Background="{StaticResource DaTextBrush}" CornerRadius="2,0,0,2"/>
+                                                <Border Width="6" Height="12" Background="{StaticResource ViTextBrush}" CornerRadius="0,2,2,0" Margin="2,0,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Text="DaVi 2極" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource PresetButton}" ToolTip="Vo・Vi 2極化"
+                                            Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_vi">
+                                        <StackPanel Orientation="Horizontal">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                                                <Border Width="6" Height="12" Background="{StaticResource VoTextBrush}" CornerRadius="2,0,0,2"/>
+                                                <Border Width="6" Height="12" Background="{StaticResource ViTextBrush}" CornerRadius="0,2,2,0" Margin="2,0,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Text="VoVi 2極" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- 区切り -->
+                                <Border Width="1" Height="20" Background="#D1D5DB" Margin="6,0,6,4" VerticalAlignment="Center"/>
+
+                                <!-- 3分割 (グレーの3バー + 「均等」) -->
+                                <Button Style="{StaticResource PresetButton}" Margin="0,0,0,4"
+                                        Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="equal">
+                                    <StackPanel Orientation="Horizontal">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                                            <Border Width="4" Height="12" Background="{StaticResource VoTextBrush}" CornerRadius="2"/>
+                                            <Border Width="4" Height="12" Background="{StaticResource DaTextBrush}" CornerRadius="2" Margin="2,0,0,0"/>
+                                            <Border Width="4" Height="12" Background="{StaticResource ViTextBrush}" CornerRadius="2" Margin="2,0,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock Text="均等 3分割" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </WrapPanel>
                         </StackPanel>
                     </Border>
 

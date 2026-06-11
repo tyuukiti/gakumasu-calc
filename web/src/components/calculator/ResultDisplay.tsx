@@ -45,10 +45,10 @@ export default function ResultDisplay() {
         const widthPercent = Math.min((rawValue / statCap) * 100, 100);
         const widthBasePercent = Math.min((rawValueBase / statCap) * 100, 100);
         return (
-          <div key={key} className="flex items-center gap-3">
+          <div key={key} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:flex-nowrap sm:gap-3">
             <span className="w-14 text-sm font-bold" style={{ color }}>{label}</span>
             <div
-              className="relative flex-1 h-7 rounded-full overflow-hidden"
+              className="relative order-last w-full h-7 rounded-full overflow-hidden sm:order-none sm:w-auto sm:flex-1"
               style={{ backgroundColor: bgColor }}
             >
               {/* 合計バー（暗色） — 差分が右端に暗く見える */}
@@ -69,7 +69,7 @@ export default function ResultDisplay() {
                 }}
               />
             </div>
-            <div className="w-20 text-right">
+            <div className="w-20 text-right ml-auto sm:ml-0">
               <span
                 className={`block text-sm font-mono font-bold ${atCap ? 'text-red-500' : ''}`}
                 title={atCap ? `実ゲーム表示値 ${cappedValue} (cap前 ${rawValue})` : undefined}

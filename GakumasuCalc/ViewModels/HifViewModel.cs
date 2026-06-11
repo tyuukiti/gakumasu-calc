@@ -439,6 +439,15 @@ public class HifViewModel : ViewModelBase
                 case "vi_all":
                     item.ExamVoAlloc = 0; item.ExamDaAlloc = 0; item.ExamViAlloc = d;
                     break;
+                case "vo_da":
+                    item.ExamVoAlloc = d - d / 2; item.ExamDaAlloc = d / 2; item.ExamViAlloc = 0;
+                    break;
+                case "da_vi":
+                    item.ExamVoAlloc = 0; item.ExamDaAlloc = d - d / 2; item.ExamViAlloc = d / 2;
+                    break;
+                case "vo_vi":
+                    item.ExamVoAlloc = d - d / 2; item.ExamDaAlloc = 0; item.ExamViAlloc = d / 2;
+                    break;
                 case "equal":
                     int q = d / 3;
                     int r = d - q * 3;

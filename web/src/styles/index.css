@@ -21,3 +21,14 @@ body {
   background-color: #f5f5f5;
   color: #333;
 }
+
+/* 全ボタン共通のクリック押下フィードバック (押すと少し縮む)。
+   base レイヤに置くことで、個別の transform/transition ユーティリティがあれば上書き可能。 */
+@layer base {
+  button {
+    transition: transform 0.1s ease;
+  }
+  button:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+}

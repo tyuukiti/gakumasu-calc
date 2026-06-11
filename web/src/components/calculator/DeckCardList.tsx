@@ -89,7 +89,7 @@ export default function DeckCardList() {
                 setExpandedIndex(isExpanded ? null : index);
               }}
             >
-              <div className="flex items-center gap-2 px-3 py-2">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3 py-2 sm:flex-nowrap sm:gap-2">
                 {/* Type badge */}
                 <span
                   className="text-xs font-bold px-1.5 py-0.5 rounded"
@@ -120,13 +120,13 @@ export default function DeckCardList() {
                   </span>
                 )}
 
-                {/* Card name */}
-                <span className={`flex-1 text-sm truncate ${cs.is_rental ? 'text-orange-600' : cs.is_required ? 'text-purple-600' : 'text-gray-800'}`}>
+                {/* Card name: 狭幅では独立行に全幅表示して名前を省略させない */}
+                <span className={`order-first w-full break-words text-sm sm:order-none sm:w-auto sm:flex-1 sm:min-w-0 sm:truncate ${cs.is_rental ? 'text-orange-600' : cs.is_required ? 'text-purple-600' : 'text-gray-800'}`}>
                   {displayName}
                 </span>
 
-                {/* Stat value */}
-                <span className="text-sm font-mono font-bold text-[var(--color-accent)]">
+                {/* Stat value (狭幅では2行目の右寄せ起点) */}
+                <span className="ml-auto sm:ml-0 text-sm font-mono font-bold text-[var(--color-accent)]">
                   +{cs.total_value}
                   {cs.team_bonus_total > 0 && (
                     <span className="text-xs font-normal text-gray-500 ml-1">
