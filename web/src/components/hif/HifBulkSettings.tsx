@@ -1,3 +1,4 @@
+import type { ExamAllocationPreset } from '../../stores/hifStore';
 import { useHifStore } from '../../stores/hifStore';
 
 type Stat = 'vo' | 'da' | 'vi';
@@ -15,6 +16,13 @@ const STAT_BG: Record<Stat, string> = {
   da: 'var(--color-da-bg)',
   vi: 'var(--color-vi-bg)',
 };
+
+/** 2分割プリセット (配分値を2属性で半分ずつ。端数は前者へ) */
+const SPLIT_PRESETS: Array<{ preset: ExamAllocationPreset; a: Stat; b: Stat }> = [
+  { preset: 'vo_da', a: 'vo', b: 'da' },
+  { preset: 'da_vi', a: 'da', b: 'vi' },
+  { preset: 'vo_vi', a: 'vo', b: 'vi' },
+];
 
 /**
  * HIF用 一括設定セクション。
@@ -134,6 +142,21 @@ export default function HifBulkSettings() {
           >
             Vi 全振り
           </button>
+          {SPLIT_PRESETS.map(({ preset, a, b }) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => applyExam(preset)}
+              title={`${STAT_LABEL[a]}・${STAT_LABEL[b]} 2分割`}
+              className="px-2 py-1 border border-gray-300 rounded text-xs font-semibold cursor-pointer hover:opacity-80"
+              style={{
+                background: `linear-gradient(90deg, ${STAT_BG[a]} 0 50%, ${STAT_BG[b]} 50% 100%)`,
+              }}
+            >
+              <span style={{ color: STAT_TEXT[a] }}>{STAT_LABEL[a]}</span>
+              <span style={{ color: STAT_TEXT[b] }}>{STAT_LABEL[b]}</span>
+            </button>
+          ))}
           <button
             type="button"
             onClick={() => applyExam('equal')}

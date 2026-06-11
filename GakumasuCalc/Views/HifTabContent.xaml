@@ -107,37 +107,80 @@
                             </StackPanel>
 
                             <!-- 試験配分一括 -->
-                            <StackPanel Orientation="Horizontal">
+                            <WrapPanel>
                                 <TextBlock Text="試験配分:" FontSize="12" Foreground="#555"
-                                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                           VerticalAlignment="Center" Margin="0,0,8,4"/>
                                 <Button Content="Vo 全振り"
                                         Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_all"
                                         Style="{StaticResource TintedOutlineButton}"
                                         Background="{StaticResource VoBgBrush}"
                                         Foreground="{StaticResource VoBrushDark}"
                                         BorderBrush="{StaticResource VoBrushDark}"
-                                        Margin="0,0,4,0"/>
+                                        Margin="0,0,4,4"/>
                                 <Button Content="Da 全振り"
                                         Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="da_all"
                                         Style="{StaticResource TintedOutlineButton}"
                                         Background="{StaticResource DaBgBrush}"
                                         Foreground="{StaticResource DaBrushDark}"
                                         BorderBrush="{StaticResource DaBrushDark}"
-                                        Margin="0,0,4,0"/>
+                                        Margin="0,0,4,4"/>
                                 <Button Content="Vi 全振り"
                                         Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vi_all"
                                         Style="{StaticResource TintedOutlineButton}"
                                         Background="{StaticResource ViBgBrush}"
                                         Foreground="{StaticResource ViBrushDark}"
                                         BorderBrush="{StaticResource ViBrushDark}"
-                                        Margin="0,0,4,0"/>
+                                        Margin="0,0,4,4"/>
+                                <!-- 2分割プリセット (中央で2色に分割) -->
+                                <Button Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_da"
+                                        ToolTip="Vo・Da 2分割"
+                                        Style="{StaticResource TintedOutlineButton}"
+                                        BorderBrush="#BDBDBD" Margin="0,0,4,4">
+                                    <Button.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#FFE0EC" Offset="0.0"/>
+                                            <GradientStop Color="#FFE0EC" Offset="0.5"/>
+                                            <GradientStop Color="#E0EEFF" Offset="0.5"/>
+                                            <GradientStop Color="#E0EEFF" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </Button.Background>
+                                    <TextBlock><Run Text="Vo" Foreground="{StaticResource VoBrushDark}"/><Run Text="Da" Foreground="{StaticResource DaBrushDark}"/></TextBlock>
+                                </Button>
+                                <Button Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="da_vi"
+                                        ToolTip="Da・Vi 2分割"
+                                        Style="{StaticResource TintedOutlineButton}"
+                                        BorderBrush="#BDBDBD" Margin="0,0,4,4">
+                                    <Button.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#E0EEFF" Offset="0.0"/>
+                                            <GradientStop Color="#E0EEFF" Offset="0.5"/>
+                                            <GradientStop Color="#FFF9E0" Offset="0.5"/>
+                                            <GradientStop Color="#FFF9E0" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </Button.Background>
+                                    <TextBlock><Run Text="Da" Foreground="{StaticResource DaBrushDark}"/><Run Text="Vi" Foreground="{StaticResource ViBrushDark}"/></TextBlock>
+                                </Button>
+                                <Button Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="vo_vi"
+                                        ToolTip="Vo・Vi 2分割"
+                                        Style="{StaticResource TintedOutlineButton}"
+                                        BorderBrush="#BDBDBD" Margin="0,0,4,4">
+                                    <Button.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#FFE0EC" Offset="0.0"/>
+                                            <GradientStop Color="#FFE0EC" Offset="0.5"/>
+                                            <GradientStop Color="#FFF9E0" Offset="0.5"/>
+                                            <GradientStop Color="#FFF9E0" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </Button.Background>
+                                    <TextBlock><Run Text="Vo" Foreground="{StaticResource VoBrushDark}"/><Run Text="Vi" Foreground="{StaticResource ViBrushDark}"/></TextBlock>
+                                </Button>
                                 <Button Content="均等3分割"
                                         Command="{Binding HifVm.ApplyExamPresetCommand}" CommandParameter="equal"
                                         Style="{StaticResource TintedOutlineButton}"
                                         Background="White"
                                         Foreground="#555555"
-                                        BorderBrush="#BDBDBD"/>
-                            </StackPanel>
+                                        BorderBrush="#BDBDBD" Margin="0,0,0,4"/>
+                            </WrapPanel>
                         </StackPanel>
                     </Border>
 
