@@ -163,10 +163,10 @@ export default function HifBulkSettings() {
             onClick={() => applyExam('equal')}
             className={btnBaseClass}
           >
-            <div className="flex gap-0.5 shrink-0 opacity-40">
-              <span className="w-1 h-3 rounded-sm bg-gray-500" />
-              <span className="w-1 h-3 rounded-sm bg-gray-500" />
-              <span className="w-1 h-3 rounded-sm bg-gray-500" />
+            <div className="flex gap-0.5 shrink-0">
+              {STATS.map((s) => (
+                <span key={s} className="w-1 h-3 rounded-sm" style={{ backgroundColor: STAT_COLOR_VAR[s] }} />
+              ))}
             </div>
             均等 3分割
           </button>
