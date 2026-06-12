@@ -114,7 +114,7 @@ public class TurnChoiceViewModel : ViewModelBase
             ActionType.DaClass => "Da授業",
             ActionType.ViClass => "Vi授業",
             ActionType.Outing => "お出かけ",
-            ActionType.Rest => "休憩",
+            ActionType.Rest => "休む",
             ActionType.Consultation => "相談",
             ActionType.ActivitySupply => "活動支給",
             ActionType.SpecialTraining => "特別指導",

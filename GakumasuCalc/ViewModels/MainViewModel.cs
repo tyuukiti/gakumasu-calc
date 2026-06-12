@@ -1260,9 +1260,10 @@ public class MainViewModel : ViewModelBase
         foreach (var tc in TurnChoices)
         {
             if (tc.IsFixedEvent || tc.AvailableActions.Count == 0) continue;
-            bool allClass = tc.AvailableActions.All(a =>
+            // 授業を含む週 (休む等が混在する週もあるため Any 判定)
+            bool hasClass = tc.AvailableActions.Any(a =>
                 a is ActionType.VoClass or ActionType.DaClass or ActionType.ViClass);
-            if (!allClass) continue;
+            if (!hasClass) continue;
             if (tc.AvailableActions.Contains(targetAction))
                 tc.SelectedAction = targetAction;
         }
@@ -1420,6 +1421,16 @@ public class MainViewModel : ViewModelBase
             System.Windows.MessageBox.Show(
                 "スケジュールが未設定です。",
                 "スケジュール未設定", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        // 休むはプロデュース中4回まで (初レジェンド仕様)
+        int restCount = turnChoices.Count(tc => tc.ChosenAction == ActionType.Rest);
+        if (restCount > 4)
+        {
+            System.Windows.MessageBox.Show(
+                $"休むはプロデュース中4回までです（現在 {restCount} 回）。",
+                "休む回数超過", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
             return;
         }
 

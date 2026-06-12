@@ -158,7 +158,8 @@ public class StatusCalculationService
             ActionType.ViClass => CalculateClassGain(week, "vi", cards, triggerCounters, uncapLevels),
             ActionType.Outing => CalculateOutingGain(week, cards, triggerCounters, uncapLevels),
             ActionType.Consultation => CalculateConsultationGain(week, cards, triggerCounters, uncapLevels),
-            ActionType.Rest => StatusValues.Zero,
+            // 休む: ステータス獲得なし(体力回復はモデル外)だが「休む選択時」トリガーは発火する
+            ActionType.Rest => FireTrigger("rest", cards, triggerCounters, uncapLevels),
             ActionType.ActivitySupply => CalculateSupplyGain(turnChoice, plan, cards, triggerCounters, uncapLevels),
             ActionType.SpecialTraining => CalculateSpecialTrainingGain(week, cards, triggerCounters, uncapLevels),
             _ => StatusValues.Zero
@@ -381,6 +382,10 @@ public class StatusCalculationService
             {
                 counts["activity_supply"] = counts.GetValueOrDefault("activity_supply") + 1;
             }
+            else if (a == ActionType.Rest)
+            {
+                counts["rest"] = counts.GetValueOrDefault("rest") + 1;
+            }
         }
         foreach (var week in plan.Schedule)
         {
@@ -450,7 +455,7 @@ public class StatusCalculationService
             ActionType.DaClass => "Da授業",
             ActionType.ViClass => "Vi授業",
             ActionType.Outing => "お出かけ",
-            ActionType.Rest => "休憩",
+            ActionType.Rest => "休む",
             ActionType.Consultation => "相談",
             ActionType.ActivitySupply => "活動支給",
             ActionType.SpecialTraining => "特別指導",

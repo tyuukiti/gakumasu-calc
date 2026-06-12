@@ -78,7 +78,7 @@ public class ActionTypeToStringConverter : IValueConverter
                 GakumasuCalc.Models.ActionType.DaClass => "Da授業",
                 GakumasuCalc.Models.ActionType.ViClass => "Vi授業",
                 GakumasuCalc.Models.ActionType.Outing => "お出かけ",
-                GakumasuCalc.Models.ActionType.Rest => "休憩",
+                GakumasuCalc.Models.ActionType.Rest => "休む",
                 GakumasuCalc.Models.ActionType.Consultation => "相談",
                 GakumasuCalc.Models.ActionType.ActivitySupply => "活動支給",
                 GakumasuCalc.Models.ActionType.SpecialTraining => "特別指導",

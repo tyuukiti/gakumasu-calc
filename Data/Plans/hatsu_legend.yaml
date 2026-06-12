@@ -50,10 +50,10 @@
         - type: "vi"
           sp_bonus: { vo: 55, da: 55, vi: 140 }
 
-    # Week 5: おでかけ / 相談 / 活動支給
+    # Week 5: おでかけ / 相談 / 活動支給 / 休む
     - week: 5
       type: "free"
-      available_actions: ["outing", "consultation", "activity_supply"]
+      available_actions: ["outing", "consultation", "activity_supply", "rest"]
 
     # Week 6: 授業 (パラメータ上昇値: 150)
     - week: 6
@@ -79,10 +79,10 @@
         - type: "vi"
           sp_bonus: { vo: 60, da: 60, vi: 180 }
 
-    # Week 8: 相談のみ
+    # Week 8: 相談 / 休む
     - week: 8
       type: "free"
-      available_actions: ["consultation"]
+      available_actions: ["consultation", "rest"]
 
     # Week 9: 特別指導のみ
     - week: 9
@@ -95,7 +95,7 @@
       event_name: "中間試験"
       status_gain: { vo: 80, da: 80, vi: 80 }
 
-    # Week 11: おでかけ / 活動支給 / 休憩 (相談削除軸はカード獲得を抑えるため休む)
+    # Week 11: おでかけ / 活動支給 / 休む (相談削除軸はカード獲得を抑えるため休む)
     - week: 11
       type: "free"
       available_actions: ["outing", "activity_supply", "rest"]
@@ -112,10 +112,10 @@
         - type: "vi"
           sp_bonus: { vo: 70, da: 70, vi: 260 }
 
-    # Week 13: おでかけ / 相談 / 活動支給
+    # Week 13: おでかけ / 相談 / 活動支給 / 休む
     - week: 13
       type: "free"
-      available_actions: ["outing", "consultation", "activity_supply"]
+      available_actions: ["outing", "consultation", "activity_supply", "rest"]
 
     # Week 14: Vo/Da/Viレッスン (SP Perfect: 550 = 280+90×3)
     - week: 14
@@ -129,10 +129,10 @@
         - type: "vi"
           sp_bonus: { vo: 90, da: 90, vi: 370 }
 
-    # Week 15: 授業 (パラメータ上昇値: 200)
+    # Week 15: 授業 (パラメータ上昇値: 200) / 休む
     - week: 15
       type: "free"
-      available_actions: ["vo_class", "da_class", "vi_class"]
+      available_actions: ["vo_class", "da_class", "vi_class", "rest"]
       classes:
         - type: "vo"
           sp_bonus: { vo: 200, da: 0, vi: 0 }
@@ -153,10 +153,10 @@
         - type: "vi"
           sp_bonus: { vo: 115, da: 115, vi: 570 }
 
-    # Week 17: 相談 / 特別指導
+    # Week 17: 相談 / 特別指導 / 休む
     - week: 17
       type: "free"
-      available_actions: ["consultation", "special_training"]
+      available_actions: ["consultation", "special_training", "rest"]
 
     # Week 18: 最終試験 (固定イベント) 1位: 全パラメータ+120
     - week: 18

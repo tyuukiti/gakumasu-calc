@@ -2668,7 +2668,7 @@ public class CardScoringService
         "p_item_acquire" => "Pアイテム獲得",
         "p_drink_acquire" => "Pドリンク獲得",
         "consultation_drink" => "相談ドリンク交換",
-        "rest" => "休憩",
+        "rest" => "休む",
         "vo_sp_end" => "VoSP終了",
         "da_sp_end" => "DaSP終了",
         "vi_sp_end" => "ViSP終了",
@@ -2777,6 +2777,9 @@ public class CardScoringService
                         break;
                     case ActionType.SpecialTraining:
                         counts["special_training"] = counts.GetValueOrDefault("special_training") + 1;
+                        break;
+                    case ActionType.Rest:
+                        counts["rest"] = counts.GetValueOrDefault("rest") + 1;
                         break;
                 }
             }

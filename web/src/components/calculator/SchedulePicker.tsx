@@ -16,7 +16,7 @@ const ACTION_LABEL: Record<string, string> = {
   da_class: 'Da授業',
   vi_class: 'Vi授業',
   outing: 'お出かけ',
-  rest: '休憩',
+  rest: '休む',
   consultation: '相談',
   activity_supply: '活動支給',
   special_training: '特別指導',
@@ -136,9 +136,6 @@ function ActionChoice({
     return <span className="text-gray-700">{ACTION_LABEL[acts[0]] ?? acts[0]}</span>;
   }
 
-  const isClass = acts.every((a) => a.endsWith('_class'));
-  const isLesson = acts.every((a) => a.endsWith('_lesson'));
-
   return (
     <select
       className="border border-gray-300 rounded px-2 py-1 text-xs bg-white"
@@ -146,12 +143,13 @@ function ActionChoice({
       onChange={(e) => onChange({ action: e.target.value as ActionType })}
     >
       {acts.map((a) => {
+        // 授業/レッスンは選択肢ごとに上昇値を併記 (休む等と混在する週があるため per-option 判定)
         let label = ACTION_LABEL[a] ?? a;
-        if (isClass) {
+        if (a.endsWith('_class')) {
           const stat = a.split('_')[0] as Stat;
           const val = week.classes.find((c) => c.type === stat)?.sp_bonus[stat] ?? 0;
           label = `${STAT_LABEL[stat]}授業 (+${val})`;
-        } else if (isLesson) {
+        } else if (a.endsWith('_lesson')) {
           const stat = a.split('_')[0] as Stat;
           const val = week.lessons.find((l) => l.type === stat)?.sp_bonus[stat] ?? 0;
           label = `${STAT_LABEL[stat]}レッスン (+${val})`;

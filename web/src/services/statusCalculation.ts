@@ -256,7 +256,8 @@ function calculateWeekGain(
     case 'consultation':
       return calculateConsultationGain(week, cards, triggerCounters, uncapLevels);
     case 'rest':
-      return svZero();
+      // 休む: ステータス獲得なし(体力回復はモデル外)だが「休む選択時」トリガーは発火する
+      return fireTrigger('rest', cards, triggerCounters, uncapLevels);
     case 'activity_supply':
       return calculateSupplyGain(turnChoice, plan, cards, triggerCounters, uncapLevels);
     case 'special_training':
@@ -518,6 +519,8 @@ function computeBaseTriggerCounts(
       counts.special_training = (counts.special_training ?? 0) + 1;
     } else if (a === 'activity_supply') {
       counts.activity_supply = (counts.activity_supply ?? 0) + 1;
+    } else if (a === 'rest') {
+      counts.rest = (counts.rest ?? 0) + 1;
     }
   }
   for (const week of plan.schedule) {
@@ -623,7 +626,7 @@ function getActionName(
     case 'outing':
       return 'お出かけ';
     case 'rest':
-      return '休憩';
+      return '休む';
     case 'consultation':
       return '相談';
     case 'activity_supply':

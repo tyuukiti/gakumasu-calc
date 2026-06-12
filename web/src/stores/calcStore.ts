@@ -1127,7 +1127,8 @@ export const useCalcStore = create<CalcState>((set, get) => ({
     const next: Record<number, ScheduleChoice> = { ...existing };
     for (const w of plan.schedule) {
       const acts = w.available_actions;
-      if (acts.length > 0 && acts.every((a) => a.endsWith('_class')) && acts.includes(action)) {
+      // 授業を含む週 (休む等が混在する週もあるため some 判定)
+      if (acts.some((a) => a.endsWith('_class')) && acts.includes(action)) {
         next[w.week] = { action };
       }
     }
@@ -1210,6 +1211,14 @@ export const useCalcStore = create<CalcState>((set, get) => ({
         if (turnChoices.length === 0) {
           set({ errorMessage: 'スケジュールが未設定です' });
           trackEvent('calculation_error', { error_message: 'スケジュールが未設定です' });
+          return;
+        }
+
+        // 休むはプロデュース中4回まで (初レジェンド仕様)
+        const restCount = turnChoices.filter((tc) => tc.chosen_action === 'rest').length;
+        if (restCount > 4) {
+          set({ errorMessage: `休むはプロデュース中4回までです（現在 ${restCount} 回）` });
+          trackEvent('calculation_error', { error_message: '休む回数超過' });
           return;
         }
 
