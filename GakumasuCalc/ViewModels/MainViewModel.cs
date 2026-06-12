@@ -2614,6 +2614,32 @@ public class MainViewModel : ViewModelBase
     private void ApplyEventTemplate(EventCountTemplate template)
     {
         ApplyCounts(template.Counts);
+        ApplyTemplateWeekActionsToSchedule(template);
+    }
+
+    /// <summary>
+    /// 日程方式: テンプレートの week_actions をスケジュールへ反映する（活動支給軸/相談削除軸の切替）。
+    /// 直後の再適用(SelectedEventTemplate セッター)が新日程を使えるようスナップショットも更新する。
+    /// </summary>
+    private void ApplyTemplateWeekActionsToSchedule(EventCountTemplate template)
+    {
+        if (!IsExplicitSchedulePlan || _selectedPlan == null) return;
+        if (template.PlanId != _selectedPlan.Id) return;
+        if (template.WeekActions == null || template.WeekActions.Count == 0) return;
+
+        foreach (var tc in TurnChoices)
+        {
+            if (tc.IsFixedEvent) continue;
+            if (template.WeekActions.TryGetValue(tc.Week, out var actionStr)
+                && TurnChoiceViewModel.TryParseAction(actionStr, out var action)
+                && tc.AvailableActions.Contains(action))
+            {
+                tc.SelectedAction = action;
+            }
+        }
+        CacheScheduleSelections();
+        if (_isScheduleMode)
+            _scheduleTurnChoices = TurnChoices.Where(t => !t.IsFixedEvent).Select(t => t.ToTurnChoice()).ToList();
     }
 
     /// <summary>AdditionalCounts の各値を入力欄プロパティへ反映する（テンプレート/プリセット共通）。</summary>

@@ -783,15 +783,34 @@ export const useCalcStore = create<CalcState>((set, get) => ({
         (counts as Record<string, number>)[key] = value;
       }
     }
-    set({ additionalCounts: counts, selectedTemplateName: template.name });
+
+    // 日程方式: テンプレートの week_actions をスケジュールへ反映（活動支給軸/相談削除軸の切替）
+    const state = get();
+    const planId = state.selectedPlanId;
+    const extra: Partial<CalcState> = {};
+    if (SCHEDULE_PLAN_IDS.has(planId) && template.plan_id === planId && template.week_actions) {
+      const plan = useAppStore.getState().plans.find((p) => p.id === planId);
+      if (plan) {
+        const next: Record<number, ScheduleChoice> = { ...(state.scheduleChoices[planId] ?? {}) };
+        for (const [weekStr, action] of Object.entries(template.week_actions)) {
+          const week = Number(weekStr);
+          const w = plan.schedule.find((x) => x.week === week);
+          if (w && w.available_actions.includes(action)) {
+            next[week] = { action };
+          }
+        }
+        extra.scheduleChoices = { ...state.scheduleChoices, [planId]: next };
+        // 直後の再適用が新日程を使えるようスナップショットも更新
+        extra._lastTurnChoices = buildTurnChoicesFromSchedule(plan, next);
+      }
+    }
+
+    set({ additionalCounts: counts, selectedTemplateName: template.name, ...extra });
 
     // Re-apply pattern to refresh turn choices using the new template's week_actions
-    const state = get();
-    if (state.calculationResult && state.deckResults.length > 0) {
-      const updates = applySelectedPatternImpl(
-        { ...state, additionalCounts: counts, selectedTemplateName: template.name },
-        state.selectedPatternIndex,
-      );
+    const after = get();
+    if (after.calculationResult && after.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(after, after.selectedPatternIndex);
       set(updates as Partial<CalcState>);
     }
   },
