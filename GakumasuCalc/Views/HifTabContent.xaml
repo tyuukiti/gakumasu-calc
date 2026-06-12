@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:GakumasuCalc.ViewModels"
              xmlns:conv="clr-namespace:GakumasuCalc.Converters"
-             xmlns:models="clr-namespace:GakumasuCalc.Models">
+             xmlns:models="clr-namespace:GakumasuCalc.Models"
+             xmlns:views="clr-namespace:GakumasuCalc.Views">
 
     <UserControl.Resources>
         <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
@@ -607,11 +608,7 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
                                            VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBox Text="{Binding VoSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                         Style="{StaticResource NumericTextBox}"
-                                         Background="White"
-                                         Width="48" FontSize="13" Padding="6,3"
-                                         HorizontalContentAlignment="Center"/>
+                                <views:NumberSpinner Value="{Binding VoSpCount}" Minimum="0" Maximum="6" Width="64"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -626,11 +623,7 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
                                            VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBox Text="{Binding DaSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                         Style="{StaticResource NumericTextBox}"
-                                         Background="White"
-                                         Width="48" FontSize="13" Padding="6,3"
-                                         HorizontalContentAlignment="Center"/>
+                                <views:NumberSpinner Value="{Binding DaSpCount}" Minimum="0" Maximum="6" Width="64"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -645,11 +638,7 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <TextBlock Text="SP率枚数" FontSize="12" Foreground="#555"
                                            VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBox Text="{Binding ViSpCount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                         Style="{StaticResource NumericTextBox}"
-                                         Background="White"
-                                         Width="48" FontSize="13" Padding="6,3"
-                                         HorizontalContentAlignment="Center"/>
+                                <views:NumberSpinner Value="{Binding ViSpCount}" Minimum="0" Maximum="6" Width="64"/>
                             </StackPanel>
                         </Grid>
                     </Border>
