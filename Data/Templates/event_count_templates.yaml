@@ -149,7 +149,7 @@ templates:
     3: activity_supply
     5: consultation
     8: consultation
-    11: activity_supply
+    11: rest
     13: consultation
     17: consultation
   counts:
@@ -177,7 +177,7 @@ templates:
     3: activity_supply
     5: consultation
     8: consultation
-    11: activity_supply
+    11: rest
     13: consultation
     17: consultation
   counts:
@@ -206,7 +206,7 @@ templates:
     3: activity_supply
     5: consultation
     8: consultation
-    11: activity_supply
+    11: rest
     13: consultation
     17: consultation
   counts:
@@ -235,7 +235,7 @@ templates:
     3: activity_supply
     5: consultation
     8: consultation
-    11: activity_supply
+    11: rest
     13: consultation
     17: consultation
   counts:
@@ -264,7 +264,7 @@ templates:
     3: activity_supply
     5: consultation
     8: consultation
-    11: activity_supply
+    11: rest
     13: consultation
     17: consultation
   counts:

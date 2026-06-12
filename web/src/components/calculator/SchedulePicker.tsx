@@ -16,6 +16,7 @@ const ACTION_LABEL: Record<string, string> = {
   da_class: 'Da授業',
   vi_class: 'Vi授業',
   outing: 'お出かけ',
+  rest: '休憩',
   consultation: '相談',
   activity_supply: '活動支給',
   special_training: '特別指導',

@@ -95,10 +95,10 @@
       event_name: "中間試験"
       status_gain: { vo: 80, da: 80, vi: 80 }
 
-    # Week 11: おでかけ / 活動支給
+    # Week 11: おでかけ / 活動支給 / 休憩 (相談削除軸はカード獲得を抑えるため休む)
     - week: 11
       type: "free"
-      available_actions: ["outing", "activity_supply"]
+      available_actions: ["outing", "activity_supply", "rest"]
 
     # Week 12: Vo/Da/Viレッスン (SP Perfect: 400 = 190+70×3)
     - week: 12
