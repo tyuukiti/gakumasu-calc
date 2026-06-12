@@ -837,7 +837,9 @@ public class MainViewModel : ViewModelBase
             {
                 ApplyEventTemplate(value);
                 // 既に計算済みならターン選択を道中テンプレートで再適用
-                if (_deckResults.Count > 0 && SelectedPattern != null)
+                // (Result != null 必須: タブ切替後は結果をクリア済みのため、
+                //  別プランの古い _deckResults で再適用しない)
+                if (Result != null && _deckResults.Count > 0 && SelectedPattern != null)
                     ApplySelectedPattern(SelectedPattern.Index);
             }
         }
@@ -1768,8 +1770,15 @@ public class MainViewModel : ViewModelBase
 
         FilterEventCountTemplates();
 
+        // 前プランの結果・パターンを完全にクリア (Web版 setSelectedPlanId と同等)。
+        // 残すと別プランの古い _deckResults でパターン再適用される事故の温床になる。
         Result = null;
         DeckCards.Clear();
+        _deckResults = new List<CardScoringService.DeckResult>();
+        PatternResults.Clear();
+        _selectedPattern = null;
+        OnPropertyChanged(nameof(SelectedPattern));
+        OnPropertyChanged(nameof(PatternResults));
         OnPropertyChanged(nameof(DeckLabel));
         OnPropertyChanged(nameof(DeckTotal));
     }
