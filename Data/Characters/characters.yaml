@@ -4,6 +4,8 @@
 # - para_bonus: 週次レッスンの上昇値に乗算される属性別%（サポカ para_bonus と同列加算、3凸前提の最大値）
 # - uncap3_bonus: 3凸時のレッスンボーナス追加分（OFFで減算）
 # - step4_bonus: 一部キャラに開放されるSTEP4の追加分。base_status_bonus(固定値)と para_bonus(%)の両方を上乗せ（ONで加算、デフォルトON）
+# - nia_criteria: N.I.Aオーディションの審査基準 ("balance"=バランス / "concentrate"=突出)。オーディション種別表の行選択に使う
+# - nia_trend: N.I.Aの流行1/流行2/流行3 がそれぞれ対応する属性 [流行1, 流行2, 流行3]（vo/da/vi）。未設定キャラは流行不明＝獲得0
 # 並びは学園アイドルマスター公式の順
 characters:
   - id: "char_saki"
@@ -12,6 +14,8 @@ characters:
     initial: "咲"
     base_status_bonus: { vo: 100, da: 100, vi: 105 }
     para_bonus: { vo: 19.5, da: 19.5, vi: 22.5 }
+    nia_criteria: "balance"
+    nia_trend: ["vi", "da", "vo"]
     uncap3_bonus: { vo: 3.0, da: 3.0, vi: 2.0 }
 
   - id: "char_temari"
@@ -20,6 +24,8 @@ characters:
     initial: "手"
     base_status_bonus: { vo: 120, da: 100, vi: 80 }
     para_bonus: { vo: 27.0, da: 26.5, vi: 8.5 }
+    nia_criteria: "concentrate"
+    nia_trend: ["vo", "da", "vi"]
     uncap3_bonus: { vo: 3.0, da: 5.0, vi: 0 }
     step4_bonus:
       base_status_bonus: { vo: 0, da: 0, vi: 0 }
@@ -31,6 +37,8 @@ characters:
     initial: "こ"
     base_status_bonus: { vo: 90, da: 90, vi: 120 }
     para_bonus: { vo: 8.0, da: 29.5, vi: 25.5 }
+    nia_criteria: "concentrate"
+    nia_trend: ["da", "vi", "vo"]
     uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
 
   - id: "char_tsubame"
@@ -47,6 +55,8 @@ characters:
     initial: "麻"
     base_status_bonus: { vo: 125, da: 90, vi: 100 }
     para_bonus: { vo: 25.0, da: 8.0, vi: 28.0 }
+    nia_criteria: "concentrate"
+    nia_trend: ["vo", "vi", "da"]
     uncap3_bonus: { vo: 3.0, da: 0, vi: 5.0 }
     step4_bonus:
       base_status_bonus: { vo: 0, da: 0, vi: 15 }
@@ -58,6 +68,8 @@ characters:
     initial: "リ"
     base_status_bonus: { vo: 80, da: 100, vi: 115 }
     para_bonus: { vo: 18.0, da: 25.0, vi: 21.0 }
+    nia_criteria: "balance"
+    nia_trend: ["vi", "da", "vo"]
     uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
     step4_bonus:
       base_status_bonus: { vo: 15, da: 0, vi: 5 }
@@ -69,6 +81,8 @@ characters:
     initial: "千"
     base_status_bonus: { vo: 75, da: 115, vi: 125 }
     para_bonus: { vo: 10.0, da: 29.0, vi: 23.5 }
+    nia_criteria: "concentrate"
+    nia_trend: ["da", "vi", "vo"]
     uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
     step4_bonus:
       base_status_bonus: { vo: 20, da: 10, vi: 10 }
@@ -80,6 +94,8 @@ characters:
     initial: "清"
     base_status_bonus: { vo: 100, da: 115, vi: 90 }
     para_bonus: { vo: 9.0, da: 28.0, vi: 26.0 }
+    nia_criteria: "concentrate"
+    nia_trend: ["da", "vi", "vo"]
     uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
     step4_bonus:
       base_status_bonus: { vo: 5, da: 0, vi: 5 }
@@ -91,6 +107,8 @@ characters:
     initial: "広"
     base_status_bonus: { vo: 125, da: 120, vi: 80 }
     para_bonus: { vo: 28.0, da: 24.5, vi: 10.0 }
+    nia_criteria: "balance"
+    nia_trend: ["vo", "da", "vi"]
     uncap3_bonus: { vo: 5.0, da: 5.0, vi: 0 }
     step4_bonus:
       base_status_bonus: { vo: 5, da: 5, vi: 15 }
@@ -102,6 +120,8 @@ characters:
     initial: "星"
     base_status_bonus: { vo: 175, da: 125, vi: 140 }
     para_bonus: { vo: 17.0, da: 8.0, vi: 24.5 }
+    nia_criteria: "balance"
+    nia_trend: ["vi", "vo", "da"]
     uncap3_bonus: { vo: 2.0, da: 0, vi: 4.0 }
 
   - id: "char_misuzu"
@@ -110,6 +130,8 @@ characters:
     initial: "美"
     base_status_bonus: { vo: 85, da: 125, vi: 135 }
     para_bonus: { vo: 31.0, da: 10.0, vi: 20.0 }
+    nia_criteria: "concentrate"
+    nia_trend: ["vo", "vi", "da"]
     uncap3_bonus: { vo: 4.0, da: 0, vi: 2.0 }
     step4_bonus:
       base_status_bonus: { vo: 10, da: 0, vi: 5 }
@@ -121,6 +143,8 @@ characters:
     initial: "佑"
     base_status_bonus: { vo: 90, da: 95, vi: 100 }
     para_bonus: { vo: 23.0, da: 28.0, vi: 15.0 }
+    nia_criteria: "balance"
+    nia_trend: ["da", "vo", "vi"]
     uncap3_bonus: { vo: 3.0, da: 5.0, vi: 0 }
 
   - id: "char_rinami"
@@ -129,6 +153,8 @@ characters:
     initial: "莉"
     base_status_bonus: { vo: 85, da: 110, vi: 110 }
     para_bonus: { vo: 11.0, da: 24.5, vi: 28.5 }
+    nia_criteria: "balance"
+    nia_trend: ["vi", "da", "vo"]
     uncap3_bonus: { vo: 0, da: 3.0, vi: 5.0 }
     step4_bonus:
       base_status_bonus: { vo: 0, da: 10, vi: 15 }

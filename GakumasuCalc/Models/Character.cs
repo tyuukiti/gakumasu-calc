@@ -67,5 +67,13 @@ public class Character
     [YamlMember(Alias = "step4_bonus")]
     public Step4Bonus? Step4Bonus { get; set; }
 
+    /// <summary>N.I.Aオーディションの審査基準 ("balance"=バランス / "concentrate"=突出)。種別表の行選択に使う。</summary>
+    [YamlMember(Alias = "nia_criteria")]
+    public string? NiaCriteria { get; set; }
+
+    /// <summary>N.I.Aの流行1/2/3 が対応する属性 [流行1, 流行2, 流行3]（"vo"/"da"/"vi"）。null＝流行不明で獲得0。</summary>
+    [YamlMember(Alias = "nia_trend")]
+    public List<string>? NiaTrend { get; set; }
+
     public override string ToString() => Name;
 }

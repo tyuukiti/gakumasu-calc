@@ -91,6 +91,12 @@ public class WeekSchedule
     [YamlMember(Alias = "hif_exam_distributed")]
     public int? HifExamDistributed { get; set; }
 
+    /// <summary>
+    /// N.I.Aオーディションの種別ごとの理論値量。キャラの審査基準(NiaCriteria)・流行(NiaTrend)で属性へ振り分ける。
+    /// </summary>
+    [YamlMember(Alias = "nia_audition_tiers")]
+    public List<NiaAuditionTier>? NiaAuditionTiers { get; set; }
+
     public bool IsFree => Type == "free";
     public bool IsFixedEvent => Type == "fixed_event" || Type == "exam" || Type == "audition";
 
@@ -118,6 +124,39 @@ public class LessonConfig
 
     [YamlMember(Alias = "sp_bonus")]
     public StatusValues SpBonus { get; set; } = StatusValues.Zero;
+}
+
+/// <summary>N.I.Aオーディション1種別ぶんの、流行1/2/3別 取得パラメータ量（審査基準で行を選ぶ）。</summary>
+public class NiaTrendAmounts
+{
+    /// <summary>流行1</summary>
+    [YamlMember(Alias = "t1")]
+    public int T1 { get; set; }
+
+    /// <summary>流行2</summary>
+    [YamlMember(Alias = "t2")]
+    public int T2 { get; set; }
+
+    /// <summary>流行3</summary>
+    [YamlMember(Alias = "t3")]
+    public int T3 { get; set; }
+}
+
+public class NiaAuditionTier
+{
+    /// <summary>種別名（例: FINALE / QUARTET / メロBang! 等）</summary>
+    [YamlMember(Alias = "name")]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>審査基準=バランスのときの流行1/2/3量</summary>
+    [YamlMember(Alias = "balance")]
+    public NiaTrendAmounts Balance { get; set; } = new();
+
+    /// <summary>審査基準=突出のときの流行1/2/3量</summary>
+    [YamlMember(Alias = "concentrate")]
+    public NiaTrendAmounts Concentrate { get; set; } = new();
+
+    public override string ToString() => Name;
 }
 
 public class ActivitySupplyConfig

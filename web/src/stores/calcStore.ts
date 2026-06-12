@@ -9,6 +9,9 @@ import type {
   MemoryAttributeBonus,
   MemoryPreset,
   EventCountPreset,
+  Character,
+  StatusValues,
+  WeekSchedule,
 } from '../types/models';
 import {
   emptyAdditionalCounts,
@@ -232,6 +235,8 @@ interface CalcState {
   scheduleBulkClassStat: 'vo' | 'da' | 'vi';
   /** 日程プリセット（planId → プリセット配列、localStorage 永続化）。 */
   schedulePresetsByPlan: Record<string, SchedulePreset[]>;
+  /** NIAオーディション: week → 選択した種別名。未設定の週は先頭(最強)種別を使う。 */
+  niaAuditionTierByWeek: Record<number, string>;
 
   setSelectedPlanId: (id: string) => void;
   setSelectedPlanType: (type: PlanType) => void;
@@ -280,6 +285,8 @@ interface CalcState {
   /** プリセットを読み込み現在の日程に反映（要・計算実行）。 */
   loadSchedulePreset: (planId: string, name: string) => void;
   deleteSchedulePreset: (planId: string, name: string) => void;
+  /** NIAオーディションの種別を選択（結果があれば再適用して即反映）。 */
+  setNiaAuditionTier: (week: number, tierName: string) => void;
 }
 
 function getCandidateCards(
@@ -480,6 +487,50 @@ function buildTurnChoicesFromSchedule(
   return turnChoices;
 }
 
+/**
+ * N.I.Aオーディション1週ぶんの獲得ステータスを、キャラの審査基準・流行から算出。
+ * 1種別クリアで「流行1値→流行1属性 / 流行2値→流行2属性 / 流行3値→流行3属性」を同時加算。
+ * キャラ未選択・流行データ無し・種別データ無しなら null（＝獲得0）。
+ */
+export function computeNiaAuditionGain(
+  week: WeekSchedule,
+  character: Character | null | undefined,
+  tierName?: string,
+): StatusValues | null {
+  const tiers = week.nia_audition_tiers;
+  if (!tiers || tiers.length === 0) return null;
+  if (!character || !character.nia_trend || character.nia_trend.length < 3) return null;
+  const tier = tiers.find((t) => t.name === (tierName ?? tiers[0].name)) ?? tiers[0];
+  const amounts = character.nia_criteria === 'concentrate' ? tier.concentrate : tier.balance;
+  const ranks = [amounts.t1, amounts.t2, amounts.t3];
+  const gain: StatusValues = { vo: 0, da: 0, vi: 0 };
+  for (let i = 0; i < 3; i++) {
+    const attr = character.nia_trend[i];
+    if (attr === 'vo' || attr === 'da' || attr === 'vi') gain[attr] += ranks[i];
+  }
+  return gain;
+}
+
+/**
+ * N.I.Aのオーディション週へ、選択キャラ・種別から算出した status_gain を流し込んだプランを返す。
+ * オーディション種別を持たない週（初レジェンド等）・キャラ未選択時は素のプランをそのまま返す。
+ */
+function buildNiaAuditionPlan(
+  plan: TrainingPlan,
+  character: Character | null | undefined,
+  tierByWeek: Record<number, string>,
+): TrainingPlan {
+  let changed = false;
+  const newSchedule = plan.schedule.map((w) => {
+    if (!w.nia_audition_tiers || w.nia_audition_tiers.length === 0) return w;
+    const gain = computeNiaAuditionGain(w, character, tierByWeek[w.week]);
+    if (!gain) return w; // キャラ未選択/流行なし → 0 のまま
+    changed = true;
+    return { ...w, status_gain: gain };
+  });
+  return changed ? { ...plan, schedule: newSchedule } : plan;
+}
+
 function autoAssignTurnChoices(
   plan: TrainingPlan,
   mainStats: string[],
@@ -600,8 +651,14 @@ function applySelectedPatternImpl(
   const memoryBonuses = state.memoryBonuses;
   const hasAnyMemory = !isEmptyAllMemoryBonuses(memoryBonuses);
 
+  // 日程方式(NIA)はキャラの審査基準・流行でオーディション獲得を動的付与する。
+  // キャラ未選択や流行データ無しなら素のプラン（オーディション=0）。補正なし結果は素のプランを使う。
+  const effPlan = SCHEDULE_PLAN_IDS.has(plan.id)
+    ? buildNiaAuditionPlan(plan, character, state.niaAuditionTierByWeek)
+    : plan;
+
   const result = calculate(
-    plan,
+    effPlan,
     selectedCards,
     turnChoices,
     uncapLevels,
@@ -668,6 +725,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   scheduleBulkMain2: 'da',
   scheduleBulkClassStat: 'vo',
   schedulePresetsByPlan: loadSchedulePresetsByPlan(),
+  niaAuditionTierByWeek: {},
 
   setSelectedPlanId: (id) =>
     set({
@@ -1115,6 +1173,20 @@ export const useCalcStore = create<CalcState>((set, get) => ({
     set({ schedulePresetsByPlan: nextMap });
   },
 
+  setNiaAuditionTier: (week, tierName) => {
+    const state = get();
+    const next = { ...state.niaAuditionTierByWeek, [week]: tierName };
+    set({ niaAuditionTierByWeek: next });
+    // 結果が出ていれば、同じデッキのまま新種別でオーディション獲得を再計算して即反映
+    if (state.calculationResult && state.deckResults.length > 0) {
+      const updates = applySelectedPatternImpl(
+        { ...state, niaAuditionTierByWeek: next },
+        state.selectedPatternIndex,
+      );
+      set(updates as Partial<CalcState>);
+    }
+  },
+
   executeCalculate: () => {
     try {
       const state = get();
@@ -1170,10 +1242,13 @@ export const useCalcStore = create<CalcState>((set, get) => ({
           state.step4BonusEnabled,
         );
 
+        // NIA: キャラの審査基準・流行でオーディション獲得を付与した有効プラン（未選択/流行なしは素のプラン＝0）
+        const effPlan = buildNiaAuditionPlan(plan, character, state.niaAuditionTierByWeek);
+
         startTimer('calculation');
 
         const patterns = selectMultiplePatternsHif(
-          plan,
+          effPlan,
           candidateCards,
           mainStats,
           lessonAllocation,
@@ -1201,7 +1276,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
             if (cs.is_rental) uc[cs.card.id] = 4;
           }
           const fs = calculate(
-            plan,
+            effPlan,
             cards,
             turnChoices,
             uc,

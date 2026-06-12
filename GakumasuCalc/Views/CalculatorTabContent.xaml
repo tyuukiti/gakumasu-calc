@@ -168,6 +168,38 @@
                 </StackPanel>
             </Border>
 
+            <!-- NIAオーディション獲得 (種別選択。キャラの審査基準・流行で振り分け。nia時のみ表示) -->
+            <Border Style="{StaticResource SectionCard}"
+                    Visibility="{Binding HasNiaAuditions, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="オーディション獲得（種別選択）" Style="{StaticResource SectionHeader}"/>
+                    <ItemsControl ItemsSource="{Binding NiaAuditions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#F7F7F7" BorderBrush="#E0E0E0" BorderThickness="1"
+                                        CornerRadius="4" Padding="10,6" Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding EventName}" FontSize="12"
+                                                   FontWeight="SemiBold" Foreground="#555" VerticalAlignment="Center"/>
+                                        <ComboBox Grid.Column="1" ItemsSource="{Binding TierNames}"
+                                                  SelectedItem="{Binding SelectedTierName}"
+                                                  FontSize="12" Padding="6,3" MinWidth="160" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding GainText}" FontSize="12"
+                                                   Foreground="#777" VerticalAlignment="Center"
+                                                   HorizontalAlignment="Right" Margin="10,0,0,0"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- SP率カード枚数 (属性設定の撤去で失われる入力を独立カードへ移設) -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>

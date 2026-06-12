@@ -6,6 +6,7 @@ import StatRoleConfig from '../components/calculator/StatRoleConfig';
 import ScheduleBulkSettings from '../components/calculator/ScheduleBulkSettings';
 import SchedulePresets from '../components/calculator/SchedulePresets';
 import SchedulePicker from '../components/calculator/SchedulePicker';
+import NiaAuditionConfig from '../components/calculator/NiaAuditionConfig';
 import SpCountConfig from '../components/hif/SpCountConfig';
 import EventCountConfig from '../components/calculator/EventCountConfig';
 import RequiredCardSelector from '../components/calculator/RequiredCardSelector';
@@ -64,6 +65,8 @@ export default function CalculatorPage({ fixedPlanId, heading }: CalculatorPageP
               <SchedulePresets planId={planId} />
               <SchedulePicker planId={planId} />
             </div>
+            {/* NIAオーディション獲得（種別選択＋キャラ流行で振り分け）。初レジェンドは種別なしで非表示 */}
+            <NiaAuditionConfig planId={planId} />
             {/* SP枚数設定（Vo/Da/Vi 独立。属性設定の撤去で失われる入力を補う） */}
             <SpCountConfig />
           </>

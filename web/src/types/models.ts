@@ -81,6 +81,27 @@ export interface WeekSchedule {
   hif_exam_base?: number;
   /** HIFモードの試験日でユーザが Vo/Da/Vi に振り分ける配分値の合計 */
   hif_exam_distributed?: number;
+  /** N.I.Aオーディションの種別ごとの理論値量（キャラの審査基準・流行で属性へ振り分け） */
+  nia_audition_tiers?: NiaAuditionTier[];
+}
+
+/** N.I.Aオーディション1種別ぶんの、流行1/2/3別 取得パラメータ量（審査基準で行を選ぶ） */
+export interface NiaTrendAmounts {
+  /** 流行1 */
+  t1: number;
+  /** 流行2 */
+  t2: number;
+  /** 流行3 */
+  t3: number;
+}
+
+export interface NiaAuditionTier {
+  /** 種別名（例: FINALE / QUARTET / メロBang! 等） */
+  name: string;
+  /** 審査基準=バランスのときの流行1/2/3量 */
+  balance: NiaTrendAmounts;
+  /** 審査基準=突出のときの流行1/2/3量 */
+  concentrate: NiaTrendAmounts;
 }
 
 export interface LessonConfig {
@@ -199,6 +220,10 @@ export interface Character {
   uncap3_bonus?: StatBonusPercent;
   /** STEP4で追加される基礎ステータス＋パラボ（任意・ONで加算） */
   step4_bonus?: Step4Bonus;
+  /** N.I.Aオーディションの審査基準（balance=バランス / concentrate=突出）。種別表の行選択に使う */
+  nia_criteria?: 'balance' | 'concentrate';
+  /** N.I.Aの流行1/2/3 が対応する属性 [流行1, 流行2, 流行3]（'vo'|'da'|'vi'）。未設定＝流行不明で獲得0 */
+  nia_trend?: string[];
 }
 
 export interface CharacterFile {
