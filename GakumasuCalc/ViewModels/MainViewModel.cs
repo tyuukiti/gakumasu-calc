@@ -1312,6 +1312,8 @@ public class MainViewModel : ViewModelBase
         // 選択クリアはフィールド直接 (プロパティ経由だと再ロードが走るため)
         _selectedSchedulePreset = null;
         OnPropertyChanged(nameof(SelectedSchedulePreset));
+        // タブ切替時に前プランのプリセット名入力を残さない (Web側 key=planId と同等)
+        NewSchedulePresetName = string.Empty;
         SchedulePresets.Clear();
         var svc = GetCurrentSchedulePresetService();
         if (svc != null)

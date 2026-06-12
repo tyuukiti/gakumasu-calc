@@ -62,7 +62,8 @@ export default function CalculatorPage({ fixedPlanId, heading }: CalculatorPageP
             <ScheduleBulkSettings planId={planId} />
             {/* スケジュール調整: プリセット + 個別調整 */}
             <div className="space-y-3 bg-white rounded-md p-3 border border-gray-200">
-              <SchedulePresets planId={planId} />
+              {/* key=planId: タブ切替時にローカル状態(選択中プリセット名等)をリセットする */}
+              <SchedulePresets key={planId} planId={planId} />
               <SchedulePicker planId={planId} />
             </div>
             {/* NIAオーディション獲得（種別選択＋キャラ流行で振り分け）。初レジェンドは種別なしで非表示 */}

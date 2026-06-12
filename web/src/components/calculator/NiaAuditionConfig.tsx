@@ -37,7 +37,10 @@ export default function NiaAuditionConfig({ planId }: { planId: string }) {
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-semibold text-gray-700">オーディション獲得（種別選択）</label>
+      <label className="text-sm font-semibold text-gray-700">
+        オーディション獲得（種別選択）
+        <span className="ml-2 text-xs font-normal text-gray-500">※表示はパラメータボーナス適用前の基礎値</span>
+      </label>
       {!hasTrend && (
         <p className="text-xs text-gray-500">
           {character

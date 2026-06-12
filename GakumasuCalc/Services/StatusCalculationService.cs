@@ -130,10 +130,13 @@ public class StatusCalculationService
         if (week.IsFixedEvent)
         {
             var fixedGain = week.StatusGain?.Clone() ?? StatusValues.Zero;
-            // HIFモードの選抜試験(基礎値+配分値)はゲーム内挙動と同じくパラメータボーナスを適用する
+            // HIFモードの選抜試験(基礎値+配分値)はゲーム内挙動と同じくパラメータボーナスを適用する。
+            // NIAオーディション(種別表の理論値=パラボ適用前の基礎値)も同様に適用する。
             bool isHifExam = week.Type == "audition"
                 && (week.HifExamBase != null || week.HifExamDistributed != null);
-            if (isHifExam)
+            bool isNiaAudition = week.Type == "audition"
+                && week.NiaAuditionTiers is { Count: > 0 };
+            if (isHifExam || isNiaAudition)
             {
                 fixedGain = ApplyParaBonus(fixedGain, cards, uncapLevels, character, memoryBonuses);
             }

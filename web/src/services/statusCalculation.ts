@@ -220,11 +220,14 @@ function calculateWeekGain(
 
   if (isFixedEvent) {
     let fixedGain = week.status_gain ? svClone(week.status_gain) : svZero();
-    // HIFモードの選抜試験(基礎値+配分値)はゲーム内挙動と同じくパラメータボーナスを適用する
+    // HIFモードの選抜試験(基礎値+配分値)はゲーム内挙動と同じくパラメータボーナスを適用する。
+    // NIAオーディション(種別表の理論値=パラボ適用前の基礎値)も同様に適用する。
     const isHifExam =
       week.type === 'audition' &&
       (week.hif_exam_base != null || week.hif_exam_distributed != null);
-    if (isHifExam) {
+    const isNiaAudition =
+      week.type === 'audition' && (week.nia_audition_tiers?.length ?? 0) > 0;
+    if (isHifExam || isNiaAudition) {
       fixedGain = applyParaBonus(fixedGain, cards, uncapLevels, character, memoryBonuses);
     }
     const examTriggerGain = fireTrigger('exam_end', cards, triggerCounters, uncapLevels);

@@ -168,7 +168,11 @@
             <Border Style="{StaticResource SectionCard}"
                     Visibility="{Binding HasNiaAuditions, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <TextBlock Text="オーディション獲得（種別選択）" Style="{StaticResource SectionHeader}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="オーディション獲得（種別選択）" Style="{StaticResource SectionHeader}"/>
+                        <TextBlock Text="※表示はパラメータボーナス適用前の基礎値" FontSize="11" Foreground="#999"
+                                   VerticalAlignment="Center" Margin="8,0,0,4"/>
+                    </StackPanel>
                     <ItemsControl ItemsSource="{Binding NiaAuditions}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
