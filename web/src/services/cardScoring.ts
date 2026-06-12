@@ -71,7 +71,7 @@ function triggerDisplayName(trigger: string): string {
     p_item_acquire: 'Pアイテム獲得',
     p_drink_acquire: 'Pドリンク獲得',
     consultation_drink: '相談ドリンク交換',
-    rest: '休憩',
+    rest: '休む',
     vo_sp_end: 'VoSP終了',
     da_sp_end: 'DaSP終了',
     vi_sp_end: 'ViSP終了',
@@ -205,6 +205,8 @@ export function countTriggers(
         counts['activity_supply'] = (counts['activity_supply'] ?? 0) + 1;
       } else if (a === 'special_training') {
         counts['special_training'] = (counts['special_training'] ?? 0) + 1;
+      } else if (a === 'rest') {
+        counts['rest'] = (counts['rest'] ?? 0) + 1;
       }
     }
     return counts;

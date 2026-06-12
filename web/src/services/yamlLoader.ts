@@ -28,6 +28,7 @@ function normalizeWeek(w: Partial<WeekSchedule>): WeekSchedule {
     hif_sub_value: w.hif_sub_value,
     hif_exam_base: w.hif_exam_base,
     hif_exam_distributed: w.hif_exam_distributed,
+    nia_audition_tiers: w.nia_audition_tiers,
   }
 }
 

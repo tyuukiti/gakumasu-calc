@@ -81,6 +81,22 @@ public class MainViewModel : ViewModelBase
     private TrainingPlan? _hifDynamicPlan;
     private List<TurnChoice> _hifTurnChoices = new();
 
+    // 日程方式 (初レジェンド / NIA) 計算用の状態
+    private bool _isScheduleMode;
+    private List<TurnChoice> _scheduleTurnChoices = new();
+    /// <summary>タブ切替で日程編集を失わないための planId→(week→action) キャッシュ。</summary>
+    private readonly Dictionary<string, Dictionary<int, ActionType>> _scheduleSelectionCache = new();
+    /// <summary>日程方式プランごとのプリセット永続化サービス。</summary>
+    private readonly Dictionary<string, SchedulePresetService> _schedulePresetServices = new();
+    /// <summary>現在の選択プランが日程方式 (初レジェンド / NIA) かどうか。</summary>
+    private bool IsExplicitSchedulePlan => _selectedPlan?.Id is "hatsu_legend" or "nia";
+
+    // NIAオーディション: week → 選択種別名（未設定の週は先頭=最強種別）
+    private readonly Dictionary<int, string> _niaAuditionTiers = new();
+    /// <summary>NIAオーディション種別選択UIの行（nia時のみ）。</summary>
+    public ObservableCollection<NiaAuditionViewModel> NiaAuditions { get; } = new();
+    public bool HasNiaAuditions => NiaAuditions.Count > 0;
+
     public ObservableCollection<TrainingPlan> AvailablePlans { get; } = new();
     public ObservableCollection<TurnChoiceViewModel> TurnChoices { get; } = new();
     public ObservableCollection<DeckCardViewModel> DeckCards { get; } = new();
@@ -175,6 +191,8 @@ public class MainViewModel : ViewModelBase
                 OnPropertyChanged(nameof(HasStep4Bonus));
                 foreach (var tile in CharacterTiles)
                     tile.IsSelected = (tile.Character == value);
+                // NIAオーディション獲得プレビューを選択キャラで更新
+                RefreshNiaAuditionPreviews();
                 // 計算済みなら選択中パターンで再計算
                 if (Result != null && _selectedPattern != null && _deckResults.Count > 0)
                     ApplySelectedPattern(_selectedPattern.Index);
@@ -748,6 +766,8 @@ public class MainViewModel : ViewModelBase
         get => _selectedPlan;
         set
         {
+            // プラン切替前に、現在の日程編集をキャッシュ（タブ往復で編集を保持）
+            CacheScheduleSelections();
             if (SetProperty(ref _selectedPlan, value))
                 OnPlanChanged();
         }
@@ -817,7 +837,9 @@ public class MainViewModel : ViewModelBase
             {
                 ApplyEventTemplate(value);
                 // 既に計算済みならターン選択を道中テンプレートで再適用
-                if (_deckResults.Count > 0 && SelectedPattern != null)
+                // (Result != null 必須: タブ切替後は結果をクリア済みのため、
+                //  別プランの古い _deckResults で再適用しない)
+                if (Result != null && _deckResults.Count > 0 && SelectedPattern != null)
                     ApplySelectedPattern(SelectedPattern.Index);
             }
         }
@@ -1000,6 +1022,11 @@ public class MainViewModel : ViewModelBase
         HifVm = new HifViewModel(
             new HifSchedulePresetService(Path.Combine(dataDir, "HifSchedulePresets", "hif_schedule_presets.yaml")),
             new HifBonusLevelsService(Path.Combine(dataDir, "HifBonusLevels", "hif_bonus_levels.yaml")));
+        // 日程方式プラン (初レジェンド / NIA) のプリセットはプランごとに別ファイル
+        _schedulePresetServices["hatsu_legend"] =
+            new SchedulePresetService(Path.Combine(dataDir, "SchedulePresets", "hatsu_legend.yaml"));
+        _schedulePresetServices["nia"] =
+            new SchedulePresetService(Path.Combine(dataDir, "SchedulePresets", "nia.yaml"));
         _versionCheckService = new VersionCheckService();
         _calculationService = new StatusCalculationService();
         _scoringService = new CardScoringService();
@@ -1057,6 +1084,11 @@ public class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsUpdateBannerVisible));
         });
         HifCalculateCommand = new RelayCommand(_ => ExecuteHifCalculate());
+        ApplyScheduleBulkLessonCommand = new RelayCommand(_ => ExecuteApplyScheduleBulkLesson());
+        ApplyScheduleBulkClassCommand = new RelayCommand(_ => ExecuteApplyScheduleBulkClass());
+        SaveSchedulePresetCommand = new RelayCommand(_ => ExecuteSaveSchedulePreset());
+        DeleteSchedulePresetCommand = new RelayCommand(_ => ExecuteDeleteSchedulePreset(),
+            _ => _selectedSchedulePreset != null);
 
         CurrentVersion = VersionCheckService.GetCurrentVersion();
 
@@ -1102,8 +1134,607 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    // ===================== 日程方式 (初レジェンド / NIA) =====================
+
+    /// <summary>レッスン週のみ main1/main2 配分を TurnChoices に適用 (中間前1:1・後2:1)。シード/一括配分で共通利用。</summary>
+    private void DistributeLessonsInto(List<string> mainStats)
+    {
+        if (mainStats.Count < 2)
+        {
+            var onlyAction = (mainStats.Count > 0 ? mainStats[0] : "vo") switch
+            {
+                "vo" => ActionType.VoLesson,
+                "da" => ActionType.DaLesson,
+                _ => ActionType.ViLesson
+            };
+            foreach (var tc in TurnChoices)
+            {
+                if (!tc.IsFixedEvent && tc.AvailableActions.Contains(onlyAction))
+                    tc.SelectedAction = onlyAction;
+            }
+            return;
+        }
+
+        var main1Action = mainStats[0] switch
+        {
+            "vo" => ActionType.VoLesson,
+            "da" => ActionType.DaLesson,
+            _ => ActionType.ViLesson
+        };
+        var main2Action = mainStats[1] switch
+        {
+            "vo" => ActionType.VoLesson,
+            "da" => ActionType.DaLesson,
+            _ => ActionType.ViLesson
+        };
+
+        // 中間試験の週を探す (無ければ 10 をフォールバック)
+        var midExamWeek = _selectedPlan?.Schedule
+            .Where(w => w.IsFixedEvent && w.EventName == "中間試験")
+            .Select(w => w.Week)
+            .FirstOrDefault() ?? 10;
+
+        var lessonTurns = TurnChoices
+            .Where(tc => !tc.IsFixedEvent && tc.AvailableActions.Any(a =>
+                a is ActionType.VoLesson or ActionType.DaLesson or ActionType.ViLesson))
+            .OrderBy(tc => tc.Week)
+            .ToList();
+
+        var beforeMid = lessonTurns.Where(tc => tc.Week < midExamWeek).ToList();
+        var afterMid = lessonTurns.Where(tc => tc.Week > midExamWeek).ToList();
+
+        // 中間前: メイン1:メイン2 = 1:1 (交互)
+        bool toggle = false;
+        foreach (var tc in beforeMid)
+        {
+            var action = toggle ? main2Action : main1Action;
+            if (tc.AvailableActions.Contains(action))
+                tc.SelectedAction = action;
+            else if (tc.AvailableActions.Contains(toggle ? main1Action : main2Action))
+                tc.SelectedAction = toggle ? main1Action : main2Action;
+            toggle = !toggle;
+        }
+
+        // 中間後: メイン1:メイン2 = 2:1 (メイン1を多めに)
+        int afterCount = 0;
+        foreach (var tc in afterMid)
+        {
+            var action = (afterCount % 3 == 1) ? main2Action : main1Action;
+            if (tc.AvailableActions.Contains(action))
+                tc.SelectedAction = action;
+            else
+            {
+                var fallback = (action == main2Action) ? main1Action : main2Action;
+                if (tc.AvailableActions.Contains(fallback))
+                    tc.SelectedAction = fallback;
+            }
+            afterCount++;
+        }
+    }
+
+    /// <summary>現在の TurnChoices 選択を planId キャッシュへ保存 (タブ切替後に復元するため)。</summary>
+    private void CacheScheduleSelections()
+    {
+        if (!IsExplicitSchedulePlan || _selectedPlan == null) return;
+        var map = new Dictionary<int, ActionType>();
+        foreach (var tc in TurnChoices)
+            if (!tc.IsFixedEvent) map[tc.Week] = tc.SelectedAction;
+        _scheduleSelectionCache[_selectedPlan.Id] = map;
+    }
+
+    // ----- 一括設定 -----
+    public List<HifStatOption> ScheduleStatOptions { get; } = new()
+    {
+        new() { Value = "vo", Label = "Vocal" },
+        new() { Value = "da", Label = "Dance" },
+        new() { Value = "vi", Label = "Visual" },
+    };
+
+    /// <summary>一括レッスン属性（全レッスン週に適用する単一属性。メイン1/2の概念は廃止）。</summary>
+    private string _scheduleBulkLessonStat = "vo";
+    public string ScheduleBulkLessonStat
+    {
+        get => _scheduleBulkLessonStat;
+        set => SetProperty(ref _scheduleBulkLessonStat, value);
+    }
+
+    private string _scheduleBulkClassStat = "vo";
+    public string ScheduleBulkClassStat
+    {
+        get => _scheduleBulkClassStat;
+        set => SetProperty(ref _scheduleBulkClassStat, value);
+    }
+
+    public ICommand ApplyScheduleBulkLessonCommand { get; private set; } = null!;
+    public ICommand ApplyScheduleBulkClassCommand { get; private set; } = null!;
+
+    private void ExecuteApplyScheduleBulkLesson()
+    {
+        if (_selectedPlan == null) return;
+        // 全レッスン週に選択属性を適用（DistributeLessonsInto の単一メイン分岐＝全週その属性）
+        DistributeLessonsInto(new List<string> { _scheduleBulkLessonStat });
+        CacheScheduleSelections();
+    }
+
+    private void ExecuteApplyScheduleBulkClass()
+    {
+        if (!TurnChoiceViewModel.TryParseAction($"{_scheduleBulkClassStat}_class", out var targetAction)) return;
+        foreach (var tc in TurnChoices)
+        {
+            if (tc.IsFixedEvent || tc.AvailableActions.Count == 0) continue;
+            // 授業を含む週 (休む等が混在する週もあるため Any 判定)
+            bool hasClass = tc.AvailableActions.Any(a =>
+                a is ActionType.VoClass or ActionType.DaClass or ActionType.ViClass);
+            if (!hasClass) continue;
+            if (tc.AvailableActions.Contains(targetAction))
+                tc.SelectedAction = targetAction;
+        }
+        CacheScheduleSelections();
+    }
+
+    // ----- プリセット -----
+    public int MaxSchedulePresets => SchedulePresetService.MaxPresets;
+    public string SchedulePresetCountText => $"{SchedulePresets.Count}/{MaxSchedulePresets}";
+    public ObservableCollection<SchedulePreset> SchedulePresets { get; } = new();
+
+    private SchedulePreset? _selectedSchedulePreset;
+    public SchedulePreset? SelectedSchedulePreset
+    {
+        get => _selectedSchedulePreset;
+        set
+        {
+            if (SetProperty(ref _selectedSchedulePreset, value))
+            {
+                if (value != null)
+                {
+                    LoadSchedulePresetIntoTurnChoices(value);
+                    NewSchedulePresetName = value.Name;
+                }
+            }
+        }
+    }
+
+    private string _newSchedulePresetName = string.Empty;
+    public string NewSchedulePresetName
+    {
+        get => _newSchedulePresetName;
+        set => SetProperty(ref _newSchedulePresetName, value);
+    }
+
+    public ICommand SaveSchedulePresetCommand { get; private set; } = null!;
+    public ICommand DeleteSchedulePresetCommand { get; private set; } = null!;
+
+    private SchedulePresetService? GetCurrentSchedulePresetService()
+    {
+        if (_selectedPlan == null) return null;
+        return _schedulePresetServices.TryGetValue(_selectedPlan.Id, out var svc) ? svc : null;
+    }
+
+    private void LoadSchedulePresetsForCurrentPlan()
+    {
+        // 選択クリアはフィールド直接 (プロパティ経由だと再ロードが走るため)
+        _selectedSchedulePreset = null;
+        OnPropertyChanged(nameof(SelectedSchedulePreset));
+        // タブ切替時に前プランのプリセット名入力を残さない (Web側 key=planId と同等)
+        NewSchedulePresetName = string.Empty;
+        SchedulePresets.Clear();
+        var svc = GetCurrentSchedulePresetService();
+        if (svc != null)
+        {
+            try { foreach (var p in svc.Load()) SchedulePresets.Add(p); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"スケジュールプリセット読込エラー: {ex.Message}"); }
+        }
+        OnPropertyChanged(nameof(SchedulePresetCountText));
+    }
+
+    private void LoadSchedulePresetIntoTurnChoices(SchedulePreset preset)
+    {
+        var byWeek = preset.Choices.ToDictionary(c => c.Week);
+        foreach (var tc in TurnChoices)
+        {
+            if (tc.IsFixedEvent) continue;
+            if (byWeek.TryGetValue(tc.Week, out var c)
+                && TurnChoiceViewModel.TryParseAction(c.Action, out var act)
+                && tc.AvailableActions.Contains(act))
+                tc.SelectedAction = act;
+        }
+        CacheScheduleSelections();
+    }
+
+    private void ExecuteSaveSchedulePreset()
+    {
+        var svc = GetCurrentSchedulePresetService();
+        if (svc == null) return;
+        var name = NewSchedulePresetName.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+
+        var choices = new List<ScheduleChoiceEntry>();
+        foreach (var tc in TurnChoices)
+        {
+            if (tc.IsFixedEvent || tc.AvailableActions.Count == 0) continue;
+            choices.Add(new ScheduleChoiceEntry { Week = tc.Week, Action = ActionToYaml(tc.SelectedAction) });
+        }
+        if (choices.Count == 0) return;
+
+        var preset = new SchedulePreset { Name = name, Choices = choices };
+        var existing = SchedulePresets.FirstOrDefault(p => p.Name == name);
+        if (existing != null)
+        {
+            SchedulePresets[SchedulePresets.IndexOf(existing)] = preset;
+        }
+        else
+        {
+            if (SchedulePresets.Count >= MaxSchedulePresets)
+            {
+                System.Windows.MessageBox.Show(
+                    $"プリセットは最大{MaxSchedulePresets}件まで保存できます。",
+                    "上限到達", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+            SchedulePresets.Add(preset);
+        }
+
+        try { svc.Save(SchedulePresets.ToList()); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"スケジュールプリセット保存エラー: {ex.Message}"); }
+        OnPropertyChanged(nameof(SchedulePresetCountText));
+        NewSchedulePresetName = string.Empty;
+    }
+
+    private void ExecuteDeleteSchedulePreset()
+    {
+        var svc = GetCurrentSchedulePresetService();
+        if (svc == null || _selectedSchedulePreset == null) return;
+        var target = SchedulePresets.FirstOrDefault(p => p.Name == _selectedSchedulePreset.Name);
+        if (target == null) return;
+        SchedulePresets.Remove(target);
+        try { svc.Save(SchedulePresets.ToList()); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"スケジュールプリセット削除エラー: {ex.Message}"); }
+        SelectedSchedulePreset = null;
+        OnPropertyChanged(nameof(SchedulePresetCountText));
+    }
+
+    private static string ActionToYaml(ActionType a) => a switch
+    {
+        ActionType.VoLesson => "vo_lesson",
+        ActionType.DaLesson => "da_lesson",
+        ActionType.ViLesson => "vi_lesson",
+        ActionType.VoClass => "vo_class",
+        ActionType.DaClass => "da_class",
+        ActionType.ViClass => "vi_class",
+        ActionType.Outing => "outing",
+        ActionType.Rest => "rest",
+        ActionType.Consultation => "consultation",
+        ActionType.ActivitySupply => "activity_supply",
+        ActionType.SpecialTraining => "special_training",
+        _ => "outing",
+    };
+
+    /// <summary>
+    /// 日程方式の計算実行。ユーザ確定の TurnChoices を主入力にし、HIFスコアラー (turnChoicesOverride) で
+    /// カードを選出する。HIF固有の試験配分/公開レッスン/上限パネル/overflow罰則は使わない。
+    /// </summary>
+    private void ExecuteScheduleCalculate()
+    {
+        if (_selectedPlan == null) return;
+
+        var turnChoices = TurnChoices.Where(tc => !tc.IsFixedEvent).Select(tc => tc.ToTurnChoice()).ToList();
+        if (turnChoices.Count == 0)
+        {
+            System.Windows.MessageBox.Show(
+                "スケジュールが未設定です。",
+                "スケジュール未設定", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        // 休むはプロデュース中4回まで (初レジェンド仕様)
+        int restCount = turnChoices.Count(tc => tc.ChosenAction == ActionType.Rest);
+        if (restCount > 4)
+        {
+            System.Windows.MessageBox.Show(
+                $"休むはプロデュース中4回までです（現在 {restCount} 回）。",
+                "休む回数超過", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        _isHifMode = false;
+        _isScheduleMode = true;
+
+        var mainStats = InferMainStatsFromTurnChoices(turnChoices);
+        var lessonWeekCount = _selectedPlan.Schedule.Count(w => w.Lessons.Count > 0);
+
+        var additional = BuildAdditionalCounts();
+        var candidateCards = GetCandidateCards();
+        var uncapLevels = BuildUncapLevels();
+
+        List<SupportCard>? rentalPool = null;
+        if (OwnedOnly)
+        {
+            rentalPool = ContestMode
+                ? _allCards.Where(c => c.Tag is not ("skill" or "exam_item")).ToList()
+                : _allCards;
+        }
+
+        // 除外カードを候補・レンタルプールから除去
+        if (ExcludedCards.Count > 0)
+        {
+            var excludedIdSet = ExcludedCards.Select(c => c.Id).ToHashSet();
+            candidateCards = candidateCards.Where(c => !excludedIdSet.Contains(c.Id)).ToList();
+            if (rentalPool != null)
+                rentalPool = rentalPool.Where(c => !excludedIdSet.Contains(c.Id)).ToList();
+        }
+
+        var requiredCardIds = RequiredCards.Select(c => c.Id).ToList();
+        if (requiredCardIds.Count > 0)
+        {
+            var requiredIdSet = requiredCardIds.ToHashSet();
+            var candidateIdSet = candidateCards.Select(c => c.Id).ToHashSet();
+            if (OwnedOnly)
+            {
+                var ownedIdSet = _inventory.Where(e => e.Owned).Select(e => e.CardId).ToHashSet();
+                foreach (var card in _allCards.Where(c => requiredIdSet.Contains(c.Id) && ownedIdSet.Contains(c.Id)))
+                    if (!candidateIdSet.Contains(card.Id)) candidateCards.Add(card);
+                if (rentalPool != null)
+                {
+                    var rentalIdSet = rentalPool.Select(c => c.Id).ToHashSet();
+                    foreach (var card in _allCards.Where(c => requiredIdSet.Contains(c.Id)))
+                        if (!rentalIdSet.Contains(card.Id)) rentalPool.Add(card);
+                }
+            }
+            else
+            {
+                foreach (var card in _allCards.Where(c => requiredIdSet.Contains(c.Id)))
+                    if (!candidateIdSet.Contains(card.Id)) candidateCards.Add(card);
+            }
+        }
+
+        var spCounts = new Dictionary<string, int>();
+        if (VoSpCount > 0) spCounts["vo"] = VoSpCount;
+        if (DaSpCount > 0) spCounts["da"] = DaSpCount;
+        if (ViSpCount > 0) spCounts["vi"] = ViSpCount;
+
+        if (OwnedOnly && requiredCardIds.Count > 0)
+        {
+            var ownedIds = _inventory.Where(e => e.Owned).Select(e => e.CardId).ToHashSet();
+            int notOwnedCount = requiredCardIds.Count(id => !ownedIds.Contains(id));
+            if (notOwnedCount > 1)
+            {
+                System.Windows.MessageBox.Show(
+                    "未所持の必須カードは最大1枚です（レンタル枠使用）。",
+                    "必須カード設定エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+        }
+
+        _scheduleTurnChoices = turnChoices;
+        _lastMainStats = mainStats;
+        _lastLessonWeekCount = lessonWeekCount;
+
+        var lessonAllocation = new Dictionary<string, int> { ["vo"] = 0, ["da"] = 0, ["vi"] = 0 };
+        foreach (var tc in turnChoices)
+        {
+            switch (tc.ChosenAction)
+            {
+                case ActionType.VoLesson: lessonAllocation["vo"]++; break;
+                case ActionType.DaLesson: lessonAllocation["da"]++; break;
+                case ActionType.ViLesson: lessonAllocation["vi"]++; break;
+            }
+        }
+
+        var effectiveChar = GetEffectiveCharacter();
+        var memoryBonuses = BuildMemoryBonuses();
+
+        // NIA: キャラの審査基準・流行でオーディション獲得を付与した有効プラン（未選択/流行なしは素のプラン＝0）
+        var effPlan = BuildNiaAuditionPlan(_selectedPlan);
+
+        var patterns = _scoringService.SelectMultiplePatternsHif(
+            effPlan, candidateCards, mainStats, lessonAllocation,
+            spCounts: spCounts, planType: SelectedPlanType, additionalCounts: additional,
+            uncapLevels: uncapLevels, rentalPool: rentalPool,
+            requiredCardIds: requiredCardIds.Count > 0 ? requiredCardIds : null,
+            character: effectiveChar, memoryBonuses: memoryBonuses,
+            turnChoicesOverride: turnChoices,
+            overflowPenalty: null);
+
+        _deckResults = patterns;
+
+        // 選出はキャラ補正込みのキャップ後合計で比較 (TotalValue はキャラ非考慮のため)
+        var cap = _selectedPlan.StatusLimit;
+        PatternResults.Clear();
+        int bestIndex = 0;
+        int bestTotal = int.MinValue;
+
+        for (int i = 0; i < patterns.Count; i++)
+        {
+            var pattern = patterns[i];
+            var pCards = pattern.SelectedCards.Select(cs => cs.Card).ToList();
+            var pUncap = new Dictionary<string, int>(uncapLevels ?? new());
+            foreach (var cs in pattern.SelectedCards.Where(cs => cs.IsRental))
+                pUncap[cs.Card.Id] = 4;
+            var pFs = _calculationService.Calculate(effPlan, pCards, turnChoices, pUncap, additional, effectiveChar, memoryBonuses).FinalStatus;
+            int cappedTotal = Math.Min(pFs.Vo, cap) + Math.Min(pFs.Da, cap) + Math.Min(pFs.Vi, cap);
+
+            var vm = new PatternResultViewModel { Label = pattern.Label, Index = i };
+            foreach (var cs in pattern.SelectedCards)
+            {
+                var suffix = (cs.IsRental ? "（レンタル）" : "") + (cs.IsRequired ? "（必須）" : "");
+                var displayName = cs.Card.Name + suffix;
+                var breakdown = string.Join("\n", cs.Breakdowns
+                    .Select(b => b.Value == 0 ? $"  {b.Reason}" : $"  {b.Reason} → {b.Value:+0.#;-0.#}"));
+                vm.Cards.Add(new DeckCardViewModel
+                {
+                    CardName = displayName,
+                    CardType = cs.Card.Type,
+                    CardRarity = cs.Card.Rarity,
+                    CardPlan = cs.Card.Plan,
+                    StatValue = cs.TotalValue,
+                    TeamBonusTotal = cs.TeamBonusTotal,
+                    TeamBonusContributors = cs.TeamBonusContributors.Select(c => (c.CardName, c.Value)).ToList(),
+                    Breakdowns = new ObservableCollection<EffectBreakdownViewModel>(
+                        cs.Breakdowns.Select(b => new EffectBreakdownViewModel { Reason = b.Reason, Stat = b.Stat, Value = b.Value })),
+                    RawVo = cs.RawVo,
+                    RawDa = cs.RawDa,
+                    RawVi = cs.RawVi,
+                    DeckLabel = pattern.Label,
+                    BreakdownText = $"Vo:{cs.RawVo} Da:{cs.RawDa} Vi:{cs.RawVi}\n{breakdown}",
+                    HasSpRate = cs.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"),
+                });
+            }
+            PatternResults.Add(vm);
+
+            if (cappedTotal > bestTotal)
+            {
+                bestTotal = cappedTotal;
+                bestIndex = i;
+            }
+        }
+
+        OnPropertyChanged(nameof(PatternResults));
+
+        if (PatternResults.Count > 0)
+            SelectedPattern = PatternResults[bestIndex];
+        else
+            System.Windows.MessageBox.Show(
+                "有効な編成パターンが見つかりませんでした。",
+                "計算結果なし", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+    }
+
+    // ----- NIAオーディション獲得パラメータ -----
+
+    /// <summary>
+    /// オーディション1週ぶんの獲得ステータスを、キャラの審査基準・流行から算出。
+    /// 1種別クリアで「流行1値→流行1属性 / 流行2値→流行2属性 / 流行3値→流行3属性」を同時加算。
+    /// キャラ未選択・流行データ無し・種別データ無しなら null（＝獲得0）。
+    /// </summary>
+    private static StatusValues? ComputeNiaAuditionGain(WeekSchedule week, Character? character, string? tierName)
+    {
+        var tiers = week.NiaAuditionTiers;
+        if (tiers == null || tiers.Count == 0) return null;
+        if (character?.NiaTrend == null || character.NiaTrend.Count < 3) return null;
+        var tier = tiers.FirstOrDefault(t => t.Name == (tierName ?? tiers[0].Name)) ?? tiers[0];
+        var amounts = character.NiaCriteria == "concentrate" ? tier.Concentrate : tier.Balance;
+        var ranks = new[] { amounts.T1, amounts.T2, amounts.T3 };
+        int vo = 0, da = 0, vi = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            switch (character.NiaTrend[i])
+            {
+                case "vo": vo += ranks[i]; break;
+                case "da": da += ranks[i]; break;
+                case "vi": vi += ranks[i]; break;
+            }
+        }
+        return new StatusValues(vo, da, vi);
+    }
+
+    private static WeekSchedule CloneWeekWithGain(WeekSchedule w, StatusValues gain) => new()
+    {
+        Week = w.Week,
+        Type = w.Type,
+        AvailableActions = w.AvailableActions,
+        Lessons = w.Lessons,
+        EventName = w.EventName,
+        StatusGain = gain,
+        OutingEffect = w.OutingEffect,
+        Classes = w.Classes,
+        ClassEffect = w.ClassEffect,
+        ConsultationEffect = w.ConsultationEffect,
+        SpecialTrainingEffect = w.SpecialTrainingEffect,
+        HifSubValue = w.HifSubValue,
+        HifExamBase = w.HifExamBase,
+        HifExamDistributed = w.HifExamDistributed,
+        NiaAuditionTiers = w.NiaAuditionTiers,
+    };
+
+    /// <summary>
+    /// NIAのオーディション週へ、選択キャラ・種別から算出した status_gain を流し込んだプランを返す。
+    /// 種別を持たない週(初レジェンド等)・キャラ未選択・流行なしは素のプランをそのまま返す。
+    /// </summary>
+    private TrainingPlan BuildNiaAuditionPlan(TrainingPlan basePlan)
+    {
+        bool any = basePlan.Schedule.Any(w => w.NiaAuditionTiers is { Count: > 0 });
+        if (!any || _selectedCharacter?.NiaTrend == null || _selectedCharacter.NiaTrend.Count < 3)
+            return basePlan;
+
+        var newSchedule = new List<WeekSchedule>(basePlan.Schedule.Count);
+        bool changed = false;
+        foreach (var w in basePlan.Schedule)
+        {
+            if (w.NiaAuditionTiers is { Count: > 0 })
+            {
+                var tierName = _niaAuditionTiers.TryGetValue(w.Week, out var t) ? t : w.NiaAuditionTiers[0].Name;
+                var gain = ComputeNiaAuditionGain(w, _selectedCharacter, tierName);
+                if (gain != null)
+                {
+                    newSchedule.Add(CloneWeekWithGain(w, gain));
+                    changed = true;
+                    continue;
+                }
+            }
+            newSchedule.Add(w);
+        }
+        if (!changed) return basePlan;
+
+        return new TrainingPlan
+        {
+            Id = basePlan.Id,
+            Name = basePlan.Name,
+            Description = basePlan.Description,
+            TotalWeeks = basePlan.TotalWeeks,
+            StatusLimit = basePlan.StatusLimit,
+            BaseStatus = basePlan.BaseStatus,
+            Schedule = newSchedule,
+            ActivitySupply = basePlan.ActivitySupply,
+        };
+    }
+
+    /// <summary>選択プランの種別UI行を再構築（nia時のみ。初レジェンド等は空＝非表示）。</summary>
+    private void PopulateNiaAuditions()
+    {
+        NiaAuditions.Clear();
+        if (_selectedPlan != null)
+        {
+            foreach (var w in _selectedPlan.Schedule)
+            {
+                if (w.NiaAuditionTiers is not { Count: > 0 }) continue;
+                var tierNames = w.NiaAuditionTiers.Select(t => t.Name).ToList();
+                if (!_niaAuditionTiers.ContainsKey(w.Week)) _niaAuditionTiers[w.Week] = tierNames[0];
+                NiaAuditions.Add(new NiaAuditionViewModel(
+                    w.Week, w.EventName ?? $"Week {w.Week}", tierNames, _niaAuditionTiers[w.Week], OnNiaTierChanged));
+            }
+            RefreshNiaAuditionPreviews();
+        }
+        OnPropertyChanged(nameof(HasNiaAuditions));
+    }
+
+    private void OnNiaTierChanged(int week, string tierName)
+    {
+        _niaAuditionTiers[week] = tierName;
+        RefreshNiaAuditionPreviews();
+        // 結果が出ていれば同じデッキのまま再計算して反映
+        if (Result != null && _selectedPattern != null && _deckResults.Count > 0)
+            ApplySelectedPattern(_selectedPattern.Index);
+    }
+
+    private void RefreshNiaAuditionPreviews()
+    {
+        if (_selectedPlan == null) return;
+        foreach (var vm in NiaAuditions)
+        {
+            var week = _selectedPlan.Schedule.FirstOrDefault(w => w.Week == vm.Week);
+            if (week == null) continue;
+            var gain = ComputeNiaAuditionGain(week, _selectedCharacter, vm.SelectedTierName);
+            vm.GainText = gain != null
+                ? $"Vo+{gain.Vo} / Da+{gain.Da} / Vi+{gain.Vi}"
+                : (_selectedCharacter == null ? "キャラ未選択のため0" : "流行データ無しのため0");
+        }
+    }
+
     private void OnPlanChanged()
     {
+        // モードフラグをリセット (HIF/日程の取り違え防止)
+        _isHifMode = false;
+        _isScheduleMode = false;
+
         TurnChoices.Clear();
         if (_selectedPlan == null) return;
 
@@ -1112,10 +1743,42 @@ public class MainViewModel : ViewModelBase
             TurnChoices.Add(new TurnChoiceViewModel(week, _selectedPlan.ActivitySupply));
         }
 
+        // 日程方式: 編集キャッシュがあれば復元、無ければ既定配分でシード。プリセットも読み込む。
+        if (IsExplicitSchedulePlan && TurnChoices.Count > 0)
+        {
+            if (_scheduleSelectionCache.TryGetValue(_selectedPlan.Id, out var cached))
+            {
+                foreach (var tc in TurnChoices)
+                {
+                    if (!tc.IsFixedEvent && cached.TryGetValue(tc.Week, out var act)
+                        && tc.AvailableActions.Contains(act))
+                        tc.SelectedAction = act;
+                }
+            }
+            else
+            {
+                // 既定シード: 全レッスンを bulkLessonStat、非レッスン週は優先度デフォルト（メイン1/2廃止）
+                AutoAssignTurnChoices(
+                    new Dictionary<string, int> { ["vo"] = 0, ["da"] = 0, ["vi"] = 0 },
+                    new List<string> { ScheduleBulkLessonStat },
+                    null);
+            }
+            LoadSchedulePresetsForCurrentPlan();
+        }
+
+        PopulateNiaAuditions();
+
         FilterEventCountTemplates();
 
+        // 前プランの結果・パターンを完全にクリア (Web版 setSelectedPlanId と同等)。
+        // 残すと別プランの古い _deckResults でパターン再適用される事故の温床になる。
         Result = null;
         DeckCards.Clear();
+        _deckResults = new List<CardScoringService.DeckResult>();
+        PatternResults.Clear();
+        _selectedPattern = null;
+        OnPropertyChanged(nameof(SelectedPattern));
+        OnPropertyChanged(nameof(PatternResults));
         OnPropertyChanged(nameof(DeckLabel));
         OnPropertyChanged(nameof(DeckTotal));
     }
@@ -1124,7 +1787,15 @@ public class MainViewModel : ViewModelBase
     {
         if (_selectedPlan == null) return;
 
+        // 日程方式 (初レジェンド / NIA) はユーザの日程を主入力にする別経路へ
+        if (IsExplicitSchedulePlan)
+        {
+            ExecuteScheduleCalculate();
+            return;
+        }
+
         _isHifMode = false;
+        _isScheduleMode = false;
 
         var lessonWeekCount = _selectedPlan.Schedule.Count(w => w.Lessons.Count > 0);
 
@@ -1301,9 +1972,13 @@ public class MainViewModel : ViewModelBase
         if (patternIndex < 0 || patternIndex >= _deckResults.Count)
             return;
 
-        // HIFモード時は別経路で計算
-        var planForCalc = _isHifMode ? _hifDynamicPlan : _selectedPlan;
+        // HIFモード時は動的プラン。日程方式(NIA)はキャラの審査基準・流行でオーディション獲得を付与した有効プラン。
+        var planForCalc = _isHifMode
+            ? _hifDynamicPlan
+            : (_isScheduleMode && _selectedPlan != null ? BuildNiaAuditionPlan(_selectedPlan) : _selectedPlan);
         if (planForCalc == null) return;
+        // 「補正なし結果」用ベースプラン: オーディション獲得はキャラ依存のため素のプランを使う(NIA)。
+        var baselinePlan = (_isScheduleMode && _selectedPlan != null) ? _selectedPlan : planForCalc;
 
         var pattern = _deckResults[patternIndex];
 
@@ -1312,6 +1987,11 @@ public class MainViewModel : ViewModelBase
         {
             // HIFはユーザが指定したスケジュール選択をそのまま使用
             choices = _hifTurnChoices;
+        }
+        else if (_isScheduleMode)
+        {
+            // 日程方式 (初レジェンド / NIA): ユーザ確定の日程をそのまま使用 (AutoAssign で上書きしない)
+            choices = _scheduleTurnChoices;
         }
         else
         {
@@ -1335,7 +2015,7 @@ public class MainViewModel : ViewModelBase
         var memoryBonuses = BuildMemoryBonuses();
         // キャラ補正・メモリー補正・HIFボーナスのいずれかが有効なら「補正なし結果」を別途算出し差分表示に使う
         _resultWithoutCharacter = (_selectedCharacter != null || HasAnyMemoryBonus || hasAnyHifBonus)
-            ? _calculationService.Calculate(planForCalc, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), null, null)
+            ? _calculationService.Calculate(baselinePlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), null, null)
             : null;
         Result = _calculationService.Calculate(planForCalc, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), effectiveChar, memoryBonuses);
 
@@ -1865,82 +2545,8 @@ public class MainViewModel : ViewModelBase
             _ => ActionType.ViClass
         };
 
-        if (mainStats.Count < 2)
-        {
-            // メインが1つだけの場合は全レッスンをそれに割り当て
-            var onlyAction = mainStats[0] switch
-            {
-                "vo" => ActionType.VoLesson,
-                "da" => ActionType.DaLesson,
-                _ => ActionType.ViLesson
-            };
-            foreach (var tc in TurnChoices)
-            {
-                if (!tc.IsFixedEvent && tc.AvailableActions.Contains(onlyAction))
-                    tc.SelectedAction = onlyAction;
-            }
-        }
-        else
-        {
-            // メイン2属性のレッスンアクション
-            var main1Action = mainStats[0] switch
-            {
-                "vo" => ActionType.VoLesson,
-                "da" => ActionType.DaLesson,
-                _ => ActionType.ViLesson
-            };
-            var main2Action = mainStats[1] switch
-            {
-                "vo" => ActionType.VoLesson,
-                "da" => ActionType.DaLesson,
-                _ => ActionType.ViLesson
-            };
-
-            // 中間試験の週を探す
-            var midExamWeek = _selectedPlan?.Schedule
-                .Where(w => w.IsFixedEvent && w.EventName == "中間試験")
-                .Select(w => w.Week)
-                .FirstOrDefault() ?? 10;
-
-            // レッスン週を中間前後に分ける
-            var lessonTurns = TurnChoices
-                .Where(tc => !tc.IsFixedEvent && tc.AvailableActions.Any(a =>
-                    a is ActionType.VoLesson or ActionType.DaLesson or ActionType.ViLesson))
-                .OrderBy(tc => tc.Week)
-                .ToList();
-
-            var beforeMid = lessonTurns.Where(tc => tc.Week < midExamWeek).ToList();
-            var afterMid = lessonTurns.Where(tc => tc.Week > midExamWeek).ToList();
-
-            // 中間前: メイン1:メイン2 = 1:1 (交互に割り当て)
-            bool toggle = false;
-            foreach (var tc in beforeMid)
-            {
-                var action = toggle ? main2Action : main1Action;
-                if (tc.AvailableActions.Contains(action))
-                    tc.SelectedAction = action;
-                else if (tc.AvailableActions.Contains(toggle ? main1Action : main2Action))
-                    tc.SelectedAction = toggle ? main1Action : main2Action;
-                toggle = !toggle;
-            }
-
-            // 中間後: メイン1:メイン2 = 2:1 (メイン1を多めに)
-            // 3回中: メイン1, メイン2, メイン1 の順 (1回だけの属性を2回目に配置)
-            int afterCount = 0;
-            foreach (var tc in afterMid)
-            {
-                var action = (afterCount % 3 == 1) ? main2Action : main1Action;
-                if (tc.AvailableActions.Contains(action))
-                    tc.SelectedAction = action;
-                else
-                {
-                    var fallback = (action == main2Action) ? main1Action : main2Action;
-                    if (tc.AvailableActions.Contains(fallback))
-                        tc.SelectedAction = fallback;
-                }
-                afterCount++;
-            }
-        }
+        // レッスン週の配分は DistributeLessonsInto に集約 (シード/一括配分と同一ソース)
+        DistributeLessonsInto(mainStats);
 
         // 授業週: サブ属性の授業を選択
         foreach (var tc in TurnChoices)
@@ -2028,6 +2634,32 @@ public class MainViewModel : ViewModelBase
     private void ApplyEventTemplate(EventCountTemplate template)
     {
         ApplyCounts(template.Counts);
+        ApplyTemplateWeekActionsToSchedule(template);
+    }
+
+    /// <summary>
+    /// 日程方式: テンプレートの week_actions をスケジュールへ反映する（活動支給軸/相談削除軸の切替）。
+    /// 直後の再適用(SelectedEventTemplate セッター)が新日程を使えるようスナップショットも更新する。
+    /// </summary>
+    private void ApplyTemplateWeekActionsToSchedule(EventCountTemplate template)
+    {
+        if (!IsExplicitSchedulePlan || _selectedPlan == null) return;
+        if (template.PlanId != _selectedPlan.Id) return;
+        if (template.WeekActions == null || template.WeekActions.Count == 0) return;
+
+        foreach (var tc in TurnChoices)
+        {
+            if (tc.IsFixedEvent) continue;
+            if (template.WeekActions.TryGetValue(tc.Week, out var actionStr)
+                && TurnChoiceViewModel.TryParseAction(actionStr, out var action)
+                && tc.AvailableActions.Contains(action))
+            {
+                tc.SelectedAction = action;
+            }
+        }
+        CacheScheduleSelections();
+        if (_isScheduleMode)
+            _scheduleTurnChoices = TurnChoices.Where(t => !t.IsFixedEvent).Select(t => t.ToTurnChoice()).ToList();
     }
 
     /// <summary>AdditionalCounts の各値を入力欄プロパティへ反映する（テンプレート/プリセット共通）。</summary>
@@ -2243,6 +2875,8 @@ public class MainViewModel : ViewModelBase
         RequiredCards.Clear();
         ExcludedCards.Clear();
         OnPropertyChanged(nameof(CanAddRequiredCard));
+        // 日程方式: リセットは編集キャッシュも消して既定シードに戻す
+        if (_selectedPlan != null) _scheduleSelectionCache.Remove(_selectedPlan.Id);
         OnPlanChanged();
     }
 

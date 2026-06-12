@@ -85,10 +85,22 @@
       available_actions: ["special_training"]
 
     # Week 9: 1次オーディション
+    # status_gain はキャラの審査基準(nia_criteria)・流行(nia_trend)と選択種別から動的生成される。
+    # 種別ごとに balance(バランス) / concentrate(突出) の流行1/2/3別 理論値量。
     - week: 9
       type: "audition"
       event_name: "1次オーディション"
       status_gain: { vo: 0, da: 0, vi: 0 }
+      nia_audition_tiers:
+        - name: "メロBang!"
+          balance: { t1: 92, t2: 76, t3: 62 }
+          concentrate: { t1: 116, t2: 69, t3: 46 }
+        - name: "ハーモニーToNight"
+          balance: { t1: 62, t2: 51, t3: 42 }
+          concentrate: { t1: 77, t2: 46, t3: 31 }
+        - name: "MusicOrder"
+          balance: { t1: 31, t2: 25, t3: 21 }
+          concentrate: { t1: 39, t2: 23, t3: 15 }
 
     # Week 10: おでかけ / 差し入れ
     - week: 10
@@ -158,6 +170,16 @@
       type: "audition"
       event_name: "2次オーディション"
       status_gain: { vo: 0, da: 0, vi: 0 }
+      nia_audition_tiers:
+        - name: "GALAXYミュージック"
+          balance: { t1: 119, t2: 98, t3: 80 }
+          concentrate: { t1: 149, t2: 89, t3: 59 }
+        - name: "POPFair"
+          balance: { t1: 79, t2: 65, t3: 53 }
+          concentrate: { t1: 99, t2: 59, t3: 40 }
+        - name: "MELODYJourney"
+          balance: { t1: 40, t2: 33, t3: 27 }
+          concentrate: { t1: 50, t2: 30, t3: 20 }
 
     # Week 18: おでかけ / 差し入れ
     - week: 18
@@ -239,3 +261,16 @@
       type: "audition"
       event_name: "最終オーディション"
       status_gain: { vo: 0, da: 0, vi: 0 }
+      nia_audition_tiers:
+        - name: "FINALE"
+          balance: { t1: 172, t2: 142, t3: 116 }
+          concentrate: { t1: 215, t2: 129, t3: 86 }
+        - name: "QUARTET"
+          balance: { t1: 145, t2: 120, t3: 98 }
+          concentrate: { t1: 182, t2: 109, t3: 73 }
+        - name: "IDOLBigup!"
+          balance: { t1: 97, t2: 80, t3: 65 }
+          concentrate: { t1: 121, t2: 73, t3: 48 }
+        - name: "SingleCut"
+          balance: { t1: 48, t2: 40, t3: 33 }
+          concentrate: { t1: 61, t2: 36, t3: 24 }

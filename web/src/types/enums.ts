@@ -28,7 +28,7 @@ export const ACTION_TYPE_DISPLAY: Record<ActionType, string> = {
   da_class: 'Da授業',
   vi_class: 'Vi授業',
   outing: 'お出かけ',
-  rest: '休憩',
+  rest: '休む',
   consultation: '相談',
   activity_supply: '活動支給',
   special_training: '特別指導',

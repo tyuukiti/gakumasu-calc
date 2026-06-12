@@ -59,7 +59,7 @@ public class CardEditorViewModel : ViewModelBase
         new("activity_supply", "活動支給選択時"),
         new("exam_end", "試験終了時"),
         new("special_training", "特別指導開始時"),
-        new("rest", "休憩選択時"),
+        new("rest", "休む選択時"),
         new("skill_ssr_acquire", "スキル(SSR)獲得時"),
         new("skill_enhance", "スキル強化時"),
         new("skill_delete", "スキル削除時"),
