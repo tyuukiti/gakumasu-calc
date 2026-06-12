@@ -67,20 +67,16 @@
                 <StackPanel>
                     <TextBlock Text="スケジュール調整" Style="{StaticResource SectionHeader}"/>
 
-                    <!-- 一括設定: レッスン配分 -->
+                    <!-- 一括設定: レッスン (全レッスン週に単一属性) -->
                     <Border Background="#F7F7F7" BorderBrush="#E0E0E0" BorderThickness="1"
                             CornerRadius="4" Padding="10,8" Margin="0,0,0,6">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="レッスン配分:" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
-                            <TextBlock Text="メイン1" FontSize="11" Foreground="#777" VerticalAlignment="Center" Margin="8,0,4,0"/>
-                            <ComboBox ItemsSource="{Binding ScheduleStatOptions}" SelectedValue="{Binding ScheduleBulkMain1}"
+                            <TextBlock Text="レッスン:" FontSize="12" Foreground="#555" VerticalAlignment="Center"/>
+                            <TextBlock Text="属性" FontSize="11" Foreground="#777" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                            <ComboBox ItemsSource="{Binding ScheduleStatOptions}" SelectedValue="{Binding ScheduleBulkLessonStat}"
                                       SelectedValuePath="Value" DisplayMemberPath="Label"
                                       FontSize="12" Padding="6,3" MinWidth="80" VerticalAlignment="Center"/>
-                            <TextBlock Text="メイン2" FontSize="11" Foreground="#777" VerticalAlignment="Center" Margin="10,0,4,0"/>
-                            <ComboBox ItemsSource="{Binding ScheduleMain2Options}" SelectedValue="{Binding ScheduleBulkMain2}"
-                                      SelectedValuePath="Value" DisplayMemberPath="Label"
-                                      FontSize="12" Padding="6,3" MinWidth="80" VerticalAlignment="Center"/>
-                            <Button Content="全レッスンに適用" Command="{Binding ApplyScheduleBulkMainCommand}"
+                            <Button Content="全レッスンに適用" Command="{Binding ApplyScheduleBulkLessonCommand}"
                                     Style="{StaticResource SecondaryButton}" FontSize="11" Padding="10,4" Margin="12,0,0,0"/>
                         </StackPanel>
                     </Border>

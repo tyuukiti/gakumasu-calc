@@ -228,9 +228,8 @@ interface CalcState {
 
   /** 日程方式: planId → week → 選択。calcStore は両タブ共有のため planId キーで保持する。 */
   scheduleChoices: Record<string, Record<number, ScheduleChoice>>;
-  /** 一括メイン属性配分（main1/main2、異値）。 */
-  scheduleBulkMain1: 'vo' | 'da' | 'vi';
-  scheduleBulkMain2: 'vo' | 'da' | 'vi';
+  /** 一括レッスン属性（全レッスン週に適用する単一属性。メイン1/2の概念は廃止）。 */
+  scheduleBulkLessonStat: 'vo' | 'da' | 'vi';
   /** 一括授業属性。 */
   scheduleBulkClassStat: 'vo' | 'da' | 'vi';
   /** 日程プリセット（planId → プリセット配列、localStorage 永続化）。 */
@@ -273,11 +272,10 @@ interface CalcState {
   setScheduleChoice: (planId: string, week: number, choice: ScheduleChoice) => void;
   /** 未設定の週を現行の自動配分でシード（既存の選択は上書きしない）。 */
   seedScheduleDefaults: (planId: string) => void;
-  setScheduleBulkMain1: (stat: 'vo' | 'da' | 'vi') => void;
-  setScheduleBulkMain2: (stat: 'vo' | 'da' | 'vi') => void;
+  setScheduleBulkLessonStat: (stat: 'vo' | 'da' | 'vi') => void;
   setScheduleBulkClassStat: (stat: 'vo' | 'da' | 'vi') => void;
-  /** 全レッスン週に main1/main2 配分を一括適用。 */
-  applyScheduleBulkDistribution: (planId: string) => void;
+  /** 全レッスン週に選択属性を一括適用。 */
+  applyScheduleBulkLesson: (planId: string) => void;
   /** 全授業週に bulkClassStat を一括適用。 */
   applyScheduleBulkClass: (planId: string) => void;
   /** 現在の日程を名前付きで保存（同名上書き、空は保存しない、上限あり）。 */
@@ -721,8 +719,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   _lastTurnChoices: [],
 
   scheduleChoices: {},
-  scheduleBulkMain1: 'vo',
-  scheduleBulkMain2: 'da',
+  scheduleBulkLessonStat: 'vo',
   scheduleBulkClassStat: 'vo',
   schedulePresetsByPlan: loadSchedulePresetsByPlan(),
   niaAuditionTierByWeek: {},
@@ -1063,9 +1060,10 @@ export const useCalcStore = create<CalcState>((set, get) => ({
     const template = state.selectedTemplateName
       ? templates.find((t) => t.name === state.selectedTemplateName && t.plan_id === planId) ?? null
       : null;
+    // 単一属性シード: 全レッスンを bulkLessonStat、非レッスン週は優先度デフォルト（メイン1/2廃止）
     const autoChoices = autoAssignTurnChoices(
       plan,
-      [state.scheduleBulkMain1, state.scheduleBulkMain2],
+      [state.scheduleBulkLessonStat],
       template,
     );
     const existing = state.scheduleChoices[planId] ?? {};
@@ -1083,29 +1081,16 @@ export const useCalcStore = create<CalcState>((set, get) => ({
     }
   },
 
-  setScheduleBulkMain1: (stat) => {
-    const state = get();
-    // main1 と main2 は異値を保つ
-    const main2 = state.scheduleBulkMain2 === stat
-      ? (['vo', 'da', 'vi'] as const).find((x) => x !== stat)!
-      : state.scheduleBulkMain2;
-    set({ scheduleBulkMain1: stat, scheduleBulkMain2: main2 });
-  },
-
-  setScheduleBulkMain2: (stat) => {
-    const state = get();
-    if (stat === state.scheduleBulkMain1) return;
-    set({ scheduleBulkMain2: stat });
-  },
+  setScheduleBulkLessonStat: (stat) => set({ scheduleBulkLessonStat: stat }),
 
   setScheduleBulkClassStat: (stat) => set({ scheduleBulkClassStat: stat }),
 
-  applyScheduleBulkDistribution: (planId) => {
+  applyScheduleBulkLesson: (planId) => {
     const state = get();
-    if (state.scheduleBulkMain1 === state.scheduleBulkMain2) return;
     const plan = useAppStore.getState().plans.find((p) => p.id === planId);
     if (!plan) return;
-    const assignment = distributeLessons(plan, [state.scheduleBulkMain1, state.scheduleBulkMain2]);
+    // 全レッスン週に選択属性を適用（distributeLessons の単一メイン分岐＝全週その属性）
+    const assignment = distributeLessons(plan, [state.scheduleBulkLessonStat]);
     const existing = state.scheduleChoices[planId] ?? {};
     const next: Record<number, ScheduleChoice> = { ...existing };
     for (const [weekStr, action] of Object.entries(assignment)) {

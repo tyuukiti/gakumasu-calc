@@ -1082,7 +1082,7 @@ public class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsUpdateBannerVisible));
         });
         HifCalculateCommand = new RelayCommand(_ => ExecuteHifCalculate());
-        ApplyScheduleBulkMainCommand = new RelayCommand(_ => ExecuteApplyScheduleBulkMain());
+        ApplyScheduleBulkLessonCommand = new RelayCommand(_ => ExecuteApplyScheduleBulkLesson());
         ApplyScheduleBulkClassCommand = new RelayCommand(_ => ExecuteApplyScheduleBulkClass());
         SaveSchedulePresetCommand = new RelayCommand(_ => ExecuteSaveSchedulePreset());
         DeleteSchedulePresetCommand = new RelayCommand(_ => ExecuteDeleteSchedulePreset(),
@@ -1228,31 +1228,13 @@ public class MainViewModel : ViewModelBase
         new() { Value = "vi", Label = "Visual" },
     };
 
-    private string _scheduleBulkMain1 = "vo";
-    public string ScheduleBulkMain1
+    /// <summary>一括レッスン属性（全レッスン週に適用する単一属性。メイン1/2の概念は廃止）。</summary>
+    private string _scheduleBulkLessonStat = "vo";
+    public string ScheduleBulkLessonStat
     {
-        get => _scheduleBulkMain1;
-        set
-        {
-            if (SetProperty(ref _scheduleBulkMain1, value))
-            {
-                if (_scheduleBulkMain2 == value)
-                    ScheduleBulkMain2 = new[] { "vo", "da", "vi" }.First(s => s != value);
-                OnPropertyChanged(nameof(ScheduleMain2Options));
-            }
-        }
+        get => _scheduleBulkLessonStat;
+        set => SetProperty(ref _scheduleBulkLessonStat, value);
     }
-
-    private string _scheduleBulkMain2 = "da";
-    public string ScheduleBulkMain2
-    {
-        get => _scheduleBulkMain2;
-        set => SetProperty(ref _scheduleBulkMain2, value);
-    }
-
-    /// <summary>メイン1以外のメイン2候補。</summary>
-    public List<HifStatOption> ScheduleMain2Options =>
-        ScheduleStatOptions.Where(o => o.Value != _scheduleBulkMain1).ToList();
 
     private string _scheduleBulkClassStat = "vo";
     public string ScheduleBulkClassStat
@@ -1261,13 +1243,14 @@ public class MainViewModel : ViewModelBase
         set => SetProperty(ref _scheduleBulkClassStat, value);
     }
 
-    public ICommand ApplyScheduleBulkMainCommand { get; private set; } = null!;
+    public ICommand ApplyScheduleBulkLessonCommand { get; private set; } = null!;
     public ICommand ApplyScheduleBulkClassCommand { get; private set; } = null!;
 
-    private void ExecuteApplyScheduleBulkMain()
+    private void ExecuteApplyScheduleBulkLesson()
     {
-        if (_selectedPlan == null || _scheduleBulkMain1 == _scheduleBulkMain2) return;
-        DistributeLessonsInto(new List<string> { _scheduleBulkMain1, _scheduleBulkMain2 });
+        if (_selectedPlan == null) return;
+        // 全レッスン週に選択属性を適用（DistributeLessonsInto の単一メイン分岐＝全週その属性）
+        DistributeLessonsInto(new List<string> { _scheduleBulkLessonStat });
         CacheScheduleSelections();
     }
 
@@ -1759,10 +1742,10 @@ public class MainViewModel : ViewModelBase
             }
             else
             {
-                // 既定シード (今日の自動配分と一致: main1=vo, main2=da)
+                // 既定シード: 全レッスンを bulkLessonStat、非レッスン週は優先度デフォルト（メイン1/2廃止）
                 AutoAssignTurnChoices(
                     new Dictionary<string, int> { ["vo"] = 0, ["da"] = 0, ["vi"] = 0 },
-                    new List<string> { ScheduleBulkMain1, ScheduleBulkMain2 },
+                    new List<string> { ScheduleBulkLessonStat },
                     null);
             }
             LoadSchedulePresetsForCurrentPlan();
