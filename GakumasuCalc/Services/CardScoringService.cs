@@ -2858,12 +2858,15 @@ public class CardScoringService
             }
         }
 
-        // HIFモードの選抜試験 (基礎値+配分値) もパラボ対象になるので加算する。
-        // BuildPlanAndChoices で audition の StatusGain には既に base+alloc が反映されている。
+        // 試験/オーディション (基礎値+配分値 / 種別理論値) もパラボ対象になるので加算する。
+        // HIF選抜試験は base+alloc、NIAオーディションは種別理論値が StatusGain に反映済み
+        // (BuildNiaAuditionPlan)。実 Calculate 側 (StatusCalculationService) はどちらにもパラボを
+        // 適用するため、スコアリング/内訳のパラボ土台でも両方を含める。
         foreach (var w in plan.Schedule)
         {
             if (w.Type == "audition"
-                && (w.HifExamBase != null || w.HifExamDistributed != null)
+                && (w.HifExamBase != null || w.HifExamDistributed != null
+                    || w.NiaAuditionTiers is { Count: > 0 })
                 && w.StatusGain != null)
             {
                 vo += w.StatusGain.Vo;

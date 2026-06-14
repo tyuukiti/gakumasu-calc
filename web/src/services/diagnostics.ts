@@ -1,7 +1,9 @@
 import type { useCalcStore } from '../stores/calcStore';
+import { SCHEDULE_PLAN_IDS, computeNiaAuditionGain, type ScheduleChoice } from '../stores/calcStore';
 import type { useAppStore } from '../stores/appStore';
 import type { useHifStore } from '../stores/hifStore';
-import type { MemoryBonus } from '../types/models';
+import { applyCharacterToggles } from '../services/characterBonus';
+import type { MemoryBonus, Character, TrainingPlan } from '../types/models';
 import { ACTION_TYPE_DISPLAY } from '../types/enums';
 
 type CalcSnapshot = ReturnType<typeof useCalcStore.getState>;
@@ -39,6 +41,13 @@ const PLAN_TYPE_LABELS: Record<string, string> = {
   sense: 'センス',
   logic: 'ロジック',
   anomaly: 'アノマリー',
+};
+
+const STAT_LABELS: Record<string, string> = { vo: 'Vo', da: 'Da', vi: 'Vi' };
+
+const NIA_CRITERIA_LABELS: Record<string, string> = {
+  balance: 'バランス',
+  concentrate: '突出',
 };
 
 function formatMemoryLine(m: MemoryBonus): string | null {
@@ -122,6 +131,82 @@ function appendResult(
   lines.push(`合計: ${total}`);
 }
 
+/** キャラの実効補正 (3凸/STEP4 反映後の基礎ステータス + パラボ%) を lines に追記。 */
+function appendCharacterBonus(
+  lines: string[],
+  character: Character | null | undefined,
+  uncap3Enabled: boolean,
+  step4Enabled: boolean,
+): void {
+  const eff = applyCharacterToggles(character, uncap3Enabled, step4Enabled);
+  if (!eff) return;
+  const b = eff.base_status_bonus;
+  const p = eff.para_bonus;
+  lines.push(
+    `キャラ補正(実効): 基礎 Vo+${b.vo}/Da+${b.da}/Vi+${b.vi}` +
+      ` / パラボ Vo+${p.vo}%/Da+${p.da}%/Vi+${p.vi}%`,
+  );
+}
+
+/** 日程方式プラン (初レジェンド/NIA) の週ごと選択行動を lines に追記。 */
+function appendSchedule(
+  lines: string[],
+  plan: TrainingPlan | undefined,
+  choices: Record<number, ScheduleChoice> | undefined,
+): void {
+  if (!plan || !choices) return;
+  const schedLines: string[] = [];
+  for (const w of plan.schedule) {
+    // 選択肢のない週 (固定イベント/オーディション等) は日程ダンプ対象外
+    if (w.available_actions.length === 0) continue;
+    const choice = choices[w.week];
+    if (!choice) continue;
+    const actLabel = ACTION_TYPE_DISPLAY[choice.action] ?? choice.action;
+    schedLines.push(`W${w.week}: ${actLabel}`);
+  }
+  if (schedLines.length === 0) return;
+  lines.push('');
+  lines.push('[日程]');
+  lines.push(...schedLines);
+}
+
+/** NIAオーディションの審査基準・流行・週ごとの種別と算出獲得値(パラボ前)を lines に追記。 */
+function appendNiaAudition(
+  lines: string[],
+  plan: TrainingPlan | undefined,
+  character: Character | null | undefined,
+  tierByWeek: Record<number, string>,
+): void {
+  if (!plan) return;
+  const auditionWeeks = plan.schedule.filter((w) => (w.nia_audition_tiers?.length ?? 0) > 0);
+  if (auditionWeeks.length === 0) return;
+
+  lines.push('');
+  lines.push('[NIAオーディション] (獲得値はパラボ適用前)');
+
+  const crit = character?.nia_criteria
+    ? NIA_CRITERIA_LABELS[character.nia_criteria] ?? character.nia_criteria
+    : '(未設定)';
+  const trend =
+    character?.nia_trend && character.nia_trend.length >= 3
+      ? `流行1=${STAT_LABELS[character.nia_trend[0]] ?? character.nia_trend[0]}` +
+        ` / 流行2=${STAT_LABELS[character.nia_trend[1]] ?? character.nia_trend[1]}` +
+        ` / 流行3=${STAT_LABELS[character.nia_trend[2]] ?? character.nia_trend[2]}`
+      : '(未設定 → 獲得0)';
+  lines.push(`審査基準: ${crit} / ${trend}`);
+
+  for (const w of auditionWeeks) {
+    const tiers = w.nia_audition_tiers!;
+    const tierName = tierByWeek[w.week] ?? tiers[0].name;
+    const gain = computeNiaAuditionGain(w, character, tierName);
+    const gainStr = gain
+      ? `Vo+${gain.vo}/Da+${gain.da}/Vi+${gain.vi}`
+      : '獲得0 (キャラ/流行未設定)';
+    const name = w.event_name ? ` ${w.event_name}` : '';
+    lines.push(`W${w.week}${name}: ${tierName} → ${gainStr}`);
+  }
+}
+
 /**
  * 現在の計算設定・選択編成・計算結果を、問題報告用の平文レポートにまとめる。
  * 計算未実行でも設定だけはダンプできる。
@@ -136,7 +221,10 @@ export function buildDiagnosticReport(calc: CalcSnapshot, app: AppSnapshot): str
   const plan = app.plans.find((p) => p.id === calc.selectedPlanId);
   lines.push(`プラン: ${plan ? plan.name : '(未選択)'}${plan ? ` (${plan.id})` : ''}`);
   lines.push(`プランタイプ: ${PLAN_TYPE_LABELS[calc.selectedPlanType] ?? calc.selectedPlanType}`);
-  lines.push(`ロール: Vo=${calc.voRole} / Da=${calc.daRole} / Vi=${calc.viRole}`);
+  // 日程方式 (初レジェンド/NIA) はメイン属性を日程から自動判定するためロールは持たない
+  if (!plan || !SCHEDULE_PLAN_IDS.has(plan.id)) {
+    lines.push(`ロール: Vo=${calc.voRole} / Da=${calc.daRole} / Vi=${calc.viRole}`);
+  }
   lines.push(`SP回数: Vo=${calc.voSpCount} / Da=${calc.daSpCount} / Vi=${calc.viSpCount}`);
   lines.push(`所持カードのみ: ${calc.ownedOnly ? 'ON' : 'OFF'}`);
   lines.push(`コンテストモード: ${calc.contestMode ? 'ON' : 'OFF'}`);
@@ -149,6 +237,7 @@ export function buildDiagnosticReport(calc: CalcSnapshot, app: AppSnapshot): str
       (character ? ` / 3凸ボーナス: ${calc.uncap3BonusEnabled ? 'ON' : 'OFF'}` : '') +
       (character?.step4_bonus ? ` / STEP4ボーナス: ${calc.step4BonusEnabled ? 'ON' : 'OFF'}` : ''),
   );
+  appendCharacterBonus(lines, character, calc.uncap3BonusEnabled, calc.step4BonusEnabled);
 
   if (calc.selectedTemplateName) {
     lines.push(`テンプレート: ${calc.selectedTemplateName}`);
@@ -160,6 +249,14 @@ export function buildDiagnosticReport(calc: CalcSnapshot, app: AppSnapshot): str
       return c ? `${c.name} (${id})` : id;
     });
     lines.push(`必須カード: ${names.join(', ')}`);
+  }
+
+  // 日程方式プラン (初レジェンド/NIA) は日程選択・オーディション情報を追記
+  if (plan && SCHEDULE_PLAN_IDS.has(plan.id)) {
+    appendSchedule(lines, plan, calc.scheduleChoices[plan.id]);
+    if (plan.id === 'nia') {
+      appendNiaAudition(lines, plan, character, calc.niaAuditionTierByWeek);
+    }
   }
 
   appendEventCounts(lines, calc.additionalCounts);
@@ -200,6 +297,7 @@ export function buildHifDiagnosticReport(
       (character ? ` / 3凸ボーナス: ${calc.uncap3BonusEnabled ? 'ON' : 'OFF'}` : '') +
       (character?.step4_bonus ? ` / STEP4ボーナス: ${calc.step4BonusEnabled ? 'ON' : 'OFF'}` : ''),
   );
+  appendCharacterBonus(lines, character, calc.uncap3BonusEnabled, calc.step4BonusEnabled);
 
   if (calc.selectedTemplateName) {
     lines.push(`テンプレート: ${calc.selectedTemplateName}`);
