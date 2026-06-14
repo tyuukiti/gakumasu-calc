@@ -46,6 +46,31 @@ public class CardScoringService
         public string Label { get; set; } = string.Empty;
         public List<CardScore> SelectedCards { get; set; } = new();
         public int TotalValue => SelectedCards.Sum(c => c.TotalValue);
+        /// <summary>アビリティまとめ (行動別)。total 降順。行動トリガーが1件も無ければ空。</summary>
+        public List<AbilitySummaryEntry> AbilitySummary { get; set; } = new();
+    }
+
+    /// <summary>
+    /// アビリティまとめ (行動別) の1エントリ。選択6枚の flat 効果 (trigger != "equip") を
+    /// (行動トリガー × 属性) で合算したもの。「どの行動を取るとパラメが伸びるか」の比較用。
+    /// 値は各カード個別内訳と同じ生寄与 (cap前・キャラパラボ前)。
+    /// </summary>
+    public class AbilitySummaryEntry
+    {
+        /// <summary>トリガーキー (例: "class_end")</summary>
+        public string Trigger { get; set; } = string.Empty;
+        /// <summary>トリガー表示名 (例: "授業終了")</summary>
+        public string TriggerName { get; set; } = string.Empty;
+        /// <summary>属性 ("vo" | "da" | "vi" | "all")</summary>
+        public string Stat { get; set; } = string.Empty;
+        /// <summary>1発動あたりの合計上昇値 X = Σ(各カードの per-fire 値)</summary>
+        public double PerFire { get; set; }
+        /// <summary>per-fire 値のカード別内訳 (降順)。表示の (a+b+c) 用</summary>
+        public List<double> Parts { get; set; } = new();
+        /// <summary>発動回数 (N)</summary>
+        public int Fires { get; set; }
+        /// <summary>合計寄与 (権威値) = Σ(各カードの per-fire × 実効発動回数)</summary>
+        public double Total { get; set; }
     }
 
     /// <summary>
@@ -661,7 +686,7 @@ public class CardScoringService
         }
 
         // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
-        RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
+        var adjustedCounts = RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
 
         // キャップ適用後の実効値でTotalValueを再計算
         RecalculateWithCap(selected, baseStats, statCap);
@@ -671,7 +696,8 @@ public class CardScoringService
         return new DeckResult
         {
             Label = GenerateLabel(cardTypeSlots, freeSlots),
-            SelectedCards = selected
+            SelectedCards = selected,
+            AbilitySummary = BuildAbilitySummary(selected, adjustedCounts, uncapLevels)
         };
     }
 
@@ -2288,13 +2314,14 @@ public class CardScoringService
                 additionalCounts, statCap, character, memoryBonuses, overflowPenalty);
         }
 
-        RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
+        var adjustedCounts = RecomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
         RecalculateWithCap(selected, baseStats, statCap);
         selected = selected.OrderByDescending(cs => cs.TotalValue).ToList();
         results[freeIdx] = new DeckResult
         {
             Label = free.Label,
             SelectedCards = selected,
+            AbilitySummary = BuildAbilitySummary(selected, adjustedCounts, uncapLevels),
         };
     }
 
@@ -2564,7 +2591,7 @@ public class CardScoringService
     /// - producer 側では trigger_count_bonus を raw_* に加算しない (二重カウント回避)
     /// - team_bonus_total はデッキ内 consumer のみを対象に計算
     /// </summary>
-    private void RecomputeBreakdownsDeckAware(
+    private Dictionary<string, int> RecomputeBreakdownsDeckAware(
         List<CardScore> selected,
         Dictionary<string, int> baseTriggerCounts,
         Dictionary<string, int> lessonAllocation,
@@ -2603,7 +2630,7 @@ public class CardScoringService
                 }
             }
         }
-        if (deckBonuses.Count == 0) return;
+        if (deckBonuses.Count == 0) return baseTriggerCounts;
 
         // 2. adjustedCounts = base + producer-derived bonus
         var adjustedCounts = new Dictionary<string, int>(baseTriggerCounts);
@@ -2632,6 +2659,96 @@ public class CardScoringService
             recomputed.IsRequired = cs.IsRequired;
             selected[i] = recomputed;
         }
+
+        return adjustedCounts;
+    }
+
+    /// <summary>
+    /// アビリティまとめ (行動別) を構築する。
+    ///
+    /// 選択カードの flat 効果 (trigger != "equip") を (行動トリガー × 属性) でグループ化し、
+    /// 発動回数を掛けて合算する。「どの行動を取るとパラメが伸びるか」の比較用。
+    /// - 値は CalculateCardContribution / 各カード内訳と同じ生寄与 (cap前・キャラパラボ前)
+    /// - 装備 (初期値/SP率)・パラボ・trigger_count_bonus は行動選択で変動しないため除外
+    /// - レンタル枠は4凸として評価 (内訳パネルと同じ)
+    /// - triggerCounts は RecomputeBreakdownsDeckAware が返す adjustedCounts (trigger_count_bonus 反映済み)
+    ///
+    /// MaxCount でカードごとに実効発動回数が異なる稀ケースでは、Total は各カードの
+    /// 実効回数で正確に合算し、表示の発動回数 N は当該トリガーの発動回数を用いる
+    /// (PerFire × N が Total と一致しない場合があるが Total が権威値)。
+    /// </summary>
+    internal List<AbilitySummaryEntry> BuildAbilitySummary(
+        List<CardScore> selected,
+        Dictionary<string, int> triggerCounts,
+        Dictionary<string, int>? uncapLevels)
+    {
+        // レンタル枠は内訳パネルと同様に常に4凸として評価する
+        var effectiveUncap = uncapLevels != null
+            ? new Dictionary<string, int>(uncapLevels)
+            : new Dictionary<string, int>();
+        foreach (var cs in selected)
+        {
+            if (cs.IsRental) effectiveUncap[cs.Card.Id] = 4;
+        }
+
+        var groups = new Dictionary<string, AbilitySummaryEntry>();
+        var order = new List<string>();
+
+        foreach (var cs in selected)
+        {
+            int uncap = StatusCalculationService.GetUncapLevel(cs.Card, effectiveUncap);
+            foreach (var effect in cs.Card.Effects)
+            {
+                if (effect.ValueType != "flat") continue;
+                if (effect.Trigger == "equip") continue;
+
+                int triggerFires = triggerCounts.GetValueOrDefault(effect.Trigger);
+                if (triggerFires <= 0) continue;
+
+                double perFire = effect.GetValue(uncap);
+                if (Math.Abs(perFire) < 0.01) continue;
+
+                int effFires = effect.MaxCount.HasValue
+                    ? Math.Min(triggerFires, effect.MaxCount.Value)
+                    : triggerFires;
+                if (effFires <= 0) continue;
+
+                string key = $"{effect.Trigger}|{effect.Stat}";
+                if (!groups.TryGetValue(key, out var acc))
+                {
+                    acc = new AbilitySummaryEntry
+                    {
+                        Trigger = effect.Trigger,
+                        TriggerName = TriggerDisplayName(effect.Trigger),
+                        Stat = effect.Stat,
+                        Fires = triggerFires,
+                    };
+                    groups[key] = acc;
+                    order.Add(key);
+                }
+                acc.PerFire += perFire;
+                acc.Parts.Add(Math.Round(perFire, 1));
+                acc.Total += perFire * effFires;
+            }
+        }
+
+        var entries = order.Select(k => groups[k]).ToList();
+        foreach (var e in entries)
+        {
+            e.PerFire = Math.Round(e.PerFire, 1);
+            e.Total = Math.Round(e.Total, 1);
+            e.Parts.Sort((a, b) => b.CompareTo(a));
+        }
+
+        // 同一トリガーをまとめ、グループ合計 (= その行動で得られる総パラメ) の降順に並べる。
+        // グループ内は Vo→Da→Vi→All の順 (同じ行動の Vo/Da/Vi がバラけて読みづらいのを防ぐ)。
+        var groupTotal = entries.GroupBy(e => e.Trigger).ToDictionary(g => g.Key, g => g.Sum(e => e.Total));
+        static int StatRank(string s) => s switch { "vo" => 0, "da" => 1, "vi" => 2, "all" => 3, _ => 4 };
+        return entries
+            .OrderByDescending(e => groupTotal[e.Trigger])
+            .ThenBy(e => e.Trigger, StringComparer.Ordinal)
+            .ThenBy(e => StatRank(e.Stat))
+            .ToList();
     }
 
     private static string TriggerDisplayName(string trigger) => trigger switch

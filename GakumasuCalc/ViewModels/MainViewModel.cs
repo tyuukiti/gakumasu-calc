@@ -100,6 +100,10 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<TrainingPlan> AvailablePlans { get; } = new();
     public ObservableCollection<TurnChoiceViewModel> TurnChoices { get; } = new();
     public ObservableCollection<DeckCardViewModel> DeckCards { get; } = new();
+    /// <summary>選択デッキ6枚を行動別に合算したアビリティまとめ (total 降順)。</summary>
+    public ObservableCollection<AbilitySummaryEntryViewModel> DeckAbilitySummary { get; } = new();
+    public System.Windows.Visibility DeckAbilitySummaryVisibility =>
+        DeckAbilitySummary.Count > 0 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     public ObservableCollection<PatternResultViewModel> PatternResults { get; } = new();
     public ObservableCollection<CharacterTileViewModel> CharacterTiles { get; } = new();
     public ObservableCollection<MemoryBonusViewModel> MemoryBonuses { get; } = new();
@@ -1774,6 +1778,8 @@ public class MainViewModel : ViewModelBase
         // 残すと別プランの古い _deckResults でパターン再適用される事故の温床になる。
         Result = null;
         DeckCards.Clear();
+        DeckAbilitySummary.Clear();
+        OnPropertyChanged(nameof(DeckAbilitySummaryVisibility));
         _deckResults = new List<CardScoringService.DeckResult>();
         PatternResults.Clear();
         _selectedPattern = null;
@@ -2049,6 +2055,21 @@ public class MainViewModel : ViewModelBase
                 HasSpRate = cs.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"),
             });
         }
+
+        DeckAbilitySummary.Clear();
+        foreach (var e in pattern.AbilitySummary)
+        {
+            DeckAbilitySummary.Add(new AbilitySummaryEntryViewModel
+            {
+                TriggerName = e.TriggerName,
+                Stat = e.Stat,
+                PerFire = e.PerFire,
+                Parts = e.Parts,
+                Fires = e.Fires,
+                Total = e.Total,
+            });
+        }
+        OnPropertyChanged(nameof(DeckAbilitySummaryVisibility));
         OnPropertyChanged(nameof(DeckLabel));
         OnPropertyChanged(nameof(DeckTotal));
     }
@@ -2872,6 +2893,8 @@ public class MainViewModel : ViewModelBase
         ConcentrateAcquire = 0; MotivationAcquire = 0;
         FullpowerAcquire = 0; AggressiveAcquire = 0; ConsultationDrink = 0;
         DeckCards.Clear();
+        DeckAbilitySummary.Clear();
+        OnPropertyChanged(nameof(DeckAbilitySummaryVisibility));
         RequiredCards.Clear();
         ExcludedCards.Clear();
         OnPropertyChanged(nameof(CanAddRequiredCard));
@@ -3166,6 +3189,56 @@ public class EffectBreakdownViewModel
         "vo" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x6B, 0x8A)),
         "da" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x6B, 0x9F, 0xFF)),
         "vi" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xA3, 0x00)),
+        _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x66, 0x66, 0x66)),
+    };
+}
+
+/// <summary>
+/// アビリティまとめ (行動別) の1行。「授業終了 Vo+75 (45+30) ×6回  +450」形式で表示する。
+/// </summary>
+public class AbilitySummaryEntryViewModel
+{
+    public string TriggerName { get; set; } = string.Empty;
+    public string Stat { get; set; } = string.Empty;
+    public double PerFire { get; set; }
+    public List<double> Parts { get; set; } = new();
+    public int Fires { get; set; }
+    public double Total { get; set; }
+
+    private string StatLabel => Stat switch
+    {
+        "vo" => "Vo",
+        "da" => "Da",
+        "vi" => "Vi",
+        "all" => "All",
+        _ => Stat,
+    };
+
+    /// <summary>左側の式表示: 「授業終了 Vo+75 (45+30) ×6回」。parts が2件以上のときのみ内訳を併記。</summary>
+    public string FormulaDisplay
+    {
+        get
+        {
+            var parts = Parts.Count > 1
+                ? $" ({string.Join("+", Parts.Select(p => p.ToString("0.#")))})"
+                : string.Empty;
+            return $"{TriggerName} {StatLabel}+{PerFire:0.#}{parts} ×{Fires}回";
+        }
+    }
+
+    /// <summary>右側の合計表示: 「+450」</summary>
+    public string TotalDisplay => $"+{Total:0.#}";
+
+    /// <summary>
+    /// 属性カラー。アンバー背景で視認性を確保するため、テキスト用の濃色を使う
+    /// (Vi=darkgoldenrod #B8860B。明色 #FFD36B は黄色背景で読めない)。Web版 --color-*-text と対応。
+    /// </summary>
+    public System.Windows.Media.Brush StatColor => Stat switch
+    {
+        "vo" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xC2, 0x18, 0x5B)),
+        "da" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x15, 0x65, 0xC0)),
+        "vi" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xB8, 0x86, 0x0B)),
+        "all" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2E, 0x7D, 0x32)),
         _ => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x66, 0x66, 0x66)),
     };
 }

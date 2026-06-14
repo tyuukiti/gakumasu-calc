@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCalcStore } from '../../stores/calcStore';
 import type { CardScore } from '../../types/results';
 import { trackEvent } from '../../utils/analytics';
+import AbilitySummaryRow from '../AbilitySummaryRow';
 
 const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   vo: { bg: 'var(--color-vo-bg)', text: 'var(--color-vo)' },
@@ -165,6 +166,7 @@ export default function DeckCardList() {
             </div>
           );
         })}
+        <AbilitySummaryRow entries={pattern.ability_summary} />
       </div>
     </div>
   );

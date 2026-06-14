@@ -11,7 +11,7 @@
 } from '../types/models';
 import type { ActionType } from '../types/enums';
 import { additionalCountsToRecord } from '../types/models';
-import type { CardScore, EffectBreakdown, DeckResult, TeamBonusContributor } from '../types/results';
+import type { CardScore, EffectBreakdown, DeckResult, TeamBonusContributor, AbilitySummaryEntry } from '../types/results';
 import { sv } from '../utils/statusValues';
 import { getUncapLevel, getEffectValue, calculate, getEventParamBoostPercent } from './statusCalculation';
 import { DEFAULT_STAT_CAP } from '../utils/constants';
@@ -1872,7 +1872,7 @@ function recomputeBreakdownsDeckAware(
   lessonAllocation: Record<string, number>,
   lessonStatTotals: StatusValues,
   uncapLevels: Record<string, number> | undefined,
-): void {
+): Record<string, number> {
   // レンタル枠は所持凸数に依らず常に4凸として評価する
   const effectiveUncapLevels: Record<string, number> = { ...(uncapLevels ?? {}) };
   for (const cs of selected) {
@@ -1897,7 +1897,7 @@ function recomputeBreakdownsDeckAware(
       if (bonus > 0) deckBonuses[target] = (deckBonuses[target] ?? 0) + bonus;
     }
   }
-  if (Object.keys(deckBonuses).length === 0) return;
+  if (Object.keys(deckBonuses).length === 0) return baseTriggerCounts;
 
   // 2. adjustedCounts = base + producer-derived bonus
   const adjustedCounts: Record<string, number> = { ...baseTriggerCounts };
@@ -1927,6 +1927,108 @@ function recomputeBreakdownsDeckAware(
       is_required: cs.is_required,
     };
   }
+
+  return adjustedCounts;
+}
+
+/**
+ * アビリティまとめ (行動別) を構築する。
+ *
+ * 選択カードの flat 効果 (trigger !== 'equip') を (行動トリガー × 属性) でグループ化し、
+ * 発動回数を掛けて合算する。「どの行動を取るとパラメが伸びるか」の比較用。
+ * - 値は calculateCardContribution / 各カード内訳と同じ生寄与 (cap前・キャラパラボ前)
+ * - 装備 (初期値/SP率)・パラボ・trigger_count_bonus は行動選択で変動しないため除外
+ * - レンタル枠は4凸として評価 (内訳パネルと同じ)
+ * - triggerCounts は recomputeBreakdownsDeckAware が返す adjustedCounts (trigger_count_bonus 反映済み)
+ *
+ * max_count でカードごとに実効発動回数が異なる稀ケースでは、total は各カードの
+ * 実効回数で正確に合算し、表示の発動回数 N は当該トリガーの発動回数を用いる
+ * (per_fire × N が total と一致しない場合があるが total が権威値)。
+ */
+export function buildAbilitySummary(
+  selected: CardScore[],
+  triggerCounts: Record<string, number>,
+  uncapLevels: Record<string, number> | undefined,
+): AbilitySummaryEntry[] {
+  // レンタル枠は内訳パネルと同様に常に4凸として評価する
+  const effectiveUncap: Record<string, number> = { ...(uncapLevels ?? {}) };
+  for (const cs of selected) {
+    if (cs.is_rental) effectiveUncap[cs.card.id] = 4;
+  }
+
+  interface Acc {
+    trigger: string;
+    stat: string;
+    fires: number;
+    perFireTotal: number;
+    parts: number[];
+    total: number;
+  }
+  const groups = new Map<string, Acc>();
+
+  for (const cs of selected) {
+    const uncap = getUncapLevel(cs.card, effectiveUncap);
+    for (const effect of cs.card.effects) {
+      if (effect.value_type !== 'flat') continue;
+      if (effect.trigger === 'equip') continue;
+
+      const triggerFires = triggerCounts[effect.trigger] ?? 0;
+      if (triggerFires <= 0) continue;
+
+      const perFire = getEffectValue(effect, uncap);
+      if (Math.abs(perFire) < 0.01) continue;
+
+      const effFires =
+        effect.max_count != null ? Math.min(triggerFires, effect.max_count) : triggerFires;
+      if (effFires <= 0) continue;
+
+      const key = `${effect.trigger}|${effect.stat}`;
+      let acc = groups.get(key);
+      if (acc == null) {
+        acc = {
+          trigger: effect.trigger,
+          stat: effect.stat,
+          fires: triggerFires,
+          perFireTotal: 0,
+          parts: [],
+          total: 0,
+        };
+        groups.set(key, acc);
+      }
+      acc.perFireTotal += perFire;
+      acc.parts.push(Math.round(perFire * 10) / 10);
+      acc.total += perFire * effFires;
+    }
+  }
+
+  const entries: AbilitySummaryEntry[] = [];
+  for (const acc of groups.values()) {
+    acc.parts.sort((a, b) => b - a);
+    entries.push({
+      trigger: acc.trigger,
+      trigger_name: triggerDisplayName(acc.trigger),
+      stat: acc.stat,
+      per_fire: Math.round(acc.perFireTotal * 10) / 10,
+      parts: acc.parts,
+      fires: acc.fires,
+      total: Math.round(acc.total * 10) / 10,
+    });
+  }
+
+  // 同一トリガーをまとめ、グループ合計 (= その行動で得られる総パラメ) の降順に並べる。
+  // グループ内は Vo→Da→Vi→All の順 (同じ行動の Vo/Da/Vi がバラけて読みづらいのを防ぐ)。
+  const groupTotal = new Map<string, number>();
+  for (const e of entries) groupTotal.set(e.trigger, (groupTotal.get(e.trigger) ?? 0) + e.total);
+  const statRank = (s: string): number =>
+    s === 'vo' ? 0 : s === 'da' ? 1 : s === 'vi' ? 2 : s === 'all' ? 3 : 4;
+  entries.sort((a, b) => {
+    const gb = groupTotal.get(b.trigger)!;
+    const ga = groupTotal.get(a.trigger)!;
+    if (gb !== ga) return gb - ga;
+    if (a.trigger !== b.trigger) return a.trigger < b.trigger ? -1 : 1;
+    return statRank(a.stat) - statRank(b.stat);
+  });
+  return entries;
 }
 
 function recalculateWithCap(
@@ -2801,7 +2903,7 @@ function selectOptimalDeckOnce(
   // デッキ確定後の breakdown 再計算: producer の trigger_count_bonus を deck-aware に反映
   // - producer: trigger_count_bonus を raw_* に加算しない (consumer 側が adjustedCounts 経由で実発火数を加算するため)
   // - consumer: triggerCounts[target] が producer の bonus 分増加 → flat 効果が正しい回数で発火
-  recomputeBreakdownsDeckAware(
+  const adjustedCounts = recomputeBreakdownsDeckAware(
     selected,
     triggerCounts,
     lessonAllocation,
@@ -2820,6 +2922,7 @@ function selectOptimalDeckOnce(
     label: generateLabel(cardTypeSlots, freeSlots),
     selected_cards: selected,
     total_value: totalValue,
+    ability_summary: buildAbilitySummary(selected, adjustedCounts, uncapLevels),
   };
 }
 
@@ -3153,12 +3256,13 @@ function crossSeedFreeDeck(
     );
   }
 
-  recomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
+  const adjustedCounts = recomputeBreakdownsDeckAware(selected, triggerCounts, lessonAllocation, lessonStatTotals, uncapLevels);
   recalculateWithCap(selected, baseStats, statCap);
   selected.sort((a, b) => b.total_value - a.total_value);
   results[freeIdx] = {
     label: free.label,
     selected_cards: selected,
     total_value: selected.reduce((s, c) => s + c.total_value, 0),
+    ability_summary: buildAbilitySummary(selected, adjustedCounts, uncapLevels),
   };
 }
