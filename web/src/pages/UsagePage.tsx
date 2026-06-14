@@ -31,6 +31,21 @@ export default function UsagePage() {
         </ol>
       </Section>
 
+      <Section title="コンテストモード">
+        <p className="text-sm text-gray-700 leading-relaxed">
+          <span className="font-semibold">コンテストメモリー作成用の編成</span>を計算するモードです。
+          「計算実行」ボタンの横にあるチェックボックスでONにできます。
+        </p>
+        <p className="text-sm text-gray-700 leading-relaxed mt-2">
+          サポートカードのうち<span className="font-semibold">スキルカード付き・コンテストアイテム付き</span>のものは、
+          ステータスを伸ばすメモリー育成には貢献しません。コンテストモードをONにすると、これらのカードを編成候補から自動で除外して計算します（レンタル枠にも適用されます）。
+        </p>
+        <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 mt-2">
+          <li>除外対象: スキルカード付き / コンテストアイテム付きのサポカ</li>
+          <li>必須カードに指定したカードは、コンテストモードでも除外されず編成に含まれます</li>
+        </ul>
+      </Section>
+
       <Section title="ご要望・不具合の報告">
         <p className="text-sm text-gray-700 leading-relaxed">
           ご要望や不具合の報告は <span className="font-semibold">GitHub の Issue</span> でお知らせください。GitHubの操作が難しい場合は、X（旧Twitter）へのご連絡でも構いません。
