@@ -2739,7 +2739,16 @@ public class CardScoringService
             e.Total = Math.Round(e.Total, 1);
             e.Parts.Sort((a, b) => b.CompareTo(a));
         }
-        return entries.OrderByDescending(e => e.Total).ToList();
+
+        // 同一トリガーをまとめ、グループ合計 (= その行動で得られる総パラメ) の降順に並べる。
+        // グループ内は Vo→Da→Vi→All の順 (同じ行動の Vo/Da/Vi がバラけて読みづらいのを防ぐ)。
+        var groupTotal = entries.GroupBy(e => e.Trigger).ToDictionary(g => g.Key, g => g.Sum(e => e.Total));
+        static int StatRank(string s) => s switch { "vo" => 0, "da" => 1, "vi" => 2, "all" => 3, _ => 4 };
+        return entries
+            .OrderByDescending(e => groupTotal[e.Trigger])
+            .ThenBy(e => e.Trigger, StringComparer.Ordinal)
+            .ThenBy(e => StatRank(e.Stat))
+            .ToList();
     }
 
     private static string TriggerDisplayName(string trigger) => trigger switch

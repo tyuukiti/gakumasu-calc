@@ -43,11 +43,13 @@ describe('buildAbilitySummary (アビリティまとめ・行動別)', () => {
 
   const entries = buildAbilitySummary(selected, triggerCounts, undefined);
 
-  it('(トリガー×属性) で合算し total 降順に並ぶ', () => {
+  it('同一トリガーでまとまり、グループ合計降順・グループ内は Vo→Da→Vi 順に並ぶ', () => {
+    // class_end グループ合計 = 450(vo) + 40(da) = 490 > mental_acquire 120 なので先に来る。
+    // class_end 内は Vo→Da の順。
     expect(entries.map((e) => `${e.trigger}/${e.stat}`)).toEqual([
       'class_end/vo',
-      'mental_acquire/vi',
       'class_end/da',
+      'mental_acquire/vi',
     ]);
   });
 
@@ -96,13 +98,28 @@ describe('buildAbilitySummary 統合 (実データ・selectMultiplePatterns 経�
     expect(best.ability_summary.length).toBeGreaterThan(0);
   });
 
-  it('装備は含まず、total 降順・各エントリは整合的 (total ≤ per_fire×fires、per_fire = Σparts)', () => {
+  it('装備は含まず、同一トリガーで連続・グループ内Vo→Da→Vi・各エントリ整合 (total ≤ per_fire×fires、per_fire = Σparts)', () => {
     const best = patterns.reduce((a, b) => (b.total_value > a.total_value ? b : a));
     const s = best.ability_summary;
     expect(s.some((e) => e.trigger === 'equip')).toBe(false);
-    for (let i = 1; i < s.length; i++) {
-      expect(s[i - 1].total).toBeGreaterThanOrEqual(s[i].total);
+
+    const statRank = (st: string) => (st === 'vo' ? 0 : st === 'da' ? 1 : st === 'vi' ? 2 : st === 'all' ? 3 : 4);
+    const groupTotal = new Map<string, number>();
+    for (const e of s) groupTotal.set(e.trigger, (groupTotal.get(e.trigger) ?? 0) + e.total);
+    const seenTriggers = new Set<string>();
+    for (let i = 0; i < s.length; i++) {
+      if (i > 0 && s[i].trigger !== s[i - 1].trigger) {
+        // トリガーが変わる境界: 既出トリガーへ戻らない(連続性) & グループ合計は非増加
+        expect(seenTriggers.has(s[i].trigger)).toBe(false);
+        expect(groupTotal.get(s[i - 1].trigger)!).toBeGreaterThanOrEqual(groupTotal.get(s[i].trigger)!);
+      }
+      if (i > 0 && s[i].trigger === s[i - 1].trigger) {
+        // 同一トリガー内は Vo→Da→Vi→All 順
+        expect(statRank(s[i].stat)).toBeGreaterThanOrEqual(statRank(s[i - 1].stat));
+      }
+      seenTriggers.add(s[i].trigger);
     }
+
     for (const e of s) {
       expect(e.fires).toBeGreaterThan(0);
       // per_fire は parts の和 (丸め誤差許容)

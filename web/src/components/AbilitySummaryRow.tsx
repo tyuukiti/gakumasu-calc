@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import type { AbilitySummaryEntry } from '../types/results';
 
+// 明色のバッジ用 (--color-vo 等) はアンバー背景上で視認性が悪い (特に Vi の黄色)。
+// テキスト用の濃色 (--color-*-text) を使う (アプリ他箇所のステータス文字と同じ方針)。
 const STAT_COLORS: Record<string, string> = {
-  vo: 'var(--color-vo)',
-  da: 'var(--color-da)',
-  vi: 'var(--color-vi)',
-  all: '#4caf50',
+  vo: 'var(--color-vo-text)',
+  da: 'var(--color-da-text)',
+  vi: 'var(--color-vi-text)',
+  all: '#2e7d32',
 };
 
 const STAT_LABELS: Record<string, string> = {

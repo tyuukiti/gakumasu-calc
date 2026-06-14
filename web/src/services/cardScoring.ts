@@ -2014,7 +2014,20 @@ export function buildAbilitySummary(
       total: Math.round(acc.total * 10) / 10,
     });
   }
-  entries.sort((a, b) => b.total - a.total);
+
+  // 同一トリガーをまとめ、グループ合計 (= その行動で得られる総パラメ) の降順に並べる。
+  // グループ内は Vo→Da→Vi→All の順 (同じ行動の Vo/Da/Vi がバラけて読みづらいのを防ぐ)。
+  const groupTotal = new Map<string, number>();
+  for (const e of entries) groupTotal.set(e.trigger, (groupTotal.get(e.trigger) ?? 0) + e.total);
+  const statRank = (s: string): number =>
+    s === 'vo' ? 0 : s === 'da' ? 1 : s === 'vi' ? 2 : s === 'all' ? 3 : 4;
+  entries.sort((a, b) => {
+    const gb = groupTotal.get(b.trigger)!;
+    const ga = groupTotal.get(a.trigger)!;
+    if (gb !== ga) return gb - ga;
+    if (a.trigger !== b.trigger) return a.trigger < b.trigger ? -1 : 1;
+    return statRank(a.stat) - statRank(b.stat);
+  });
   return entries;
 }
 

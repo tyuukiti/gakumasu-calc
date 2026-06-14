@@ -36,8 +36,10 @@ public class AbilitySummaryTests
         var svc = new CardScoringService();
         var entries = svc.BuildAbilitySummary(selected, triggerCounts, null);
 
+        // class_end グループ合計 = 450(vo)+40(da) = 490 > mental_acquire 120 → 先に来る。
+        // class_end 内は Vo→Da の順。
         Assert.Equal(
-            new[] { "class_end/vo", "mental_acquire/vi", "class_end/da" },
+            new[] { "class_end/vo", "class_end/da", "mental_acquire/vi" },
             entries.Select(e => $"{e.Trigger}/{e.Stat}").ToArray());
 
         var vo = entries.First(e => e.Trigger == "class_end" && e.Stat == "vo");
