@@ -332,12 +332,16 @@ export function calculateLessonStatTotals(
     }
   }
 
-  // HIFモードの選抜試験 (基礎値+配分値) もパラボ対象になるので加算する。
-  // buildPlanAndChoices で audition の status_gain には既に base+alloc が反映されている。
+  // 試験/オーディション (基礎値+配分値 / 種別理論値) もパラボ対象になるので加算する。
+  // HIF選抜試験は base+alloc、NIAオーディションは種別理論値が status_gain に反映済み
+  // (buildNiaAuditionPlan)。実 calculate 側 (statusCalculation) はどちらにもパラボを適用するため、
+  // スコアリング/内訳のパラボ土台でも両方を含める。
   for (const w of plan.schedule) {
     if (
       w.type === 'audition' &&
-      (w.hif_exam_base != null || w.hif_exam_distributed != null) &&
+      (w.hif_exam_base != null ||
+        w.hif_exam_distributed != null ||
+        (w.nia_audition_tiers?.length ?? 0) > 0) &&
       w.status_gain != null
     ) {
       vo += w.status_gain.vo;
