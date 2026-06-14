@@ -1246,6 +1246,34 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <!-- アビリティまとめ (行動別): 選択6枚を行動別に合算。どの行動でパラメが伸びるかの比較用 -->
+                    <Border Margin="0,6,0,0" Padding="8,6" CornerRadius="4"
+                            Background="#FFFBEB" BorderBrush="#FDE68A" BorderThickness="1"
+                            Visibility="{Binding DeckAbilitySummaryVisibility}">
+                        <StackPanel>
+                            <TextBlock Text="アビリティまとめ（行動別）" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#92400E" Margin="0,0,0,4"/>
+                            <ItemsControl ItemsSource="{Binding DeckAbilitySummary}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding FormulaDisplay}"
+                                                       FontFamily="Consolas" FontSize="11" Foreground="#666"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding TotalDisplay}"
+                                                       FontFamily="Consolas" FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="{Binding StatColor}" Margin="8,0,0,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
 

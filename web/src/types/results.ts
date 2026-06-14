@@ -42,8 +42,32 @@ export interface EffectBreakdown {
   value: number;
 }
 
+/**
+ * アビリティまとめ (行動別) の1エントリ。
+ * 選択6枚の flat 効果 (trigger !== 'equip') を (行動トリガー × 属性) で合算したもの。
+ * 「どの行動を取るとパラメが伸びるか」の比較用。値は各カード個別内訳と同じ生寄与 (cap前・キャラパラボ前)。
+ */
+export interface AbilitySummaryEntry {
+  /** トリガーキー (例: 'class_end') */
+  trigger: string;
+  /** トリガー表示名 (例: '授業終了') */
+  trigger_name: string;
+  /** 属性 ('vo' | 'da' | 'vi' | 'all') */
+  stat: string;
+  /** 1発動あたりの合計上昇値 X = Σ(各カードの per-fire 値) */
+  per_fire: number;
+  /** per-fire 値のカード別内訳 (降順)。表示の (a+b+c) 用 */
+  parts: number[];
+  /** 発動回数 (N) */
+  fires: number;
+  /** 合計寄与 (権威値) = Σ(各カードの per-fire × 実効発動回数) */
+  total: number;
+}
+
 export interface DeckResult {
   label: string;
   selected_cards: CardScore[];
   total_value: number;
+  /** アビリティまとめ (行動別)。total 降順。行動トリガーが1件も無ければ空配列 */
+  ability_summary: AbilitySummaryEntry[];
 }
