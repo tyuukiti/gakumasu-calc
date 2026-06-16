@@ -2421,3 +2421,43 @@ support_cards:
     stat: vi
     values: [1, 1, 1, 2, 2]
     value_type: flat
+- id: SP_SR_0074
+  name: ゆずれないもの
+  rarity: SR
+  type: vo
+  plan: sense
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vo
+    values: [37, 40, 43, 46, 49]
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [10.5, 21, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: vo_sp_end
+    stat: vo
+    values: [7, 7, 7, 13, 13]
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    values: [13, 13, 13, 26, 26]
+    value_type: flat
+    max_count: 2
+  - trigger: equip
+    stat: vo
+    values: [50, 50, 75, 75, 100]
+    value_type: event_param_boost
+  - trigger: activity_supply
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 1
+    condition: vo>=700
+    source: item
