@@ -3151,3 +3151,37 @@ support_cards:
     stat: da
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SSR_0102
+  name: どーなっちゃうの〜？
+  rarity: SSR
+  type: vi
+  plan: anomaly
+  tag: exam_item
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: special_training
+    stat: vi
+    values: [18, 18, 25, 25, 25]
+    value_type: flat
+    max_count: 3
+  - trigger: vi_sp_end
+    stat: vi
+    values: [13, 13, 13, 17, 17]
+    value_type: flat
+  - trigger: activity_supply
+    stat: vi
+    values: [28, 28, 28, 28, 38]
+    value_type: flat
+    max_count: 2
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
