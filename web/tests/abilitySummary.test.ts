@@ -65,20 +65,42 @@ describe('buildAbilitySummary (アビリティまとめ・行動別)', () => {
     expect(mental.total).toBe(120);
   });
 
-  it('max_count は実効発動回数を制限する (total は正確、表示の fires は行動の発動回数)', () => {
+  it('max_count は実効発動回数を制限する (total は正確、表示の fires は行動の発動回数、max_count を併記)', () => {
     const da = entries.find((e) => e.trigger === 'class_end' && e.stat === 'da')!;
     expect(da.per_fire).toBe(20);
-    expect(da.fires).toBe(6); // 表示上の発動回数
+    expect(da.fires).toBe(6); // 表示上の発動回数 (×6回)
+    expect(da.max_count).toBe(2); // 上限2回として併記
     expect(da.total).toBe(40); // 20 × min(6, max_count=2)
+  });
+
+  it('上限が行動回数を下回らない通常項目は max_count = null', () => {
+    const vo = entries.find((e) => e.trigger === 'class_end' && e.stat === 'vo')!;
+    expect(vo.max_count).toBeNull();
   });
 
   it('装備(初期値)・パラボは除外される', () => {
     expect(entries.some((e) => e.trigger === 'equip')).toBe(false);
   });
 
-  it('発動回数0のトリガーは出ない', () => {
+  it('通常レッスン終了時 (*_normal_end) は除外せず日本語表示名で ×0回 表示する', () => {
+    const card = mkCard('N', [mkEffect({ trigger: 'vi_normal_end', stat: 'vi', value_type: 'flat', values: [13] })]);
+    // 理論値計算では発火しない (常にSPレッスン前提で構造上0) が、トリガーとして ×0回 で表示する
+    const out = buildAbilitySummary([mkScore(card)], {}, undefined);
+    expect(out).toHaveLength(1);
+    expect(out[0].trigger).toBe('vi_normal_end');
+    expect(out[0].trigger_name).toBe('Vi通常終了'); // 生キーではなく日本語表示名
+    expect(out[0].fires).toBe(0);
+    expect(out[0].total).toBe(0);
+  });
+
+  it('発動回数0でも編成カードの行動アビリティは ×0回 (total=0) で出る', () => {
     const only = buildAbilitySummary([mkScore(cardA)], { class_end: 0 }, undefined);
-    expect(only).toEqual([]);
+    expect(only).toHaveLength(1);
+    expect(only[0].trigger).toBe('class_end');
+    expect(only[0].per_fire).toBe(45);
+    expect(only[0].fires).toBe(0);
+    expect(only[0].total).toBe(0);
+    expect(only[0].max_count).toBeNull(); // 0回時は上限を併記しない
   });
 });
 
@@ -121,7 +143,7 @@ describe('buildAbilitySummary 統合 (実データ・selectMultiplePatterns 経�
     }
 
     for (const e of s) {
-      expect(e.fires).toBeGreaterThan(0);
+      expect(e.fires).toBeGreaterThanOrEqual(0); // ×0回 (未使用の行動アビリティ) も出る
       // per_fire は parts の和 (丸め誤差許容)
       const partsSum = e.parts.reduce((a, b) => a + b, 0);
       expect(Math.abs(e.per_fire - partsSum)).toBeLessThan(0.5);

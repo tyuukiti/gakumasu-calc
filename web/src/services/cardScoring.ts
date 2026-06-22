@@ -78,6 +78,9 @@ function triggerDisplayName(trigger: string): string {
     vo_lesson_end: 'Voレッスン終了',
     da_lesson_end: 'Daレッスン終了',
     vi_lesson_end: 'Viレッスン終了',
+    vo_normal_end: 'Vo通常終了',
+    da_normal_end: 'Da通常終了',
+    vi_normal_end: 'Vi通常終了',
   };
   return map[trigger] ?? trigger;
 }
@@ -1963,6 +1966,7 @@ export function buildAbilitySummary(
     perFireTotal: number;
     parts: number[];
     total: number;
+    capValues: Set<number>; // 行動回数を下回って実際に効いている max_count の集合 (上限表記用)
   }
   const groups = new Map<string, Acc>();
 
@@ -1972,15 +1976,14 @@ export function buildAbilitySummary(
       if (effect.value_type !== 'flat') continue;
       if (effect.trigger === 'equip') continue;
 
-      const triggerFires = triggerCounts[effect.trigger] ?? 0;
-      if (triggerFires <= 0) continue;
-
       const perFire = getEffectValue(effect, uncap);
       if (Math.abs(perFire) < 0.01) continue;
 
+      // 行動を1回も取っていなくても、編成カードの行動アビリティは ×0回 として出す。
+      // (triggerFires=0 / effFires=0 を許容。total は 0 になる)
+      const triggerFires = triggerCounts[effect.trigger] ?? 0;
       const effFires =
         effect.max_count != null ? Math.min(triggerFires, effect.max_count) : triggerFires;
-      if (effFires <= 0) continue;
 
       const key = `${effect.trigger}|${effect.stat}`;
       let acc = groups.get(key);
@@ -1992,18 +1995,25 @@ export function buildAbilitySummary(
           perFireTotal: 0,
           parts: [],
           total: 0,
+          capValues: new Set<number>(),
         };
         groups.set(key, acc);
       }
       acc.perFireTotal += perFire;
       acc.parts.push(Math.round(perFire * 10) / 10);
       acc.total += perFire * effFires;
+      // 上限が行動回数を実際に下回って効いている場合のみ「上限N回」を表示
+      if (effect.max_count != null && triggerFires > effect.max_count) {
+        acc.capValues.add(effect.max_count);
+      }
     }
   }
 
   const entries: AbilitySummaryEntry[] = [];
   for (const acc of groups.values()) {
     acc.parts.sort((a, b) => b - a);
+    // 複数カードで上限値が異なる稀ケースは最も厳しい(最小)上限を表示
+    const maxCount = acc.capValues.size > 0 ? Math.min(...acc.capValues) : null;
     entries.push({
       trigger: acc.trigger,
       trigger_name: triggerDisplayName(acc.trigger),
@@ -2011,6 +2021,7 @@ export function buildAbilitySummary(
       per_fire: Math.round(acc.perFireTotal * 10) / 10,
       parts: acc.parts,
       fires: acc.fires,
+      max_count: maxCount,
       total: Math.round(acc.total * 10) / 10,
     });
   }

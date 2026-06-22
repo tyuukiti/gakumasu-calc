@@ -67,8 +67,10 @@ public class CardScoringService
         public double PerFire { get; set; }
         /// <summary>per-fire 値のカード別内訳 (降順)。表示の (a+b+c) 用</summary>
         public List<double> Parts { get; set; } = new();
-        /// <summary>発動回数 (N)</summary>
+        /// <summary>発動回数 (N)。行動を取っていない場合は 0 (×0回として表示)</summary>
         public int Fires { get; set; }
+        /// <summary>上限回数。max_count が行動回数を実際に下回って効いている場合のみ非null (「上限N回」表記用)</summary>
+        public int? MaxCount { get; set; }
         /// <summary>合計寄与 (権威値) = Σ(各カードの per-fire × 実効発動回数)</summary>
         public double Total { get; set; }
     }
@@ -2692,6 +2694,7 @@ public class CardScoringService
         }
 
         var groups = new Dictionary<string, AbilitySummaryEntry>();
+        var capValues = new Dictionary<string, HashSet<int>>();
         var order = new List<string>();
 
         foreach (var cs in selected)
@@ -2702,16 +2705,15 @@ public class CardScoringService
                 if (effect.ValueType != "flat") continue;
                 if (effect.Trigger == "equip") continue;
 
-                int triggerFires = triggerCounts.GetValueOrDefault(effect.Trigger);
-                if (triggerFires <= 0) continue;
-
                 double perFire = effect.GetValue(uncap);
                 if (Math.Abs(perFire) < 0.01) continue;
 
+                // 行動を1回も取っていなくても、編成カードの行動アビリティは ×0回 として出す。
+                // (triggerFires=0 / effFires=0 を許容。Total は 0 になる)
+                int triggerFires = triggerCounts.GetValueOrDefault(effect.Trigger);
                 int effFires = effect.MaxCount.HasValue
                     ? Math.Min(triggerFires, effect.MaxCount.Value)
                     : triggerFires;
-                if (effFires <= 0) continue;
 
                 string key = $"{effect.Trigger}|{effect.Stat}";
                 if (!groups.TryGetValue(key, out var acc))
@@ -2724,20 +2726,27 @@ public class CardScoringService
                         Fires = triggerFires,
                     };
                     groups[key] = acc;
+                    capValues[key] = new HashSet<int>();
                     order.Add(key);
                 }
                 acc.PerFire += perFire;
                 acc.Parts.Add(Math.Round(perFire, 1));
                 acc.Total += perFire * effFires;
+                // 上限が行動回数を実際に下回って効いている場合のみ「上限N回」を表示
+                if (effect.MaxCount.HasValue && triggerFires > effect.MaxCount.Value)
+                    capValues[key].Add(effect.MaxCount.Value);
             }
         }
 
         var entries = order.Select(k => groups[k]).ToList();
-        foreach (var e in entries)
+        foreach (var k in order)
         {
+            var e = groups[k];
             e.PerFire = Math.Round(e.PerFire, 1);
             e.Total = Math.Round(e.Total, 1);
             e.Parts.Sort((a, b) => b.CompareTo(a));
+            // 複数カードで上限値が異なる稀ケースは最も厳しい(最小)上限を表示
+            e.MaxCount = capValues[k].Count > 0 ? capValues[k].Min() : (int?)null;
         }
 
         // 同一トリガーをまとめ、グループ合計 (= その行動で得られる総パラメ) の降順に並べる。
@@ -2792,6 +2801,9 @@ public class CardScoringService
         "vo_lesson_end" => "Voレッスン終了",
         "da_lesson_end" => "Daレッスン終了",
         "vi_lesson_end" => "Viレッスン終了",
+        "vo_normal_end" => "Vo通常終了",
+        "da_normal_end" => "Da通常終了",
+        "vi_normal_end" => "Vi通常終了",
         _ => trigger
     };
 
