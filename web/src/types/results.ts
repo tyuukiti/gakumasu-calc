@@ -58,8 +58,10 @@ export interface AbilitySummaryEntry {
   per_fire: number;
   /** per-fire 値のカード別内訳 (降順)。表示の (a+b+c) 用 */
   parts: number[];
-  /** 発動回数 (N) */
+  /** 発動回数 (N)。行動を取っていない場合は 0 (×0回として表示) */
   fires: number;
+  /** 上限回数。max_count が行動回数を実際に下回って効いている場合のみ非null (「上限N回」表記用) */
+  max_count: number | null;
   /** 合計寄与 (権威値) = Σ(各カードの per-fire × 実効発動回数) */
   total: number;
 }

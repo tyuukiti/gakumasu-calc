@@ -48,6 +48,8 @@ export default function AbilitySummaryRow({ entries }: { entries: AbilitySummary
           {entries.map((e, i) => {
             const color = STAT_COLORS[e.stat] ?? STAT_COLORS.all;
             const label = STAT_LABELS[e.stat] ?? e.stat;
+            // 行動を取っていない (×0回) 項目は寄与0なので合計を控えめに表示
+            const totalColor = e.total === 0 ? '#9ca3af' : color;
             return (
               <div key={i} className="flex justify-between font-mono text-gray-500">
                 <span className="truncate mr-2">
@@ -58,9 +60,11 @@ export default function AbilitySummaryRow({ entries }: { entries: AbilitySummary
                   {e.parts.length > 1 && (
                     <span className="text-gray-400"> ({e.parts.join('+')})</span>
                   )}
-                  <span className="text-gray-400"> ×{e.fires}回</span>
+                  <span className="text-gray-400">
+                    {' '}×{e.fires}回{e.max_count != null && `（上限${e.max_count}回）`}
+                  </span>
                 </span>
-                <span className="shrink-0 font-bold" style={{ color }}>
+                <span className="shrink-0 font-bold" style={{ color: totalColor }}>
                   +{e.total}
                 </span>
               </div>

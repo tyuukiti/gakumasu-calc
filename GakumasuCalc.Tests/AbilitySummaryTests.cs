@@ -52,17 +52,38 @@ public class AbilitySummaryTests
         Assert.Equal("メンタル獲得", mental.TriggerName);
         Assert.Equal(120.0, mental.Total);
 
-        // max_count: total は実効回数で正確、表示の fires は行動の発動回数
+        // max_count: total は実効回数で正確、表示の fires は行動の発動回数、MaxCount を併記
         var da = entries.First(e => e.Trigger == "class_end" && e.Stat == "da");
         Assert.Equal(20.0, da.PerFire);
         Assert.Equal(6, da.Fires);
+        Assert.Equal(2, da.MaxCount); // 上限2回として併記
         Assert.Equal(40.0, da.Total); // 20 × min(6, max_count=2)
+
+        // 上限が行動回数を下回らない通常項目は MaxCount = null
+        Assert.Null(vo.MaxCount);
 
         Assert.DoesNotContain(entries, e => e.Trigger == "equip");
     }
 
     [Fact]
-    public void 発動回数0のトリガーは出ない()
+    public void 通常レッスン終了時トリガーは除外せず日本語表示名でゼロ回表示する()
+    {
+        var selected = new List<CardScoringService.CardScore>
+        {
+            Score(Card("N", Eff("vi_normal_end", "vi", "flat", new double[] { 13 }))),
+        };
+        var svc = new CardScoringService();
+        // 理論値計算では発火しない (常にSPレッスン前提で構造上0) が、トリガーとして ×0回 で表示する
+        var entries = svc.BuildAbilitySummary(selected, new Dictionary<string, int>(), null);
+        Assert.Single(entries);
+        Assert.Equal("vi_normal_end", entries[0].Trigger);
+        Assert.Equal("Vi通常終了", entries[0].TriggerName); // 生キーではなく日本語表示名
+        Assert.Equal(0, entries[0].Fires);
+        Assert.Equal(0.0, entries[0].Total);
+    }
+
+    [Fact]
+    public void 発動回数0でも編成カードの行動アビリティはゼロ回で出る()
     {
         var selected = new List<CardScoringService.CardScore>
         {
@@ -70,6 +91,11 @@ public class AbilitySummaryTests
         };
         var svc = new CardScoringService();
         var entries = svc.BuildAbilitySummary(selected, new Dictionary<string, int> { ["class_end"] = 0 }, null);
-        Assert.Empty(entries);
+        Assert.Single(entries);
+        Assert.Equal("class_end", entries[0].Trigger);
+        Assert.Equal(45.0, entries[0].PerFire);
+        Assert.Equal(0, entries[0].Fires);
+        Assert.Equal(0.0, entries[0].Total);
+        Assert.Null(entries[0].MaxCount); // 0回時は上限を併記しない
     }
 }

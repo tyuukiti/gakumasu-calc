@@ -2066,6 +2066,7 @@ public class MainViewModel : ViewModelBase
                 PerFire = e.PerFire,
                 Parts = e.Parts,
                 Fires = e.Fires,
+                MaxCount = e.MaxCount,
                 Total = e.Total,
             });
         }
@@ -3203,6 +3204,7 @@ public class AbilitySummaryEntryViewModel
     public double PerFire { get; set; }
     public List<double> Parts { get; set; } = new();
     public int Fires { get; set; }
+    public int? MaxCount { get; set; }
     public double Total { get; set; }
 
     private string StatLabel => Stat switch
@@ -3214,7 +3216,7 @@ public class AbilitySummaryEntryViewModel
         _ => Stat,
     };
 
-    /// <summary>左側の式表示: 「授業終了 Vo+75 (45+30) ×6回」。parts が2件以上のときのみ内訳を併記。</summary>
+    /// <summary>左側の式表示: 「授業終了 Vo+75 (45+30) ×6回（上限2回）」。parts が2件以上のとき内訳を、上限が効いているとき「（上限N回）」を併記。</summary>
     public string FormulaDisplay
     {
         get
@@ -3222,7 +3224,8 @@ public class AbilitySummaryEntryViewModel
             var parts = Parts.Count > 1
                 ? $" ({string.Join("+", Parts.Select(p => p.ToString("0.#")))})"
                 : string.Empty;
-            return $"{TriggerName} {StatLabel}+{PerFire:0.#}{parts} ×{Fires}回";
+            var cap = MaxCount.HasValue ? $"（上限{MaxCount}回）" : string.Empty;
+            return $"{TriggerName} {StatLabel}+{PerFire:0.#}{parts} ×{Fires}回{cap}";
         }
     }
 
@@ -3230,10 +3233,13 @@ public class AbilitySummaryEntryViewModel
     public string TotalDisplay => $"+{Total:0.#}";
 
     /// <summary>
-    /// 属性カラー。アンバー背景で視認性を確保するため、テキスト用の濃色を使う
+    /// 合計値の表示カラー。アンバー背景で視認性を確保するため、テキスト用の濃色を使う
     /// (Vi=darkgoldenrod #B8860B。明色 #FFD36B は黄色背景で読めない)。Web版 --color-*-text と対応。
+    /// 行動を取っていない (×0回) 項目は寄与0なので控えめなグレーで表示する。
     /// </summary>
-    public System.Windows.Media.Brush StatColor => Stat switch
+    public System.Windows.Media.Brush StatColor => Total == 0
+        ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x9C, 0xA3, 0xAF))
+        : Stat switch
     {
         "vo" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xC2, 0x18, 0x5B)),
         "da" => new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x15, 0x65, 0xC0)),
