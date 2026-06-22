@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import type { ExamAllocation } from '../../stores/hifStore';
 
 type Stat = 'vo' | 'da' | 'vi';
+const STAT_ORDER: Stat[] = ['vo', 'da', 'vi'];
 const STAT_LABEL: Record<Stat, string> = { vo: 'Vo', da: 'Da', vi: 'Vi' };
 /** バー塗り用（明るい配色） */
 const STAT_FILL: Record<Stat, string> = {
@@ -11,8 +12,11 @@ const STAT_FILL: Record<Stat, string> = {
 };
 
 /**
- * 全試験共通の配分比率を 1本のバーで編集するコントロール。
- * 合計は常に100で固定（2つの境界ハンドルをドラッグして Vo/Da/Vi を配分）。
+ * 全試験共通の配分比率を 1本のバーで編集するコントロール。合計は常に100。
+ *
+ * 配分が0の属性（2極・全振り時の対象外属性）はセグメント・ハンドルとも非表示にし、
+ * 残った有効属性間の境界だけをドラッグできる。これにより VoVi 2極(Da=0) などで
+ * 境界をドラッグしても 0 の属性が復活せず、0 のまま固定される。
  */
 export default function ExamRatioBar({
   ratio,
@@ -22,7 +26,9 @@ export default function ExamRatioBar({
   onChange: (r: ExamAllocation) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const dragging = useRef<1 | 2 | null>(null);
+  // ドラッグ中の境界 index と、開始時点の有効属性リストを固定保持する。
+  // (ドラッグ中に属性が0になっても境界が壊れず、同一ドラッグ内で戻せるようにするため)
+  const drag = useRef<{ i: number; active: Stat[] } | null>(null);
 
   // クリック位置 → 0..100 の値
   const toVal = (clientX: number) => {
@@ -33,65 +39,75 @@ export default function ExamRatioBar({
     return Math.max(0, Math.min(100, Math.round(r * 100)));
   };
 
+  // 配分が0より大きい属性のみ表示・操作対象にする (Vo→Da→Vi 順)
+  const activeStats = STAT_ORDER.filter((s) => ratio[s] > 0);
+
+  // 有効属性を左から並べたセグメント（左端 = それより前の有効属性の合計）
+  const segs = activeStats.map((s, idx) => ({
+    s,
+    left: activeStats.slice(0, idx).reduce((sum, k) => sum + ratio[k], 0),
+    width: ratio[s],
+  }));
+  // 隣り合う有効属性の境界（n-1 本）。位置 = 左側属性までの累積
+  const boundaries = segs.slice(0, -1).map((seg, i) => ({
+    i,
+    left: seg.left + seg.width,
+    a: activeStats[i],
+    b: activeStats[i + 1],
+  }));
+
   const onMove = (e: React.PointerEvent) => {
-    if (!dragging.current) return;
+    const d = drag.current;
+    if (!d) return;
+    const a = d.active[d.i];
+    const b = d.active[d.i + 1];
+    if (a == null || b == null) return;
+    // a の左端 = a より前の有効属性の合計（境界ドラッグでは不変）
+    let leftBase = 0;
+    for (let k = 0; k < d.i; k++) leftBase += ratio[d.active[k]];
+    const sumAB = ratio[a] + ratio[b]; // a と b の合計は不変（両者の間でのみ移動）
     const v = toVal(e.clientX);
-    if (dragging.current === 1) {
-      // Vo|Da 境界: v = vo（Vi 固定、Da が補償）
-      const voPlusDa = 100 - ratio.vi;
-      const vo = Math.min(v, voPlusDa);
-      onChange({ vo, da: voPlusDa - vo, vi: ratio.vi });
-    } else {
-      // Da|Vi 境界: v = vo+da（Vo 固定、Vi が補償）
-      const voPlusDa = Math.max(ratio.vo, v);
-      onChange({ vo: ratio.vo, da: voPlusDa - ratio.vo, vi: 100 - voPlusDa });
-    }
+    const newA = Math.max(0, Math.min(sumAB, v - leftBase));
+    onChange({ ...ratio, [a]: newA, [b]: sumAB - newA });
   };
 
-  const start = (which: 1 | 2) => (e: React.PointerEvent) => {
+  const start = (i: number) => (e: React.PointerEvent) => {
     e.preventDefault();
-    dragging.current = which;
-    (e.target as Element).setPointerCapture(e.pointerId);
+    drag.current = { i, active: activeStats };
+    // ハンドルではなくコンテナで捕捉する（ドラッグ中にハンドル数が変わっても継続できる）
+    ref.current?.setPointerCapture(e.pointerId);
   };
   const end = (e: React.PointerEvent) => {
-    dragging.current = null;
-    try { (e.target as Element).releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    drag.current = null;
+    try { ref.current?.releasePointerCapture(e.pointerId); } catch { /* noop */ }
   };
 
-  const b2 = ratio.vo + ratio.da;
-  const segs: Array<{ s: Stat; left: number; width: number; val: number }> = [
-    { s: 'vo', left: 0, width: ratio.vo, val: ratio.vo },
-    { s: 'da', left: ratio.vo, width: ratio.da, val: ratio.da },
-    { s: 'vi', left: b2, width: 100 - b2, val: ratio.vi },
-  ];
-  const handles: Array<{ left: number; which: 1 | 2; now: number }> = [
-    { left: ratio.vo, which: 1, now: ratio.vo },
-    { left: b2, which: 2, now: b2 },
-  ];
-
   return (
-    <div ref={ref} className="relative h-9 rounded-md overflow-hidden select-none border border-gray-200">
+    <div
+      ref={ref}
+      onPointerMove={onMove}
+      onPointerUp={end}
+      className="relative h-9 rounded-md overflow-hidden select-none border border-gray-200"
+    >
       {segs.map((g) => (
         <div
           key={g.s}
           className="absolute inset-y-0 flex items-center justify-center text-[11px] font-bold text-white"
           style={{ left: `${g.left}%`, width: `${g.width}%`, backgroundColor: STAT_FILL[g.s] }}
         >
-          {g.width > 14 && <span className="drop-shadow">{STAT_LABEL[g.s]} {g.val}%</span>}
+          {g.width > 14 && <span className="drop-shadow">{STAT_LABEL[g.s]} {ratio[g.s]}%</span>}
         </div>
       ))}
-      {handles.map((h) => (
+      {boundaries.map((h) => (
         <div
-          key={h.which}
+          key={h.i}
           role="slider"
-          aria-label={h.which === 1 ? 'Vo/Da 境界' : 'Da/Vi 境界'}
-          aria-valuenow={h.now}
+          aria-label={`${STAT_LABEL[h.a]}/${STAT_LABEL[h.b]} 境界`}
+          aria-valuenow={h.left}
           aria-valuemin={0}
           aria-valuemax={100}
           tabIndex={0}
-          onPointerDown={start(h.which)}
-          onPointerMove={onMove}
-          onPointerUp={end}
+          onPointerDown={start(h.i)}
           className="absolute top-0 bottom-0 -ml-2 w-4 flex items-center justify-center cursor-ew-resize"
           style={{ left: `${h.left}%`, touchAction: 'none' }}
         >
