@@ -235,6 +235,13 @@ support_cards:
     stat: da
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: equip
+    stat: da
+    values: [2, 2, 2, 2, 2]
+    value_type: trigger_count_bonus
+    trigger_target: p_drink_acquire
+    source: item
+    description: 無我の境地 (授業・営業終了時にPドリンク獲得・プロデュース中2回)
 - id: SP_SSR_0084
   name: なぜこんなところにッ！？
   rarity: SSR
