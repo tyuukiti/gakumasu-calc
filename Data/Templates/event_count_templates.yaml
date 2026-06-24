@@ -416,7 +416,7 @@ templates:
     skill_ssr_acquire: 8
     skill_acquire: 20
     skill_enhance: 4
-    skill_delete: 2
+    skill_delete: 4
     skill_custom: 3
     skill_change: 3
     active_enhance: 3
@@ -437,7 +437,7 @@ templates:
     skill_ssr_acquire: 8
     skill_acquire: 20
     skill_enhance: 4
-    skill_delete: 2
+    skill_delete: 4
     skill_custom: 3
     skill_change: 3
     active_enhance: 3
@@ -459,7 +459,7 @@ templates:
     skill_ssr_acquire: 8
     skill_acquire: 20
     skill_enhance: 4
-    skill_delete: 2
+    skill_delete: 4
     skill_custom: 3
     skill_change: 3
     active_enhance: 3
@@ -481,7 +481,7 @@ templates:
     skill_ssr_acquire: 8
     skill_acquire: 20
     skill_enhance: 4
-    skill_delete: 2
+    skill_delete: 4
     skill_custom: 3
     skill_change: 3
     active_enhance: 3
@@ -503,7 +503,7 @@ templates:
     skill_ssr_acquire: 8
     skill_acquire: 20
     skill_enhance: 4
-    skill_delete: 2
+    skill_delete: 4
     skill_custom: 3
     skill_change: 3
     active_enhance: 3
