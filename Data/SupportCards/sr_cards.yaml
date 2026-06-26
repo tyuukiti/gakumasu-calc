@@ -2461,3 +2461,36 @@ support_cards:
     max_count: 1
     condition: vo>=700
     source: item
+- id: SP_SR_0075
+  name: ゆるるんあくび顔
+  rarity: SR
+  type: vi
+  plan: anomaly
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
+    value_type: para_bonus
+  - trigger: activity_supply
+    stat: vi
+    values: [13, 26, 26, 26, 26]
+    value_type: flat
+    max_count: 2
+  - trigger: vi_sp_end
+    stat: vi
+    values: [7, 7, 7, 7, 13]
+    value_type: flat
+  - trigger: conserve_acquire
+    stat: vi
+    values: [2, 2, 2, 3, 3]
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 50, 75, 75, 100]
+    value_type: event_param_boost
