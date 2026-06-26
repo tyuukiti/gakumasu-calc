@@ -158,8 +158,8 @@
       type: "free"
       available_actions: ["consultation", "special_training", "rest"]
 
-    # Week 18: 最終試験 (固定イベント) 1位: 全パラメータ+120
+    # Week 18: 最終試験 (固定イベント) 1位: 全パラメータ+160 (2026/05/16上方修正 +120→+160)
     - week: 18
       type: "fixed_event"
       event_name: "最終試験"
-      status_gain: { vo: 120, da: 120, vi: 120 }
+      status_gain: { vo: 160, da: 160, vi: 160 }
