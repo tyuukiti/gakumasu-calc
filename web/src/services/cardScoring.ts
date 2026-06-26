@@ -242,35 +242,70 @@ export function countTriggers(
 
 // --- Estimate base stats ---
 
+/**
+ * スケジュール方式 (初レジェンド/NIA) で、ユーザが各レッスン週に指定した属性を
+ * week→stat の Map で返す。turnChoices 未指定 (自動ピックモード) では null を返し、
+ * 呼び出し側は従来の配分回数ベース近似にフォールバックする。
+ */
+function lessonStatByWeek(
+  turnChoices: TurnChoice[] | undefined,
+): Map<number, string> | null {
+  if (turnChoices == null) return null;
+  const map = new Map<number, string>();
+  for (const tc of turnChoices) {
+    const a = tc.chosen_action as string;
+    if (a === 'vo_lesson') map.set(tc.week, 'vo');
+    else if (a === 'da_lesson') map.set(tc.week, 'da');
+    else if (a === 'vi_lesson') map.set(tc.week, 'vi');
+  }
+  return map;
+}
+
 export function estimateBaseStats(
   plan: TrainingPlan,
   lessonAllocation: Record<string, number>,
+  turnChoices?: TurnChoice[],
 ): StatusValues {
   let vo = 0,
     da = 0,
     vi = 0;
 
-  // レッスンのSPパーフェクト基礎値を配分に従って加算
+  // レッスンのSPパーフェクト基礎値を加算
   const lessonWeeks = plan.schedule
     .filter((w) => w.lessons.length > 0)
     .sort((a, b) => a.week - b.week);
 
-  // 各属性のレッスン回数分、後ろの週(高い値)から割り当て
-  const weekQueue = [...lessonWeeks].sort((a, b) => b.week - a.week);
-
-  const sortedAllocation = Object.entries(lessonAllocation).sort(
-    (a, b) => b[1] - a[1],
-  );
-
-  let queueIndex = 0;
-  for (const [statKey, count] of sortedAllocation) {
-    for (let i = 0; i < count && queueIndex < weekQueue.length; i++) {
-      const w = weekQueue[queueIndex++];
-      const lesson = getLesson(w, statKey);
+  const choiceByWeek = lessonStatByWeek(turnChoices);
+  if (choiceByWeek != null) {
+    // スケジュール方式: ユーザが各週に指定した属性をそのまま使う。配分回数ベースの
+    // 「多い属性を高値週へ」近似だと DaDaDaDaVi 指定が ViDaDaDaDa 扱いになり、
+    // パラボ土台が実際の踏み順と食い違う。
+    for (const w of lessonWeeks) {
+      const stat = choiceByWeek.get(w.week);
+      if (stat == null) continue;
+      const lesson = getLesson(w, stat);
       if (lesson != null) {
         vo += lesson.sp_bonus.vo;
         da += lesson.sp_bonus.da;
         vi += lesson.sp_bonus.vi;
+      }
+    }
+  } else {
+    // 自動ピックモード: 各属性のレッスン回数分、後ろの週(高い値)から割り当て (近似)
+    const weekQueue = [...lessonWeeks].sort((a, b) => b.week - a.week);
+    const sortedAllocation = Object.entries(lessonAllocation).sort(
+      (a, b) => b[1] - a[1],
+    );
+    let queueIndex = 0;
+    for (const [statKey, count] of sortedAllocation) {
+      for (let i = 0; i < count && queueIndex < weekQueue.length; i++) {
+        const w = weekQueue[queueIndex++];
+        const lesson = getLesson(w, statKey);
+        if (lesson != null) {
+          vo += lesson.sp_bonus.vo;
+          da += lesson.sp_bonus.da;
+          vi += lesson.sp_bonus.vi;
+        }
       }
     }
   }
@@ -307,6 +342,7 @@ export function estimateBaseStats(
 export function calculateLessonStatTotals(
   plan: TrainingPlan,
   lessonAllocation: Record<string, number>,
+  turnChoices?: TurnChoice[],
 ): StatusValues {
   let vo = 0,
     da = 0,
@@ -316,21 +352,35 @@ export function calculateLessonStatTotals(
     .filter((w) => w.lessons.length > 0)
     .sort((a, b) => b.week - a.week);
 
-  const weekQueue = [...lessonWeeks];
-
-  const sortedAllocation = Object.entries(lessonAllocation).sort(
-    (a, b) => b[1] - a[1],
-  );
-
-  let queueIndex = 0;
-  for (const [statKey, count] of sortedAllocation) {
-    for (let i = 0; i < count && queueIndex < weekQueue.length; i++) {
-      const w = weekQueue[queueIndex++];
-      const lesson = getLesson(w, statKey);
+  const choiceByWeek = lessonStatByWeek(turnChoices);
+  if (choiceByWeek != null) {
+    // スケジュール方式: ユーザが各週に指定した属性をそのまま使う (踏み順を保持)。
+    for (const w of lessonWeeks) {
+      const stat = choiceByWeek.get(w.week);
+      if (stat == null) continue;
+      const lesson = getLesson(w, stat);
       if (lesson != null) {
         vo += lesson.sp_bonus.vo;
         da += lesson.sp_bonus.da;
         vi += lesson.sp_bonus.vi;
+      }
+    }
+  } else {
+    // 自動ピックモード: 配分回数ベースの近似 (多い属性を高値週へ)
+    const weekQueue = [...lessonWeeks];
+    const sortedAllocation = Object.entries(lessonAllocation).sort(
+      (a, b) => b[1] - a[1],
+    );
+    let queueIndex = 0;
+    for (const [statKey, count] of sortedAllocation) {
+      for (let i = 0; i < count && queueIndex < weekQueue.length; i++) {
+        const w = weekQueue[queueIndex++];
+        const lesson = getLesson(w, statKey);
+        if (lesson != null) {
+          vo += lesson.sp_bonus.vo;
+          da += lesson.sp_bonus.da;
+          vi += lesson.sp_bonus.vi;
+        }
       }
     }
   }
@@ -2254,10 +2304,10 @@ function selectOptimalDeckOnce(
   }
 
   // レッスン・イベント等のカード無しベースステータスを推定
-  const baseStats = estimateBaseStats(plan, lessonAllocation);
+  const baseStats = estimateBaseStats(plan, lessonAllocation, turnChoicesOverride);
 
   // レッスンの属性別合計SpBonusを事前計算
-  const lessonStatTotals = calculateLessonStatTotals(plan, lessonAllocation);
+  const lessonStatTotals = calculateLessonStatTotals(plan, lessonAllocation, turnChoicesOverride);
 
   // trigger_count_bonus 効果 (Pアイテム由来でドリンク等を追加生成する効果) の単体スコアリング用情報
   // 「もしこのカードが選ばれた場合、追加で発火する trigger_target は他カードに何ポイント寄与するか」
@@ -3149,8 +3199,8 @@ function crossSeedFreeDeck(
       if (v > 0) triggerCounts[k] = (triggerCounts[k] ?? 0) + v;
     }
   }
-  const baseStats = estimateBaseStats(plan, lessonAllocation);
-  const lessonStatTotals = calculateLessonStatTotals(plan, lessonAllocation);
+  const baseStats = estimateBaseStats(plan, lessonAllocation, turnChoicesOverride);
+  const lessonStatTotals = calculateLessonStatTotals(plan, lessonAllocation, turnChoicesOverride);
   const triggerBonusInfo = computeTriggerBonusInfo(ownedCards, uncapLevels);
 
   const planOk = (c: SupportCard) =>

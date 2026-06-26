@@ -226,10 +226,10 @@ public class CardScoringService
         }
 
         // レッスン・イベント等のカード無しベースステータスを推定
-        var baseStats = EstimateBaseStats(plan, lessonAllocation);
+        var baseStats = EstimateBaseStats(plan, lessonAllocation, turnChoicesOverride);
 
         // レッスンの属性別合計SpBonusを事前計算
-        var lessonStatTotals = CalculateLessonStatTotals(plan, lessonAllocation);
+        var lessonStatTotals = CalculateLessonStatTotals(plan, lessonAllocation, turnChoicesOverride);
 
         // trigger_count_bonus 用、対象トリガーごとの消費側カード集計
         var triggerBonusInfo = ComputeTriggerBonusInfo(eligible, uncapLevels);
@@ -1940,36 +1940,76 @@ public class CardScoringService
     }
 
     /// <summary>
+    /// スケジュール方式 (初レジェンド/NIA) で、ユーザが各レッスン週に指定した属性を
+    /// week→stat の辞書で返す。turnChoices 未指定 (自動ピックモード) では null を返し、
+    /// 呼び出し側は従来の配分回数ベース近似にフォールバックする。
+    /// </summary>
+    private static Dictionary<int, string>? LessonStatByWeek(List<TurnChoice>? turnChoices)
+    {
+        if (turnChoices == null) return null;
+        var map = new Dictionary<int, string>();
+        foreach (var tc in turnChoices)
+        {
+            string? stat = tc.ChosenAction switch
+            {
+                ActionType.VoLesson => "vo",
+                ActionType.DaLesson => "da",
+                ActionType.ViLesson => "vi",
+                _ => null,
+            };
+            if (stat != null) map[tc.Week] = stat;
+        }
+        return map;
+    }
+
+    /// <summary>
     /// カード無しのベースステータス推定（レッスン＋授業＋イベント等の基礎値）
     /// </summary>
-    private StatusValues EstimateBaseStats(TrainingPlan plan, Dictionary<string, int> lessonAllocation)
+    private StatusValues EstimateBaseStats(TrainingPlan plan, Dictionary<string, int> lessonAllocation, List<TurnChoice>? turnChoices = null)
     {
         int vo = 0, da = 0, vi = 0;
 
-        // レッスンのSPパーフェクト基礎値を配分に従って加算
+        // レッスンのSPパーフェクト基礎値を加算
         var lessonWeeks = plan.Schedule
             .Where(w => w.Lessons.Count > 0)
             .OrderBy(w => w.Week)
             .ToList();
 
-        // 各属性のレッスン回数分、後ろの週(高い値)から割り当て
-        var weekQueue = new Queue<WeekSchedule>(lessonWeeks.OrderByDescending(w => w.Week));
-
-        foreach (var stat in lessonAllocation.OrderByDescending(kv => kv.Value))
+        var choiceByWeek = LessonStatByWeek(turnChoices);
+        if (choiceByWeek != null)
         {
-            int count = stat.Value;
-            var tempWeeks = new List<WeekSchedule>();
-
-            // キューから取り出して割り当て
-            for (int i = 0; i < count && weekQueue.Count > 0; i++)
+            // スケジュール方式: ユーザが各週に指定した属性をそのまま使う。配分回数ベースの
+            // 「多い属性を高値週へ」近似だと DaDaDaDaVi 指定が ViDaDaDaDa 扱いになり、
+            // パラボ土台が実際の踏み順と食い違う。
+            foreach (var w in lessonWeeks)
             {
-                var w = weekQueue.Dequeue();
-                var lesson = w.GetLesson(stat.Key);
+                if (!choiceByWeek.TryGetValue(w.Week, out var stat)) continue;
+                var lesson = w.GetLesson(stat);
                 if (lesson != null)
                 {
                     vo += lesson.SpBonus.Vo;
                     da += lesson.SpBonus.Da;
                     vi += lesson.SpBonus.Vi;
+                }
+            }
+        }
+        else
+        {
+            // 自動ピックモード: 各属性のレッスン回数分、後ろの週(高い値)から割り当て (近似)
+            var weekQueue = new Queue<WeekSchedule>(lessonWeeks.OrderByDescending(w => w.Week));
+            foreach (var stat in lessonAllocation.OrderByDescending(kv => kv.Value))
+            {
+                int count = stat.Value;
+                for (int i = 0; i < count && weekQueue.Count > 0; i++)
+                {
+                    var w = weekQueue.Dequeue();
+                    var lesson = w.GetLesson(stat.Key);
+                    if (lesson != null)
+                    {
+                        vo += lesson.SpBonus.Vo;
+                        da += lesson.SpBonus.Da;
+                        vi += lesson.SpBonus.Vi;
+                    }
                 }
             }
         }
@@ -2186,8 +2226,8 @@ public class CardScoringService
                 if (kvp.Value > 0)
                     triggerCounts[kvp.Key] = triggerCounts.GetValueOrDefault(kvp.Key) + kvp.Value;
         }
-        var baseStats = EstimateBaseStats(plan, lessonAllocation);
-        var lessonStatTotals = CalculateLessonStatTotals(plan, lessonAllocation);
+        var baseStats = EstimateBaseStats(plan, lessonAllocation, turnChoicesOverride);
+        var lessonStatTotals = CalculateLessonStatTotals(plan, lessonAllocation, turnChoicesOverride);
         var triggerBonusInfo = ComputeTriggerBonusInfo(ownedCards, uncapLevels);
 
         bool PlanOk(SupportCard c) =>
@@ -2960,7 +3000,7 @@ public class CardScoringService
     /// レッスン配分に基づいて、全レッスンのSpBonusを属性別に合計する。
     /// パラメータボーナスの属性別寄与計算に使用。
     /// </summary>
-    private StatusValues CalculateLessonStatTotals(TrainingPlan plan, Dictionary<string, int> lessonAllocation)
+    private StatusValues CalculateLessonStatTotals(TrainingPlan plan, Dictionary<string, int> lessonAllocation, List<TurnChoice>? turnChoices = null)
     {
         int vo = 0, da = 0, vi = 0;
 
@@ -2969,20 +3009,39 @@ public class CardScoringService
             .OrderByDescending(w => w.Week)
             .ToList();
 
-        var weekQueue = new Queue<WeekSchedule>(lessonWeeks);
-
-        foreach (var stat in lessonAllocation.OrderByDescending(kv => kv.Value))
+        var choiceByWeek = LessonStatByWeek(turnChoices);
+        if (choiceByWeek != null)
         {
-            int count = stat.Value;
-            for (int i = 0; i < count && weekQueue.Count > 0; i++)
+            // スケジュール方式: ユーザが各週に指定した属性をそのまま使う (踏み順を保持)。
+            foreach (var w in lessonWeeks)
             {
-                var w = weekQueue.Dequeue();
-                var lesson = w.GetLesson(stat.Key);
+                if (!choiceByWeek.TryGetValue(w.Week, out var stat)) continue;
+                var lesson = w.GetLesson(stat);
                 if (lesson != null)
                 {
                     vo += lesson.SpBonus.Vo;
                     da += lesson.SpBonus.Da;
                     vi += lesson.SpBonus.Vi;
+                }
+            }
+        }
+        else
+        {
+            // 自動ピックモード: 配分回数ベースの近似 (多い属性を高値週へ)
+            var weekQueue = new Queue<WeekSchedule>(lessonWeeks);
+            foreach (var stat in lessonAllocation.OrderByDescending(kv => kv.Value))
+            {
+                int count = stat.Value;
+                for (int i = 0; i < count && weekQueue.Count > 0; i++)
+                {
+                    var w = weekQueue.Dequeue();
+                    var lesson = w.GetLesson(stat.Key);
+                    if (lesson != null)
+                    {
+                        vo += lesson.SpBonus.Vo;
+                        da += lesson.SpBonus.Da;
+                        vi += lesson.SpBonus.Vi;
+                    }
                 }
             }
         }
