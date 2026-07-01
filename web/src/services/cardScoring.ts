@@ -2436,7 +2436,11 @@ function selectOptimalDeckOnce(
           remainingFree = Math.max(0, remainingFree - 1);
         }
 
-        // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCounts を減算
+        // SP率カード判定: 必須カードがSP率エフェクトを持つなら spCounts を減算。
+        // all/as 型のSP率カードは全属性のSP発生率を上げる = da/vi 両方の必要数を1本ずつ満たす。
+        // ここで break すると1属性しか減算されず、ステップ1が残り属性のSPを過剰確保して
+        // 所持枠が膨張し、デッキが6枚を超える (必須+SP補充で7枚になるバグの原因)。
+        // → カバーする全属性を減算する (単一型は自属性のみ一致するので二重減算しない)。
         const spEffect = card.effects.find(
           (e) => e.trigger === 'equip' && e.value_type === 'sp_rate',
         );
@@ -2447,7 +2451,6 @@ function selectOptimalDeckOnce(
               spCountsForFill[key] > 0
             ) {
               spCountsForFill[key]--;
-              break;
             }
           }
         }
