@@ -15,7 +15,7 @@ import type { TurnChoice } from '../src/types/models';
 // hatsu_legend のレッスン週は W4/W7/W12/W14/W16 (値は週後半ほど大きい)。
 const LESSON_WEEKS = [4, 7, 12, 14, 16];
 
-function turnChoicesFor(order: string[]): TurnChoice[] {
+function turnChoicesFor(order: Array<'vo' | 'da' | 'vi'>): TurnChoice[] {
   return LESSON_WEEKS.map((week, i) => ({
     week,
     chosen_action: `${order[i]}_lesson`,
