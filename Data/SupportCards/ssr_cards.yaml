@@ -240,8 +240,8 @@ support_cards:
     values: [2, 2, 2, 2, 2]
     value_type: trigger_count_bonus
     trigger_target: p_drink_acquire
-    source: item
     description: 無我の境地 (授業・営業終了時にPドリンク獲得・プロデュース中2回)
+    source: item
 - id: SP_SSR_0084
   name: なぜこんなところにッ！？
   rarity: SSR
@@ -3210,7 +3210,7 @@ support_cards:
     value_type: para_bonus
   - trigger: skill_ssr_acquire
     stat: vi
-    values: [5, 5, 5, 5, 6]
+    values: [5, 5, 6, 6, 6]
     value_type: flat
   - trigger: vi_sp_end
     stat: vi
@@ -3218,10 +3218,45 @@ support_cards:
     value_type: flat
   - trigger: outing_end
     stat: vi
-    values: [28, 28, 28, 38, 38]
+    values: [28, 28, 28, 28, 38]
     value_type: flat
     max_count: 2
   - trigger: equip
     stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
+- id: SP_SSR_0104
+  name: 次の曲は〜ッあの曲だ！！
+  rarity: SSR
+  type: vo
+  plan: logic
+  tag: exam_item
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vo
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: skill_delete
+    stat: vo
+    values: [15, 15, 20, 20, 20]
+    value_type: flat
+    max_count: 4
+  - trigger: vo_sp_end
+    stat: vo
+    values: [13, 13, 13, 17, 17]
+    value_type: flat
+  - trigger: good_impression_acquire
+    stat: vo
+    values: [16, 16, 16, 16, 22]
+    value_type: flat
+    max_count: 4
+    condition: 所持している好印象効果のスキルカード>=8
+  - trigger: equip
+    stat: vo
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
