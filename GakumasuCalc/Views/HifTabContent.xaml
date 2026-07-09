@@ -626,7 +626,7 @@
                 <StackPanel>
                     <TextBlock Style="{StaticResource SectionHeader}">
                         <Run Text="必須カード"/>
-                        <Run Text="（" Foreground="#999"/><Run Text="{Binding RequiredCards.Count, Mode=OneWay}" Foreground="#999"/><Run Text="/4）" Foreground="#999"/>
+                        <Run Text="（" Foreground="#999"/><Run Text="{Binding RequiredCards.Count, Mode=OneWay}" Foreground="#999"/><Run Text="/5）" Foreground="#999"/>
                     </TextBlock>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <ComboBox IsEditable="True" IsTextSearchEnabled="True"

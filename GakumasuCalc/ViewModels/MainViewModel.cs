@@ -727,6 +727,9 @@ public class MainViewModel : ViewModelBase
     }
 
     // 必須カード
+    /// <summary>必須カードの最大登録枚数。デッキ6枚のうち1枚は自動選出に残す (要望 #138: 5枚確定運用)</summary>
+    public const int MaxRequiredCards = 5;
+
     public ObservableCollection<SupportCard> RequiredCards { get; } = new();
     public List<SupportCard> AvailableCardsForRequired => _allCards;
 
@@ -736,7 +739,7 @@ public class MainViewModel : ViewModelBase
         set => SetProperty(ref _selectedRequiredCard, value);
     }
 
-    public bool CanAddRequiredCard => RequiredCards.Count < 4;
+    public bool CanAddRequiredCard => RequiredCards.Count < MaxRequiredCards;
 
     public ICommand AddRequiredCardCommand { get; private set; } = null!;
     public ICommand RemoveRequiredCardCommand { get; private set; } = null!;
@@ -2819,7 +2822,7 @@ public class MainViewModel : ViewModelBase
 
     private void ExecuteAddRequiredCard()
     {
-        if (SelectedRequiredCard == null || RequiredCards.Count >= 4) return;
+        if (SelectedRequiredCard == null || RequiredCards.Count >= MaxRequiredCards) return;
         if (RequiredCards.Any(c => c.Id == SelectedRequiredCard.Id)) return;
         // 必須と除外は相互排他: 必須に追加したら除外から外す
         var dup = ExcludedCards.FirstOrDefault(c => c.Id == SelectedRequiredCard.Id);

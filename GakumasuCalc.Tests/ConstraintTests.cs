@@ -91,6 +91,43 @@ public class ConstraintTests
         Assert.True(Constraints.CountSp(Constraints.DeckCards(deck), "vo") >= 2);
     }
 
+    // 要望 #138: W先生×Pアイテム3つ等でサポカ5枚が確定する運用向けに、必須カードは
+    // 上限5枚まで登録できる (残り1枠だけを自動選出に任せて最終パラメータを事前確認する)。
+    [Fact]
+    public void 必須カード5枚がすべて編成に含まれ6枚に収まる()
+    {
+        var plan = MakePlan(new PlanSpec { StatusLimit = 9999 });
+        // 寄与下位を含む5枚を必須指定しても全部入り、自動選出は残り1枠のみ
+        var required = new List<string> { "VO3", "VO4", "DA3", "VI1", "VI2" };
+        var deck = Select(plan, SyntheticPool(), new() { ["vo"] = 2, ["da"] = 2 }, 2, new() { "vo", "da" },
+            null, required);
+        var cards = Constraints.DeckCards(deck);
+        Assert.Equal(6, cards.Count);
+        Assert.True(Constraints.HasNoDuplicates(cards));
+        foreach (var id in required)
+            Assert.Contains(id, cards.Select(c => c.Id));
+    }
+
+    [Fact]
+    public void レンタルありの必須5枚は全必須含有_レンタル1枚_自動選出枠が1枚残る()
+    {
+        var plan = MakePlan(new PlanSpec { StatusLimit = 9999 });
+        var pool = SyntheticPool();
+        var required = new List<string> { "VO3", "VO4", "DA3", "VI1", "VI2" };
+        var deck = Svc.SelectOptimalDeck(
+            plan, pool, Alloc(), new() { ["vo"] = 2, ["da"] = 2 }, new() { "vo", "da" },
+            null, null, null, null, pool, 2, required);
+        var cards = Constraints.DeckCards(deck);
+        Assert.Equal(6, cards.Count);
+        Assert.True(Constraints.HasNoDuplicates(cards));
+        foreach (var id in required)
+            Assert.Contains(id, cards.Select(c => c.Id));
+        // 所持のみ運用ではレンタル枠がちょうど1枚
+        Assert.Equal(1, deck.SelectedCards.Count(cs => cs.IsRental));
+        // 必須5枚以外に自動選出された1枚が存在する
+        Assert.Equal(1, cards.Count(c => !required.Contains(c.Id)));
+    }
+
     [Fact]
     public void 同一入力なら同一出力()
     {

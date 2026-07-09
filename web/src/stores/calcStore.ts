@@ -27,6 +27,9 @@ import { calculate } from '../services/statusCalculation';
 import { applyCharacterToggles } from '../services/characterBonus';
 import { trackEvent, startTimer, endTimer, incrementCounter, trackFunnelStep } from '../utils/analytics';
 
+/** 必須カードの最大登録枚数。デッキ6枚のうち1枚は自動選出に残す (要望 #138: 5枚確定運用) */
+export const MAX_REQUIRED_CARDS = 5;
+
 const SELECTED_CHARACTER_KEY = 'selectedCharacterId';
 // 旧: 全キャラ共通の単一トグル。現在はキャラ毎マップに移行（下のマイグレーション参照）
 const LEGACY_UNCAP3_BONUS_KEY = 'uncap3CharacterBonusEnabled';
@@ -820,7 +823,7 @@ export const useCalcStore = create<CalcState>((set, get) => ({
 
   addRequiredCard: (cardId) => {
     const state = get();
-    if (state.requiredCardIds.length >= 4) return;
+    if (state.requiredCardIds.length >= MAX_REQUIRED_CARDS) return;
     if (state.requiredCardIds.includes(cardId)) return;
     set({
       requiredCardIds: [...state.requiredCardIds, cardId],
