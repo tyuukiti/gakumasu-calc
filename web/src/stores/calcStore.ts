@@ -27,8 +27,8 @@ import { calculate } from '../services/statusCalculation';
 import { applyCharacterToggles } from '../services/characterBonus';
 import { trackEvent, startTimer, endTimer, incrementCounter, trackFunnelStep } from '../utils/analytics';
 
-/** 必須カードの最大登録枚数。デッキ6枚のうち1枚は自動選出に残す (要望 #138: 5枚確定運用) */
-export const MAX_REQUIRED_CARDS = 5;
+/** 必須カードの最大登録枚数。デッキ全6枠を固定し、決め打ち編成の最終パラメータを直接評価する使い方も許容する */
+export const MAX_REQUIRED_CARDS = 6;
 
 const SELECTED_CHARACTER_KEY = 'selectedCharacterId';
 // 旧: 全キャラ共通の単一トグル。現在はキャラ毎マップに移行（下のマイグレーション参照）
