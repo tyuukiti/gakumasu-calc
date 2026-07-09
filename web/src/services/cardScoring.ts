@@ -1382,11 +1382,18 @@ function optimizeRentalAssignment(
  *
  * 例: Vocal2 で 0069(da,4凸所持)がレンタル浪費 → 0069を所持に戻し、弱い4凸カードを1枚落として
  *     0072(vo,1凸所持)を4凸借用する方が合計が高い、というケースを拾う。
+ *
+ * 借用候補は低凸所持カードに加えて rentalPool 内の未所持カードも含める。旧レンタルが
+ * SP要員 (例: 0071 0凸所持を4凸借用) だと optimizeRentalCard の単手入替は SP枚数不足で
+ * 全滅するため、「未所持カードを借用し、旧レンタルを所持0凸のSP要員に戻し、弱い1枚を落とす」
+ * 複合手はこのパスでしか到達できない。
  */
 function optimizeRentalBorrowUpgrade(
   selected: CardScore[],
   cardContributions: CardScore[],
   ownedIds: Set<string>,
+  rentalPool: SupportCard[] | undefined,
+  planType: string | undefined,
   plan: TrainingPlan,
   turnChoices: TurnChoice[],
   triggerCounts: Record<string, number>,
@@ -1443,10 +1450,17 @@ function optimizeRentalBorrowUpgrade(
     );
 
   const inDeck = new Set(selected.map((s) => s.card.id));
-  // 借用候補: デッキ外・低凸(uncap<4)所持カード。4凸寄与の上位のみ評価しコストを抑える。
-  const borrowCands = cardContributions
+  // 借用候補: デッキ外の (a) 低凸(uncap<4)所持カード + (b) rentalPool 内の未所持カード。
+  // 4凸寄与の上位のみ評価しコストを抑える。
+  const planOk = (c: SupportCard): boolean =>
+    planType == null || planType === '' || c.plan == null || c.plan === '' || c.plan === planType || c.plan === 'free';
+  const ownedCands = cardContributions
     .filter((cs) => !inDeck.has(cs.card.id) && (uncapLevels?.[cs.card.id] ?? 0) < 4)
-    .map((cs) => at4(cs.card))
+    .map((cs) => at4(cs.card));
+  const unownedCands = (rentalPool ?? [])
+    .filter((c) => !inDeck.has(c.id) && !ownedIds.has(c.id) && planOk(c))
+    .map((c) => at4(c));
+  const borrowCands = [...ownedCands, ...unownedCands]
     .sort((a, b) => rawTotal(b) - rawTotal(a))
     .slice(0, 12);
   if (borrowCands.length === 0) return;
@@ -2579,8 +2593,12 @@ function selectOptimalDeckOnce(
     // (owned 4凸 = rental 4凸 で同値)。レンタル枠は本来「未所持/低凸カードを4凸として
     // 借りる」用途なので、4凸所持カードを意図的に rental に置くのは枠の浪費。→ 除外。
     // ただし全候補が4凸所持で空になる場合はフォールバックで除外しない。
+    // 注意: uncapLevels は未所持カードにもエントリを持つ (inventory は全カードを
+    // デフォルト uncap=4 で保存する) ため、uncap だけで判定すると未所持カード全てを
+    // 「4凸所持」と誤判定しレンタル候補から除外してしまう。所持集合との積で判定する。
+    const ownedIdSet = new Set(allCards.map((c) => c.id));
     const isUserOwned4Star = (cardId: string): boolean =>
-      (uncapLevels?.[cardId] ?? 0) >= 4;
+      ownedIdSet.has(cardId) && (uncapLevels?.[cardId] ?? 0) >= 4;
     const rentalPoolForCandidates = (() => {
       const filtered = filteredRentalPool.filter((c) => !isUserOwned4Star(c.id));
       return filtered.length > 0 ? filtered : filteredRentalPool;
@@ -2925,6 +2943,8 @@ function selectOptimalDeckOnce(
       selected,
       cardContributions,
       new Set(allCards.map((c) => c.id)),
+      rentalPool,
+      planType,
       plan,
       turnChoicesOverride ?? buildTurnChoices(plan, mainStats),
       triggerCounts,
