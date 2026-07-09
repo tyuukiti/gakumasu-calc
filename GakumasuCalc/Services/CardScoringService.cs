@@ -455,8 +455,12 @@ public class CardScoringService
             // (owned 4凸 = rental 4凸 で同値)。レンタル枠は本来「未所持/低凸カードを4凸として
             // 借りる」用途なので、4凸所持カードを意図的に rental に置くのは枠の浪費。→ 除外。
             // ただし全候補が4凸所持で空になる場合はフォールバックで除外しない。
+            // 注意: uncapLevels は未所持カードにもエントリを持つ (インベントリは全カードを
+            // デフォルト uncap=4 で保存する) ため、uncap だけで判定すると未所持カード全てを
+            // 「4凸所持」と誤判定しレンタル候補から除外してしまう。所持集合との積で判定する。
+            var ownedIdSet = allCards.Select(c => c.Id).ToHashSet();
             bool IsUserOwned4Star(string cardId) =>
-                (uncapLevels?.GetValueOrDefault(cardId) ?? 0) >= 4;
+                ownedIdSet.Contains(cardId) && (uncapLevels?.GetValueOrDefault(cardId) ?? 0) >= 4;
             var planFiltered = rentalPool
                 .Where(c => string.IsNullOrEmpty(planType)
                             || string.IsNullOrEmpty(c.Plan)
@@ -669,11 +673,13 @@ public class CardScoringService
             plan, additionalCounts, statCap, character, memoryBonuses, cardTypeSlots,
             turnChoicesOverride ?? BuildTurnChoices(plan, mainStats), overflowPenalty);
 
-        // 借用アップグレード: デッキ外の低凸所持カードを4凸借用で投入し、弱い非必須カードを1枚落とす
-        // ジョイント手を実計算で評価(改善時のみ採用)。4凸所持カードのレンタル浪費を解消する。
+        // 借用アップグレード: デッキ外の低凸所持カード・未所持カードを4凸借用で投入し、
+        // 弱い非必須カードを1枚落とすジョイント手を実計算で評価(改善時のみ採用)。
+        // 4凸所持カードのレンタル浪費を解消する。
         if (rentalPool != null)
         {
             OptimizeRentalBorrowUpgrade(selected, cardContributions, allCards.Select(c => c.Id).ToHashSet(),
+                rentalPool, planType,
                 plan, turnChoicesOverride ?? BuildTurnChoices(plan, mainStats), triggerCounts,
                 lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo, additionalCounts,
                 statCap, character, memoryBonuses, cardTypeSlots, spCounts, overflowPenalty);
@@ -1294,11 +1300,18 @@ public class CardScoringService
     /// このパスは、デッキ外の低凸所持カードC(4凸寄与上位)を借用枠に投入し、デッキ内の非必須カードVを
     /// 1枚落とす手を実計算で評価し、合計が上がる場合のみ採用する(単調改善・悪化なし)。
     /// 旧レンタルカード(4凸所持等)は所持枠へ移る。属性枠(cardTypeSlots)・SP枚数・必須は維持する。
+    ///
+    /// 借用候補は低凸所持カードに加えて rentalPool 内の未所持カードも含める。旧レンタルが
+    /// SP要員 (例: 0071 0凸所持を4凸借用) だと OptimizeRentalCard の単手入替は SP枚数不足で
+    /// 全滅するため、「未所持カードを借用し、旧レンタルを所持0凸のSP要員に戻し、弱い1枚を落とす」
+    /// 複合手はこのパスでしか到達できない。
     /// </summary>
     private void OptimizeRentalBorrowUpgrade(
         List<CardScore> selected,
         List<CardScore> cardContributions,
         HashSet<string> ownedIds,
+        List<SupportCard>? rentalPool,
+        string? planType,
         TrainingPlan plan,
         List<TurnChoice> turnChoices,
         Dictionary<string, int> triggerCounts,
@@ -1353,10 +1366,17 @@ public class CardScoringService
         }
 
         var inDeck = selected.Select(s => s.Card.Id).ToHashSet();
-        // 借用候補: デッキ外・低凸(uncap<4)所持カード。4凸寄与の上位のみ評価しコストを抑える。
-        var borrowCands = cardContributions
+        // 借用候補: デッキ外の (a) 低凸(uncap<4)所持カード + (b) rentalPool 内の未所持カード。
+        // 4凸寄与の上位のみ評価しコストを抑える。
+        bool PlanOk(SupportCard c) =>
+            string.IsNullOrEmpty(planType) || string.IsNullOrEmpty(c.Plan) || c.Plan == planType || c.Plan == "free";
+        var ownedCands = cardContributions
             .Where(cs => !inDeck.Contains(cs.Card.Id) && (uncapLevels?.GetValueOrDefault(cs.Card.Id) ?? 0) < 4)
-            .Select(cs => At4(cs.Card))
+            .Select(cs => At4(cs.Card));
+        var unownedCands = (rentalPool ?? new List<SupportCard>())
+            .Where(c => !inDeck.Contains(c.Id) && !ownedIds.Contains(c.Id) && PlanOk(c))
+            .Select(At4);
+        var borrowCands = ownedCands.Concat(unownedCands)
             .OrderByDescending(RawTotal)
             .Take(12)
             .ToList();
