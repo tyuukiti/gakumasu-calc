@@ -1,6 +1,6 @@
 ﻿import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '../../stores/appStore';
-import { useCalcStore } from '../../stores/calcStore';
+import { useCalcStore, MAX_REQUIRED_CARDS } from '../../stores/calcStore';
 
 const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   vo: { bg: 'var(--color-vo-bg)', text: 'var(--color-vo)' },
@@ -50,12 +50,12 @@ export default function RequiredCardSelector() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const canAdd = requiredCardIds.length < 4;
+  const canAdd = requiredCardIds.length < MAX_REQUIRED_CARDS;
 
   return (
     <div>
       <h4 className="text-sm font-semibold text-gray-700 mb-2">
-        必須カード ({requiredCardIds.length}/4)
+        必須カード ({requiredCardIds.length}/{MAX_REQUIRED_CARDS})
       </h4>
 
       {/* 検索 + ドロップダウン */}

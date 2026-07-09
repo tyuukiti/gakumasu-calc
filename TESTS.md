@@ -14,8 +14,8 @@ pwsh ./run-tests.ps1
 個別に走らせる場合:
 
 ```powershell
-cd web; npm test                 # Web版 (TS / Vitest) … 47 件
-dotnet test GakumasuCalc.Tests   # デスクトップ版 (C# / xUnit) … 40 件
+cd web; npm test                 # Web版 (TS / Vitest) … 49 件
+dotnet test GakumasuCalc.Tests   # デスクトップ版 (C# / xUnit) … 42 件
 ```
 
 通常モード(hatsu_legend) と **HIFモード(hif)** の両方を、実データ + **実イベント回数テンプレート**で検証する。
@@ -58,13 +58,13 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 
 > 各層の符号 — **L1**=合成データで最適性・制約・決定性を厳密検証 / **L2**=実データで「自動編成≧手動編成」(このツールの核心) / **L4**=C#版とWeb版が同結果か(クロス実装パリティ)。
 
-### Web版（`web/tests/`）— 47 件
+### Web版（`web/tests/`）— 49 件
 
 | ファイル | 件数 | 検証内容 |
 |---|---|---|
 | `smoke.test.ts` | 2 | 実データ(カード/プラン)の読込／`selectMultiplePatterns`+`scoreDeck`が動く |
 | `cardScoring.invariant.test.ts` | 4 | **L1 総当たりオラクル**: ①上限張り付きトラップで同属性を積み過ぎず均等配分を選ぶ ②上限なしで寄与最大の6枚 ③属性枠(vo2/da2)ありでも最適一致 ④全列挙のどの手動にも劣らない |
-| `cardScoring.constraints.test.ts` | 9 | **L1 制約遵守**: デッキ6枚・重複なし／必須カード必須／属性枠充足／SP枚数充足／必須+SP両立／決定性(同入力→同出力)／実データ3メイン組合せの全パターンが6枚・重複なし |
+| `cardScoring.constraints.test.ts` | 11 | **L1 制約遵守**: デッキ6枚・重複なし／必須カード必須／属性枠充足／SP枚数充足／必須+SP両立／**必須5枚(上限・要望#138)で全含有・6枚・レンタル1枚+自動選出枠1**／決定性(同入力→同出力)／実データ3メイン組合せの全パターンが6枚・重複なし |
 | `cardScoring.autoGeManual.test.ts` | 9 | **L2 自動≧手動**(通常モード・**テンプレ適用**): hatsu_legend「センス（活動支給軸）」テンプレの additionalCounts 下で、3メイン組合せ×3バランス手動編成(3+3 / 2+2+2 / 3+2+1)に自動が劣らない |
 | `cardScoringHif.test.ts` | 13 | **HIFモード・テンプレ適用**: メイン**順序込み6通り**×(全パターン6枚・重複なし／自動≧単体寄与トップ6) + SP制約。HIF「センス」テンプレ適用 |
 | `cardScoringHif.crossSeed.test.ts` | 1 | **L2 回帰**(ユーザ報告2026-06): リーリヤ+HIF Lv5・DaSP3・アノマリー・所持のみ・exam全Vi で、**レンタル枠対応の総当たりオラクル**(各パターンが surface したカードの和集合+Daレンタル候補を全列挙)を実データに適用し、自動最良 ≧ 独立に求めた最適。答えを事前に知らず局所最適落ちを捕捉。`TestFixtures/hif_repro_inventory.json` 使用 |
@@ -74,13 +74,13 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 | `cardScoring.rental.test.ts` | 2 | **レンタル枠**: レンタルモードで6枚・レンタル枠ちょうど1・重複なし／4凸所持を浪費せず未所持の強カードを借用 |
 | `parity.test.ts` | 2 | **L4 パリティ**: `expected.json` と一致(なければ生成)／各シナリオが非空 |
 
-### デスクトップ版（`GakumasuCalc.Tests/`）— 40 件
+### デスクトップ版（`GakumasuCalc.Tests/`）— 42 件
 
 | ファイル | 件数 | 検証内容 |
 |---|---|---|
 | `SmokeTests.cs` | 2 | Web版 smoke と同等（実データ読込／編成+採点） |
 | `InvariantTests.cs` | 4 | **L1 総当たりオラクル**（Web版と同シナリオ。cap-trap=740 等の期待値も一致） |
-| `ConstraintTests.cs` | 9 | **L1 制約遵守**（6枚・重複・必須・属性枠・SP枚数・必須+SP・決定性・実データ3組合せ） |
+| `ConstraintTests.cs` | 11 | **L1 制約遵守**（6枚・重複・必須・属性枠・SP枚数・必須+SP・必須5枚上限・決定性・実データ3組合せ） |
 | `AutoGeManualTests.cs` | 3 | **L2 自動≧手動**(通常モード・テンプレ適用。3メイン組合せ×バランス手動編成） |
 | `HifTests.cs` | 13 | **HIFモード・テンプレ適用**（Web版と同等: 順序込み6通り×(6枚・重複なし/自動≧単体トップ6) + SP充足） |
 | `ReproHif0030Tests.cs` | 1 | **L2 回帰**(Web版 `cardScoringHif.crossSeed` と対): ユーザ報告シナリオで自動最良 ≧ レンタル枠対応総当たりオラクルの最適。cross-seed 大域最適化の回帰ガード |

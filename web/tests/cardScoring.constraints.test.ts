@@ -90,6 +90,42 @@ describe('L1: 制約遵守 (合成)', () => {
     expect(ids).toContain('DA3'); // 必須
     expect(countSp(deckCards(deck), 'vo')).toBeGreaterThanOrEqual(2); // SP も確保
   });
+
+  // 要望 #138: W先生×Pアイテム3つ等でサポカ5枚が確定する運用向けに、必須カードは
+  // 上限5枚まで登録できる (残り1枠だけを自動選出に任せて最終パラメータを事前確認する)。
+  it('必須カード5枚 (上限) がすべて編成に含まれ 6 枚に収まる', () => {
+    const plan = makePlan({ statusLimit: 9999 });
+    // 寄与下位を含む5枚を必須指定しても全部入り、自動選出は残り1枠のみ
+    const required = ['VO3', 'VO4', 'DA3', 'VI1', 'VI2'];
+    const deck = select(plan, syntheticPool(), { vo: 2, da: 2 }, 2, ['vo', 'da'], undefined, required);
+    const cards = deckCards(deck);
+    expect(cards.length).toBe(6);
+    expect(hasNoDuplicates(cards)).toBe(true);
+    for (const id of required) {
+      expect(cards.map((c) => c.id), `必須カード ${id} が編成に含まれること`).toContain(id);
+    }
+  });
+
+  it('所持のみ相当 (レンタルあり) の必須5枚: 全必須含有・レンタル1枚・自動選出枠が1枚残る', () => {
+    const plan = makePlan({ statusLimit: 9999 });
+    const pool = syntheticPool();
+    const required = ['VO3', 'VO4', 'DA3', 'VI1', 'VI2'];
+    const deck = selectOptimalDeck(
+      plan, pool, ALLOC, { vo: 2, da: 2 }, ['vo', 'da'],
+      undefined, undefined, undefined, undefined, pool,
+      2, required,
+    );
+    const cards = deckCards(deck);
+    expect(cards.length).toBe(6);
+    expect(hasNoDuplicates(cards)).toBe(true);
+    for (const id of required) {
+      expect(cards.map((c) => c.id), `必須カード ${id} が編成に含まれること`).toContain(id);
+    }
+    // 所持のみ運用ではレンタル枠がちょうど1枚
+    expect(deck.selected_cards.filter((cs) => cs.is_rental).length).toBe(1);
+    // 必須5枚以外に自動選出された1枚が存在する
+    expect(cards.filter((c) => !required.includes(c.id)).length).toBe(1);
+  });
 });
 
 describe('L1: 決定性', () => {
