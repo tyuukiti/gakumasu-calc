@@ -1,0 +1,927 @@
+[
+ {
+  "card_id": "SP_SSR_0093",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0092",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0091",
+  "owned": true,
+  "uncap": 2
+ },
+ {
+  "card_id": "SP_SSR_0089",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0088",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0086",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0085",
+  "owned": true,
+  "uncap": 2
+ },
+ {
+  "card_id": "SP_SSR_0084",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0082",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0081",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0079",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0078",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0077",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0076",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0075",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0074",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0073",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0072",
+  "owned": true,
+  "uncap": 1
+ },
+ {
+  "card_id": "SP_SSR_0071",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0069",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0067",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0065",
+  "owned": true,
+  "uncap": 2
+ },
+ {
+  "card_id": "SP_SSR_0064",
+  "owned": true,
+  "uncap": 3
+ },
+ {
+  "card_id": "SP_SSR_0063",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0059",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0058",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0056",
+  "owned": true,
+  "uncap": 2
+ },
+ {
+  "card_id": "SP_SSR_0055",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0053",
+  "owned": true,
+  "uncap": 1
+ },
+ {
+  "card_id": "SP_SSR_0052",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0051",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0050",
+  "owned": true,
+  "uncap": 1
+ },
+ {
+  "card_id": "SP_SSR_0049",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0048",
+  "owned": true,
+  "uncap": 1
+ },
+ {
+  "card_id": "SP_SSR_0047",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0046",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0045",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0044",
+  "owned": true,
+  "uncap": 3
+ },
+ {
+  "card_id": "SP_SSR_0043",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0042",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0041",
+  "owned": true,
+  "uncap": 1
+ },
+ {
+  "card_id": "SP_SSR_0038",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0037",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0036",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0035",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0034",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0033",
+  "owned": true,
+  "uncap": 1
+ },
+ {
+  "card_id": "SP_SSR_0032",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0030",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0029",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0028",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0027",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0026",
+  "owned": true,
+  "uncap": 2
+ },
+ {
+  "card_id": "SP_SSR_0025",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0024",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0023",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0022",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0021",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0020",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0019",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0017",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0015",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0014",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0013",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0012",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0011",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0010",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0008",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0007",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0006",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0005",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0004",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0002",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0001",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0090",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0087",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0083",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0080",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0068",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0066",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0057",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0054",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0039",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0031",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0018",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0062",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0061",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0060",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0040",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0016",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0009",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0070",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0003",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0094",
+  "owned": true,
+  "uncap": 3
+ },
+ {
+  "card_id": "SP_SSR_0095",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0096",
+  "owned": true,
+  "uncap": 1
+ },
+ {
+  "card_id": "SP_SSR_0097",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SSR_0098",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SSR_0099",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SR_0069",
+  "owned": true,
+  "uncap": 1
+ },
+ {
+  "card_id": "SP_SR_0068",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0067",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0066",
+  "owned": true,
+  "uncap": 0
+ },
+ {
+  "card_id": "SP_SR_0065",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0064",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0063",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0062",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0061",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0060",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0059",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0058",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0057",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0056",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0055",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0054",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0053",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0052",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0051",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0050",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0049",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0048",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0047",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0046",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0045",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0044",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0043",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0042",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0041",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0040",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0039",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0038",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0037",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0036",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0035",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0034",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0033",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0032",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0031",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0030",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0029",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0028",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0027",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0026",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0025",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0024",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0023",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0022",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0021",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0020",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0019",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0018",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0017",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0016",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0015",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0014",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0013",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0012",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0011",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0010",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0009",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0007",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0006",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0005",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0004",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0003",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0002",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0001",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0070",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0071",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0008",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0072",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_SR_0073",
+  "owned": false,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0013",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0012",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0011",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0010",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0009",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0008",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0007",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0006",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0005",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0004",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0003",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0002",
+  "owned": true,
+  "uncap": 4
+ },
+ {
+  "card_id": "SP_R_0001",
+  "owned": true,
+  "uncap": 4
+ }
+]
