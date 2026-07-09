@@ -92,7 +92,7 @@ public class ConstraintTests
     }
 
     // 要望 #138: W先生×Pアイテム3つ等でサポカ5枚が確定する運用向けに、必須カードは
-    // 上限5枚まで登録できる (残り1枠だけを自動選出に任せて最終パラメータを事前確認する)。
+    // デッキ枠と同じ6枚まで登録できる (5枚固定+自動1枠、または全6枠固定の直接評価)。
     [Fact]
     public void 必須カード5枚がすべて編成に含まれ6枚に収まる()
     {
@@ -126,6 +126,34 @@ public class ConstraintTests
         Assert.Equal(1, deck.SelectedCards.Count(cs => cs.IsRental));
         // 必須5枚以外に自動選出された1枚が存在する
         Assert.Equal(1, cards.Count(c => !required.Contains(c.Id)));
+    }
+
+    [Fact]
+    public void 必須カード6枚でデッキ全枠が固定される()
+    {
+        var plan = MakePlan(new PlanSpec { StatusLimit = 9999 });
+        var required = new List<string> { "VO1", "VO3", "VO4", "DA3", "VI1", "VI2" };
+        var deck = Select(plan, SyntheticPool(), new() { ["vo"] = 2, ["da"] = 2 }, 2, new() { "vo", "da" },
+            null, required);
+        Assert.Equal(
+            required.OrderBy(x => x).ToList(),
+            Constraints.DeckCards(deck).Select(c => c.Id).OrderBy(x => x).ToList());
+    }
+
+    [Fact]
+    public void レンタルありの必須6枚はデッキが必須6枚そのもの_借用枠は必須内に1枚割り当たる()
+    {
+        var plan = MakePlan(new PlanSpec { StatusLimit = 9999 });
+        var pool = SyntheticPool();
+        var required = new List<string> { "VO1", "VO3", "VO4", "DA3", "VI1", "VI2" };
+        var deck = Svc.SelectOptimalDeck(
+            plan, pool, Alloc(), new() { ["vo"] = 2, ["da"] = 2 }, new() { "vo", "da" },
+            null, null, null, null, pool, 2, required);
+        Assert.Equal(
+            required.OrderBy(x => x).ToList(),
+            Constraints.DeckCards(deck).Select(c => c.Id).OrderBy(x => x).ToList());
+        // 全枠必須でもレンタル(借用)枠は消えず、必須6枚のうち1枚に割り当たる
+        Assert.Equal(1, deck.SelectedCards.Count(cs => cs.IsRental));
     }
 
     [Fact]

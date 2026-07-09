@@ -727,8 +727,8 @@ public class MainViewModel : ViewModelBase
     }
 
     // 必須カード
-    /// <summary>必須カードの最大登録枚数。デッキ6枚のうち1枚は自動選出に残す (要望 #138: 5枚確定運用)</summary>
-    public const int MaxRequiredCards = 5;
+    /// <summary>必須カードの最大登録枚数。デッキ全6枠を固定し、決め打ち編成の最終パラメータを直接評価する使い方も許容する</summary>
+    public const int MaxRequiredCards = 6;
 
     public ObservableCollection<SupportCard> RequiredCards { get; } = new();
     public List<SupportCard> AvailableCardsForRequired => _allCards;
