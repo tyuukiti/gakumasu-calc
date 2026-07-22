@@ -3260,3 +3260,37 @@ support_cards:
     stat: vo
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SSR_0105
+  name: インタビューお願いします
+  rarity: SSR
+  type: vi
+  plan: anomaly
+  tag: exam_item
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: equip
+    stat: vi
+    values: [21, 21, 28, 28, 28]
+    value_type: sp_rate
+  - trigger: vi_sp_end
+    stat: vi
+    values: [13, 13, 13, 17, 17]
+    value_type: flat
+  - trigger: conserve_acquire
+    stat: vi
+    values: [16, 16, 16, 16, 22]
+    value_type: flat
+    max_count: 4
+    condition: 所持している温存効果のスキルカード>=8
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
