@@ -17,6 +17,9 @@ characters:
     nia_criteria: "balance"
     nia_trend: ["vi", "da", "vo"]
     uncap3_bonus: { vo: 3.0, da: 3.0, vi: 2.0 }
+    step4_bonus:
+      base_status_bonus: { vo: 20, da: 25, vi: 30 }
+      para_bonus: { vo: 0, da: 0, vi: 0 }
 
   - id: "char_temari"
     name: "月村手毬"
@@ -146,6 +149,9 @@ characters:
     nia_criteria: "balance"
     nia_trend: ["da", "vo", "vi"]
     uncap3_bonus: { vo: 3.0, da: 5.0, vi: 0 }
+    step4_bonus:
+      base_status_bonus: { vo: 25, da: 25, vi: 25 }
+      para_bonus: { vo: 0, da: 0, vi: 3.0 }
 
   - id: "char_rinami"
     name: "姫崎莉波"
