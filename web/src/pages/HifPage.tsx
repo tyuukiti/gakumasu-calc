@@ -84,7 +84,7 @@ export default function HifPage() {
         {/* 持ち込みメモリー */}
         <MemoryBonusInput />
 
-        {/* 条件プリセット (このタブの入力条件一式を保存・呼び出し) */}
+        {/* まるごとプリセット (このタブの入力条件一式を保存・呼び出し) */}
         <HifConditionPresets />
 
         <div className="flex items-center gap-4 flex-wrap">

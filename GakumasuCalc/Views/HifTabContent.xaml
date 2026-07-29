@@ -1191,12 +1191,12 @@
                 </StackPanel>
             </Border>
 
-            <!-- 条件プリセット (このタブの入力条件一式を保存・呼び出し) -->
+            <!-- まるごとプリセット (このタブの入力条件一式を保存・呼び出し。読込と同時に計算実行) -->
             <Border Style="{StaticResource SectionCard}">
                 <Expander IsExpanded="False">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="条件プリセット" FontSize="14" FontWeight="SemiBold"
+                            <TextBlock Text="まるごとプリセット" FontSize="14" FontWeight="SemiBold"
                                        Foreground="#333" VerticalAlignment="Center"/>
                             <TextBlock Text="（キャラ選択以外の入力一式・任意）" FontSize="11" Foreground="#999"
                                        Margin="6,0,0,0" VerticalAlignment="Center"/>

@@ -2,16 +2,18 @@ import { useState } from 'react';
 import { useHifStore, MAX_HIF_CONDITION_PRESETS } from '../../stores/hifStore';
 
 /**
- * 条件プリセット（HIFタブの入力条件一式の保存・読み込み）。
+ * まるごとプリセット（HIFタブの入力条件一式の保存・読み込み）。
  * 持ち込みメモリー (MemoryBonusInput) と同じ折りたたみ + プリセット管理のUIパターン。
  * - 保存対象: スケジュール・試験配分・一括設定 + calcStore側の入力条件
  * - 含めない: キャラ選択・凸トグル・HIFボーナスLv・MAX超過再抽選（別途永続化されるアカウント状態）
+ * - 読込ボタンは読込と同時に計算を実行する（比較ワークフローを1クリックにするため）
  */
 export default function HifConditionPresets() {
   const conditionPresets = useHifStore((s) => s.conditionPresets);
   const saveConditionPreset = useHifStore((s) => s.saveConditionPreset);
   const loadConditionPreset = useHifStore((s) => s.loadConditionPreset);
   const deleteConditionPreset = useHifStore((s) => s.deleteConditionPreset);
+  const executeCalculate = useHifStore((s) => s.executeCalculate);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPresetName, setSelectedPresetName] = useState<string>('');
   const [newPresetName, setNewPresetName] = useState<string>('');
@@ -24,7 +26,7 @@ export default function HifConditionPresets() {
         className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-gray-900 cursor-pointer"
       >
         <span>
-          条件プリセット
+          まるごとプリセット
           <span className="text-xs text-gray-400 ml-1">（キャラ選択以外の入力一式・任意）</span>
           {selectedPresetName && (
             <span className="text-xs text-gray-600 ml-2">: {selectedPresetName}</span>
@@ -64,6 +66,8 @@ export default function HifConditionPresets() {
                         setSelectedPresetName(p.name);
                         setNewPresetName(p.name);
                         loadConditionPreset(p.name);
+                        // 読込と同時に計算実行（比較ワークフローを1クリックで回す）
+                        executeCalculate();
                       }}
                       className={`text-xs border rounded px-2 py-1 cursor-pointer transition-colors ${
                         isSelected

@@ -179,6 +179,9 @@ public class MainViewModel : ViewModelBase
     public ObservableCollection<HifConditionPreset> HifConditionPresets { get; } = new();
 
     private HifConditionPreset? _selectedHifConditionPreset;
+    /// <summary>選択変更(セッター)による読込直後の DropDownClosed 再読込を1回だけ抑止するフラグ（計算の二重実行防止）。</summary>
+    private bool _suppressNextHifConditionPresetReload;
+
     public HifConditionPreset? SelectedHifConditionPreset
     {
         get => _selectedHifConditionPreset;
@@ -190,6 +193,7 @@ public class MainViewModel : ViewModelBase
                 if (value != null)
                 {
                     LoadHifConditionPreset(value);
+                    _suppressNextHifConditionPresetReload = true;
                     // 上書き保存しやすいよう、選択したプリセット名を保存欄に入れる
                     NewHifConditionPresetName = value.Name;
                 }
@@ -684,15 +688,21 @@ public class MainViewModel : ViewModelBase
     /// <summary>
     /// 現在選択されている条件プリセットを強制的に再読み込みする。
     /// ComboBox の DropDownClosed から呼ばれ、同じ項目を再選択した時にも値が反映されるようにする。
+    /// 選択変更直後の DropDownClosed は抑止フラグでスキップし、読込＋計算の二重実行を防ぐ。
     /// </summary>
     public void ReloadSelectedHifConditionPreset()
     {
+        if (_suppressNextHifConditionPresetReload)
+        {
+            _suppressNextHifConditionPresetReload = false;
+            return;
+        }
         if (_selectedHifConditionPreset != null)
             LoadHifConditionPreset(_selectedHifConditionPreset);
     }
 
     /// <summary>
-    /// 条件プリセットを HIFタブの入力条件一式へ復元する。
+    /// 条件プリセットを HIFタブの入力条件一式へ復元し、そのまま計算を実行する。
     /// キャラ選択・凸トグル・HIFボーナスLv・MAX超過再抽選は対象外（別途永続化されるアカウント状態）。
     /// </summary>
     private void LoadHifConditionPreset(HifConditionPreset preset)
@@ -761,6 +771,9 @@ public class MainViewModel : ViewModelBase
             vm.ViValue = src.Vi.Value;
             vm.ViType = src.Vi.Type;
         }
+
+        // 6. 読込と同時に計算実行（比較ワークフローを1クリックで回す）
+        ExecuteHifCalculate();
     }
 
     private static bool IsValidStat(string? s) => s is "vo" or "da" or "vi";
