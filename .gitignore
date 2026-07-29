@@ -13,8 +13,8 @@ test-results/
 *.user
 *.suo
 
-# AI assistant
 .claude/
+CLAUDE.md
 
 # OS
 Thumbs.db
