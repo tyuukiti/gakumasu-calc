@@ -7,12 +7,14 @@ declare global {
 // ─── 基本イベント送信 ───
 
 export function trackEvent(eventName: string, params?: Record<string, unknown>): void {
+  if (typeof window === 'undefined') return; // node(vitest) 環境では no-op
   window.gtag?.('event', eventName, params);
 }
 
 // ─── ユーザープロパティ ───
 
 export function setUserProperties(properties: Record<string, unknown>): void {
+  if (typeof window === 'undefined') return; // node(vitest) 環境では no-op
   window.gtag?.('set', 'user_properties', properties);
 }
 
