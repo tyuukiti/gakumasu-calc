@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../stores/appStore';
-import { useHifStore } from '../../stores/hifStore';
+import { useHifStore, defaultChoiceForWeek } from '../../stores/hifStore';
 import type { HifChoice } from '../../stores/hifStore';
 import type { WeekSchedule } from '../../types/models';
 
@@ -47,44 +47,6 @@ function weekTypeLabel(week: WeekSchedule): string {
   if (acts.some((a) => a.endsWith('_class'))) return '授業';
   if (acts.length === 1) return ACTION_LABEL[acts[0]] ?? acts[0];
   return acts.map((a) => ACTION_LABEL[a] ?? a).join(' / ');
-}
-
-/**
- * その他選択日 (outing / consultation / activity_supply / special_training を含む日) の
- * デフォルト選択優先度: 活動支給 > お出かけ > 相談 > 特別指導
- * お出かけはお金不要 + カード獲得枚数を稼げるため、相談より優先
- */
-const FREE_DAY_PRIORITY: string[] = [
-  'activity_supply',
-  'outing',
-  'consultation',
-  'special_training',
-];
-
-/**
- * 各週のデフォルト選択値を生成。
- */
-function defaultChoiceForWeek(week: WeekSchedule): HifChoice | null {
-  if (week.type === 'audition') return null;
-  if (week.type === 'public_lesson') {
-    return { action: 'vo_lesson', sub_stat: 'da' };
-  }
-  const acts = week.available_actions;
-  if (acts.length === 0) return null;
-
-  // その他選択日: 優先度順に既存アクションを探す
-  for (const pref of FREE_DAY_PRIORITY) {
-    if (acts.includes(pref)) {
-      return { action: pref } as HifChoice;
-    }
-  }
-
-  // 上記以外 (lesson/class 単独日など) は先頭を使用
-  const first = acts[0];
-  if (first.endsWith('_lesson') || first.endsWith('_class')) {
-    return { action: first } as HifChoice;
-  }
-  return null;
 }
 
 export default function ScheduleConfig() {
