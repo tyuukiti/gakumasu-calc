@@ -8,9 +8,9 @@ import type {
   SupportCard,
   StatusValues,
 } from '../types/models';
-import { isEmptyAllMemoryBonuses } from '../types/models';
+import { emptyAdditionalCounts, emptyMemoryBonus, isEmptyAllMemoryBonuses } from '../types/models';
 import { useAppStore } from './appStore';
-import { useCalcStore } from './calcStore';
+import { useCalcStore, type HifConditionCalcFields } from './calcStore';
 import { selectMultiplePatternsHif } from '../services/cardScoring';
 import { calculate } from '../services/statusCalculation';
 import { applyCharacterToggles } from '../services/characterBonus';
@@ -115,6 +115,83 @@ export interface BulkLessonDefault {
   subStat: 'vo' | 'da' | 'vi';
 }
 
+/**
+ * その他選択日 (outing / consultation / activity_supply / special_training を含む日) の
+ * デフォルト選択優先度: 活動支給 > お出かけ > 相談 > 特別指導
+ * お出かけはお金不要 + カード獲得枚数を稼げるため、相談より優先
+ */
+const FREE_DAY_PRIORITY: string[] = [
+  'activity_supply',
+  'outing',
+  'consultation',
+  'special_training',
+];
+
+/**
+ * 各週のデフォルト選択値を生成。
+ */
+export function defaultChoiceForWeek(week: WeekSchedule): HifChoice | null {
+  if (week.type === 'audition') return null;
+  if (week.type === 'public_lesson') {
+    return { action: 'vo_lesson', sub_stat: 'da' };
+  }
+  const acts = week.available_actions;
+  if (acts.length === 0) return null;
+
+  // その他選択日: 優先度順に既存アクションを探す
+  for (const pref of FREE_DAY_PRIORITY) {
+    if (acts.includes(pref)) {
+      return { action: pref } as HifChoice;
+    }
+  }
+
+  // 上記以外 (lesson/class 単独日など) は先頭を使用
+  const first = acts[0];
+  if (first.endsWith('_lesson') || first.endsWith('_class')) {
+    return { action: first } as HifChoice;
+  }
+  return null;
+}
+
+/** 未設定の週に defaultChoiceForWeek を補完した新しい choices を返す（欠落週シード）。hifプラン未読込時は入力をそのまま返す。 */
+function seedMissingChoices(choices: Record<number, HifChoice>): Record<number, HifChoice> {
+  const hifPlan = useAppStore.getState().plans.find((p) => p.id === 'hif');
+  if (!hifPlan) return choices;
+  const next: Record<number, HifChoice> = { ...choices };
+  for (const week of hifPlan.schedule) {
+    if (next[week.week] !== undefined) continue;
+    const def = defaultChoiceForWeek(week);
+    if (def) next[week.week] = def;
+  }
+  return next;
+}
+
+/** 条件プリセット読込時の1週分の検証。現行週に対して不正な選択はデフォルトに置換する。 */
+function sanitizeChoiceForWeek(week: WeekSchedule, raw: unknown): HifChoice | null {
+  if (week.type === 'audition') return null;
+  const choice = raw as HifChoice | undefined;
+  if (!choice || typeof (choice as { action?: unknown }).action !== 'string') {
+    return defaultChoiceForWeek(week);
+  }
+  if (week.type === 'public_lesson') {
+    const action = choice.action;
+    const sub = (choice as { sub_stat?: unknown }).sub_stat;
+    if (
+      (action === 'vo_lesson' || action === 'da_lesson' || action === 'vi_lesson') &&
+      (sub === 'vo' || sub === 'da' || sub === 'vi') &&
+      action.split('_')[0] !== sub
+    ) {
+      return { action, sub_stat: sub };
+    }
+    return defaultChoiceForWeek(week);
+  }
+  if (week.available_actions.length === 0) return null;
+  if (week.available_actions.includes(choice.action)) {
+    return { action: choice.action } as HifChoice;
+  }
+  return defaultChoiceForWeek(week);
+}
+
 /** スケジュール調整のプリセット (個別調整した結果を保存・読み込み) */
 export interface HifSchedulePreset {
   name: string;
@@ -213,6 +290,51 @@ function persistSchedulePresets(presets: HifSchedulePreset[]) {
   }
 }
 
+/** 条件プリセットの hifStore 側フィールド */
+export interface HifConditionHifFields {
+  scheduleChoices: Record<number, HifChoice>;
+  examAllocations: Record<number, ExamAllocation>;
+  examRatio: ExamAllocation;
+  bulkLessonDefault: BulkLessonDefault;
+  bulkClassStat: 'vo' | 'da' | 'vi';
+}
+
+/**
+ * HIF条件プリセット（このタブの入力条件一式を名前付きで保存・読込）。
+ * 凸トグル・HIFボーナスLv・overflow設定は別途永続化されるアカウント状態のため含めない。
+ * 読込は「存在し型が正しいフィールドのみ適用」の部分適用（スキーマ拡張への前方互換）。
+ */
+export interface HifConditionPreset {
+  name: string;
+  hif: HifConditionHifFields;
+  calc: HifConditionCalcFields;
+}
+
+const HIF_CONDITION_PRESETS_KEY = 'hifConditionPresets';
+/** 条件プリセットの保存可能件数上限 */
+export const MAX_HIF_CONDITION_PRESETS = 10;
+
+function loadConditionPresetsFromStorage(): HifConditionPreset[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(HIF_CONDITION_PRESETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as HifConditionPreset[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistConditionPresets(presets: HifConditionPreset[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(HIF_CONDITION_PRESETS_KEY, JSON.stringify(presets));
+  } catch (e) {
+    console.warn('HIF条件プリセット保存失敗:', e);
+  }
+}
+
 interface HifState {
   scheduleChoices: Record<number, HifChoice>;
   /** 試験日ごとの配分（基礎値はYAMLの hif_exam_base が別途加算される）。examRatio から materialize される。 */
@@ -236,6 +358,9 @@ interface HifState {
 
   /** スケジュール調整のプリセット (localStorage 永続化) */
   schedulePresets: HifSchedulePreset[];
+
+  /** 条件プリセット (このタブの入力条件一式、localStorage 永続化) */
+  conditionPresets: HifConditionPreset[];
 
   /** HIFボーナス (パネル方式の永続強化) のレベル設定 */
   bonusLevels: HifBonusLevels;
@@ -264,6 +389,12 @@ interface HifState {
   loadSchedulePreset: (name: string) => void;
   /** プリセットを削除 */
   deleteSchedulePreset: (name: string) => void;
+  /** 現在の入力条件一式（hifStore + calcStore）を条件プリセットとして保存 (同名は上書き) */
+  saveConditionPreset: (name: string) => void;
+  /** 条件プリセットを読み込んで入力条件に反映（計算結果はクリア、要・計算実行） */
+  loadConditionPreset: (name: string) => void;
+  /** 条件プリセットを削除 */
+  deleteConditionPreset: (name: string) => void;
   /** HIFボーナスレベルを更新 (1パネル単位) */
   setBonusLevel: (key: keyof HifBonusLevels, level: number) => void;
   /** HIFボーナスレベルを一括リセット (全パネル MAX) */
@@ -501,6 +632,7 @@ export const useHifStore = create<HifState>((set, get) => ({
   bulkLessonDefault: { mainStat: 'vo', subStat: 'da' },
   bulkClassStat: 'vo',
   schedulePresets: loadSchedulePresetsFromStorage(),
+  conditionPresets: loadConditionPresetsFromStorage(),
   bonusLevels: loadBonusLevelsFromStorage(),
   overflowPenalty: loadOverflowPenaltyFromStorage(),
   deckResults: [],
@@ -637,6 +769,165 @@ export const useHifStore = create<HifState>((set, get) => ({
     persistSchedulePresets(next);
     set({ schedulePresets: next });
     trackEvent('hif_schedule_preset_deleted');
+  },
+
+  saveConditionPreset: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const state = get();
+    const calc = useCalcStore.getState();
+
+    // hif側: 欠落週をデフォルト補完してから保存（空スケジュールプリセット化の防止）
+    const seededChoices = seedMissingChoices(state.scheduleChoices);
+    const snapshotChoices: Record<number, HifChoice> = {};
+    for (const [k, v] of Object.entries(seededChoices)) {
+      snapshotChoices[Number(k)] = { ...v } as HifChoice;
+    }
+    // 試験配分が未 materialize なら現在の比率から生成して保存
+    const sourceAllocs = Object.keys(state.examAllocations).length > 0
+      ? state.examAllocations
+      : materializeExamAllocations(state.examRatio);
+    const snapshotAllocs: Record<number, ExamAllocation> = {};
+    for (const [k, v] of Object.entries(sourceAllocs)) {
+      snapshotAllocs[Number(k)] = { ...v };
+    }
+
+    // calc側: 既知キーのみの独立コピー
+    const countsSnapshot = emptyAdditionalCounts();
+    for (const key of Object.keys(countsSnapshot)) {
+      (countsSnapshot as Record<string, number>)[key] =
+        (calc.additionalCounts as Record<string, number>)[key] ?? 0;
+    }
+    const memorySnapshot = calc.memoryBonuses.slice(0, 4).map((m) => ({
+      vo: { ...m.vo },
+      da: { ...m.da },
+      vi: { ...m.vi },
+    }));
+    while (memorySnapshot.length < 4) memorySnapshot.push(emptyMemoryBonus());
+
+    const preset: HifConditionPreset = {
+      name: trimmed,
+      hif: {
+        scheduleChoices: snapshotChoices,
+        examAllocations: snapshotAllocs,
+        examRatio: { ...state.examRatio },
+        bulkLessonDefault: { ...state.bulkLessonDefault },
+        bulkClassStat: state.bulkClassStat,
+      },
+      calc: {
+        selectedPlanType: calc.selectedPlanType,
+        voSpCount: calc.voSpCount,
+        daSpCount: calc.daSpCount,
+        viSpCount: calc.viSpCount,
+        additionalCounts: countsSnapshot,
+        selectedTemplateName: calc.selectedTemplateName,
+        ownedOnly: calc.ownedOnly,
+        contestMode: calc.contestMode,
+        requiredCardIds: [...calc.requiredCardIds],
+        excludedCardIds: [...calc.excludedCardIds],
+        memoryBonuses: memorySnapshot,
+        selectedCharacterId: calc.selectedCharacterId,
+      },
+    };
+
+    const existingIndex = state.conditionPresets.findIndex((p) => p.name === trimmed);
+    let next: HifConditionPreset[];
+    if (existingIndex >= 0) {
+      next = state.conditionPresets.map((p, i) => (i === existingIndex ? preset : p));
+    } else {
+      if (state.conditionPresets.length >= MAX_HIF_CONDITION_PRESETS) return;
+      next = [...state.conditionPresets, preset];
+    }
+    persistConditionPresets(next);
+    set({ conditionPresets: next });
+    trackEvent('hif_condition_preset_saved', { preset_count: next.length });
+  },
+
+  loadConditionPreset: (name) => {
+    const state = get();
+    const preset = state.conditionPresets.find((p) => p.name === name);
+    if (!preset) return;
+    const hif = (preset.hif ?? {}) as Partial<HifConditionHifFields>;
+    const hifPlan = useAppStore.getState().plans.find((p) => p.id === 'hif');
+
+    // スケジュール: 現行プランに存在する週のみ採用（不正値はデフォルト置換）→ 欠落週シード
+    const choices: Record<number, HifChoice> = {};
+    if (hifPlan && hif.scheduleChoices && typeof hif.scheduleChoices === 'object') {
+      for (const week of hifPlan.schedule) {
+        const valid = sanitizeChoiceForWeek(
+          week,
+          (hif.scheduleChoices as Record<number, unknown>)[week.week],
+        );
+        if (valid) choices[week.week] = valid;
+      }
+    }
+    const seededChoices = seedMissingChoices(choices);
+
+    // 試験配分: 試験週のみ採用・非負整数化
+    const toAllocValue = (v: unknown): number =>
+      typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0;
+    let allocs: Record<number, ExamAllocation> = {};
+    if (hifPlan && hif.examAllocations && typeof hif.examAllocations === 'object') {
+      for (const w of hifPlan.schedule) {
+        if (w.type !== 'audition' || (w.hif_exam_distributed ?? 0) <= 0) continue;
+        const raw = (hif.examAllocations as Record<number, unknown>)[w.week];
+        if (!raw || typeof raw !== 'object') continue;
+        const a = raw as Partial<ExamAllocation>;
+        allocs[w.week] = { vo: toAllocValue(a.vo), da: toAllocValue(a.da), vi: toAllocValue(a.vi) };
+      }
+    }
+    // 配分が空なら保存された比率（無効ならデフォルト比率）から按分生成
+    if (Object.keys(allocs).length === 0) {
+      const r = hif.examRatio;
+      const ratioValid =
+        r != null &&
+        [r.vo, r.da, r.vi].every((v) => typeof v === 'number' && Number.isFinite(v) && v >= 0) &&
+        r.vo + r.da + r.vi > 0;
+      const ratio = ratioValid
+        ? splitExamByRatio(100, { vo: r.vo, da: r.da, vi: r.vi })
+        : { ...DEFAULT_EXAM_RATIO };
+      allocs = materializeExamAllocations(ratio);
+    }
+
+    // 一括設定: 値検証を通ったときのみ適用
+    const isStat = (v: unknown): v is 'vo' | 'da' | 'vi' => v === 'vo' || v === 'da' || v === 'vi';
+    let bulkLessonDefault = state.bulkLessonDefault;
+    const bld = hif.bulkLessonDefault;
+    if (bld && isStat(bld.mainStat) && isStat(bld.subStat) && bld.mainStat !== bld.subStat) {
+      bulkLessonDefault = { mainStat: bld.mainStat, subStat: bld.subStat };
+    }
+    const bulkClassStat = isStat(hif.bulkClassStat) ? hif.bulkClassStat : state.bulkClassStat;
+
+    // 入力条件を差し替え、古い計算結果・内部スナップショットは全クリア
+    set({
+      scheduleChoices: seededChoices,
+      examAllocations: allocs,
+      examRatio: deriveExamRatio(allocs),
+      bulkLessonDefault,
+      bulkClassStat,
+      deckResults: [],
+      selectedPatternIndex: 0,
+      calculationResult: null,
+      calculationResultWithoutCharacter: null,
+      errorMessage: null,
+      _lastMainStats: [],
+      _lastPlan: null,
+      _lastTurnChoices: [],
+    });
+
+    useCalcStore.getState().applyHifConditionCalcFields(
+      (preset.calc ?? {}) as Partial<HifConditionCalcFields>,
+    );
+    trackEvent('hif_condition_preset_loaded');
+  },
+
+  deleteConditionPreset: (name) => {
+    const state = get();
+    const next = state.conditionPresets.filter((p) => p.name !== name);
+    if (next.length === state.conditionPresets.length) return;
+    persistConditionPresets(next);
+    set({ conditionPresets: next });
+    trackEvent('hif_condition_preset_deleted');
   },
 
   setBonusLevel: (key, level) => {
@@ -947,4 +1238,14 @@ export function getActionCategory(action: ActionType): 'lesson' | 'class' | 'oth
 
 export function lessonActionToStat(action: 'vo_lesson' | 'da_lesson' | 'vi_lesson'): 'vo' | 'da' | 'vi' {
   return action.split('_')[0] as 'vo' | 'da' | 'vi';
+}
+
+// 条件プリセット一覧のタブ間同期。
+// 2タブ比較ワークフロー（タブAで保存→開きっぱなしのタブBで読込）のため、
+// 他のブラウザタブによる保存/削除を一覧へ即時反映する（storage イベントは他タブの書き込みでのみ発火）。
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== HIF_CONDITION_PRESETS_KEY) return;
+    useHifStore.setState({ conditionPresets: loadConditionPresetsFromStorage() });
+  });
 }

@@ -1191,6 +1191,61 @@
                 </StackPanel>
             </Border>
 
+            <!-- 全体プリセット (このタブの入力条件一式を保存・呼び出し。読込と同時に計算実行) -->
+            <Border Style="{StaticResource SectionCard}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="全体プリセット" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <TextBlock Text="（入力一式・任意）" FontSize="11" Foreground="#999"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedHifConditionPresetDisplay}"
+                                       FontSize="12" Foreground="#666" Margin="4,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="プリセット" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="#666" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding HifConditionPresetCountText}" FontSize="11"
+                                       Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox Grid.Column="0"
+                                      ItemsSource="{Binding HifConditionPresets}"
+                                      SelectedItem="{Binding SelectedHifConditionPreset}"
+                                      DisplayMemberPath="Name"
+                                      DropDownClosed="OnHifConditionPresetDropDownClosed"
+                                      FontSize="12" Padding="6,4"/>
+                            <Button Grid.Column="1" Content="削除"
+                                    Command="{Binding DeleteHifConditionPresetCommand}"
+                                    Style="{StaticResource DangerButton}"
+                                    FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                        </Grid>
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding NewHifConditionPresetName, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="12" Padding="6,4"
+                                     ToolTip="保存するプリセット名を入力（同名があれば上書き）"/>
+                            <Button Grid.Column="1" Content="現在の条件を保存"
+                                    Command="{Binding SaveHifConditionPresetCommand}"
+                                    Style="{StaticResource PrimaryButton}"
+                                    FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
             <!-- 計算実行ボタン -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,12">
                 <Button Content="計算実行" Command="{Binding HifCalculateCommand}"

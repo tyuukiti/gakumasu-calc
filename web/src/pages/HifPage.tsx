@@ -5,6 +5,7 @@ import { trackEvent } from '../utils/analytics';
 import ScheduleConfig from '../components/hif/ScheduleConfig';
 import HifBulkSettings from '../components/hif/HifBulkSettings';
 import HifSchedulePresets from '../components/hif/HifSchedulePresets';
+import HifConditionPresets from '../components/hif/HifConditionPresets';
 import HifBonusConfig from '../components/hif/HifBonusConfig';
 import HifOverflowPenaltyToggle from '../components/hif/HifOverflowPenaltyToggle';
 import SpCountConfig from '../components/hif/SpCountConfig';
@@ -82,6 +83,9 @@ export default function HifPage() {
 
         {/* 持ち込みメモリー */}
         <MemoryBonusInput />
+
+        {/* 全体プリセット (このタブの入力条件一式を保存・呼び出し) */}
+        <HifConditionPresets />
 
         <div className="flex items-center gap-4 flex-wrap">
           <OwnedOnlyToggle />

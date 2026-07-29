@@ -183,4 +183,14 @@ public partial class HifTabContent : UserControl
         if (DataContext is ViewModels.MainViewModel vm)
             vm.ReloadSelectedEventCountPreset();
     }
+
+    /// <summary>
+    /// 条件プリセット ComboBox のドロップダウン閉鎖時。
+    /// 同じ項目を再選択した場合も明示的に再読み込みする。
+    /// </summary>
+    private void OnHifConditionPresetDropDownClosed(object sender, EventArgs e)
+    {
+        if (DataContext is ViewModels.MainViewModel vm)
+            vm.ReloadSelectedHifConditionPreset();
+    }
 }

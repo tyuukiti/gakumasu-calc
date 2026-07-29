@@ -185,6 +185,26 @@ function persistSchedulePresetsByPlan(map: Record<string, SchedulePreset[]>) {
   }
 }
 
+/**
+ * HIF条件プリセットの calcStore 側フィールド（hifStore.HifConditionPreset の calc セクション）。
+ * 凸トグル（3凸/STEP4）は含めず、読込時にキャラごとの永続設定から導出する。
+ */
+export interface HifConditionCalcFields {
+  selectedPlanType: PlanType;
+  voSpCount: number;
+  daSpCount: number;
+  viSpCount: number;
+  additionalCounts: AdditionalCounts;
+  selectedTemplateName: string | null;
+  ownedOnly: boolean;
+  contestMode: boolean;
+  requiredCardIds: string[];
+  excludedCardIds: string[];
+  memoryBonuses: MemoryBonus[];
+  /** 選択キャラID。null=キャラなしとして復元。フィールド自体が無い場合は現在の選択を維持 */
+  selectedCharacterId: string | null;
+}
+
 interface CalcState {
   selectedPlanId: string;
   selectedPlanType: PlanType;
@@ -267,6 +287,11 @@ interface CalcState {
   /** プリセット名を指定して読み込み（イベント回数を上書き、自動再計算）。 */
   loadEventCountPreset: (name: string) => void;
   deleteEventCountPreset: (name: string) => void;
+  /**
+   * HIF条件プリセットの calc 側フィールドを適用（hifStore.loadConditionPreset から呼ばれる）。
+   * 存在し型が正しいフィールドのみ適用する部分適用（欠落フィールドは現状維持）。
+   */
+  applyHifConditionCalcFields: (fields: Partial<HifConditionCalcFields>) => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
 
@@ -1061,6 +1086,118 @@ export const useCalcStore = create<CalcState>((set, get) => ({
     if (newPresets.length === state.eventCountPresets.length) return;
     persistEventCountPresets(newPresets);
     set({ eventCountPresets: newPresets });
+  },
+
+  applyHifConditionCalcFields: (fields) => {
+    const state = get();
+    const app = useAppStore.getState();
+    const updates: Partial<CalcState> = {};
+
+    if (
+      fields.selectedPlanType === 'sense' ||
+      fields.selectedPlanType === 'logic' ||
+      fields.selectedPlanType === 'anomaly'
+    ) {
+      updates.selectedPlanType = fields.selectedPlanType;
+    }
+
+    const toSpCount = (v: unknown): number | null =>
+      typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : null;
+    const voSp = toSpCount(fields.voSpCount);
+    if (voSp != null) updates.voSpCount = voSp;
+    const daSp = toSpCount(fields.daSpCount);
+    if (daSp != null) updates.daSpCount = daSp;
+    const viSp = toSpCount(fields.viSpCount);
+    if (viSp != null) updates.viSpCount = viSp;
+
+    if (fields.additionalCounts && typeof fields.additionalCounts === 'object') {
+      // 既知キーのみ反映した独立コピー（未知キーは破棄、欠落キーは0）
+      const counts = emptyAdditionalCounts();
+      for (const key of Object.keys(counts)) {
+        const raw = (fields.additionalCounts as Record<string, unknown>)[key];
+        if (typeof raw === 'number' && Number.isFinite(raw)) {
+          (counts as Record<string, number>)[key] = Math.max(0, Math.floor(raw));
+        }
+      }
+      updates.additionalCounts = counts;
+    }
+
+    if ('selectedTemplateName' in fields) {
+      const name = fields.selectedTemplateName;
+      updates.selectedTemplateName =
+        typeof name === 'string' && app.templates.some((t) => t.name === name) ? name : null;
+    }
+
+    if (typeof fields.ownedOnly === 'boolean') updates.ownedOnly = fields.ownedOnly;
+    if (typeof fields.contestMode === 'boolean') updates.contestMode = fields.contestMode;
+
+    // キャラ選択: null=解除、実在IDのみ採用（実在しないIDやフィールド無しは現状維持）。
+    // setSelectedCharacter と同様に永続化し、凸トグルはキャラごとの永続設定から導出する。
+    if ('selectedCharacterId' in fields) {
+      const id = fields.selectedCharacterId;
+      if (id === null || (typeof id === 'string' && app.characters.some((c) => c.id === id))) {
+        if (typeof window !== 'undefined') {
+          if (id) localStorage.setItem(SELECTED_CHARACTER_KEY, id);
+          else localStorage.removeItem(SELECTED_CHARACTER_KEY);
+        }
+        updates.selectedCharacterId = id;
+        updates.uncap3BonusEnabled = isUncap3EnabledFor(state.uncap3BonusByChar, id);
+        updates.step4BonusEnabled = isStep4EnabledFor(state.step4BonusByChar, id);
+      }
+    }
+
+    // カードIDは実在するもののみ採用。必須は上限あり、必須と除外は相互排他
+    const existingCardIds = new Set(app.cards.map((c) => c.id));
+    let requiredIds = state.requiredCardIds;
+    if (Array.isArray(fields.requiredCardIds)) {
+      requiredIds = [
+        ...new Set(
+          fields.requiredCardIds.filter(
+            (id): id is string => typeof id === 'string' && existingCardIds.has(id),
+          ),
+        ),
+      ].slice(0, MAX_REQUIRED_CARDS);
+      updates.requiredCardIds = requiredIds;
+    }
+    if (Array.isArray(fields.excludedCardIds)) {
+      const requiredSet = new Set(requiredIds);
+      updates.excludedCardIds = [
+        ...new Set(
+          fields.excludedCardIds.filter(
+            (id): id is string =>
+              typeof id === 'string' && existingCardIds.has(id) && !requiredSet.has(id),
+          ),
+        ),
+      ];
+    }
+
+    if (Array.isArray(fields.memoryBonuses)) {
+      // 4枠に正規化（不足は空、不正typeは'flat'）
+      const toAttr = (src: unknown): MemoryAttributeBonus => {
+        const o = (src ?? {}) as Partial<MemoryAttributeBonus>;
+        return {
+          value: typeof o.value === 'number' && Number.isFinite(o.value) ? o.value : 0,
+          type: o.type === 'para' ? 'para' : 'flat',
+        };
+      };
+      const newList: MemoryBonus[] = [];
+      for (let i = 0; i < 4; i++) {
+        const src = fields.memoryBonuses[i] as Partial<MemoryBonus> | undefined;
+        newList.push(
+          src ? { vo: toAttr(src.vo), da: toAttr(src.da), vi: toAttr(src.vi) } : emptyMemoryBonus(),
+        );
+      }
+      updates.memoryBonuses = newList;
+    }
+
+    set(updates);
+
+    // 計算機タブに結果表示中なら、新しい入力条件で現在の選択パターンを再計算（loadMemoryPreset と同じ挙動）
+    const after = get();
+    if (after.calculationResult && after.deckResults.length > 0) {
+      const patternUpdates = applySelectedPatternImpl(after, after.selectedPatternIndex);
+      set(patternUpdates as Partial<CalcState>);
+    }
   },
 
   setScheduleChoice: (planId, week, choice) => {

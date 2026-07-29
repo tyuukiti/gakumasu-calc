@@ -13,8 +13,8 @@ test-results/
 *.user
 *.suo
 
-# AI assistant
 .claude/
+CLAUDE.md
 
 # OS
 Thumbs.db
@@ -35,6 +35,9 @@ Data/MemoryPresets/
 
 # Event count preset data (user-specific)
 Data/EventCountPresets/
+
+# HIF condition preset data (user-specific)
+Data/HifConditionPresets/
 
 # Wiki sync state (auto-generated)
 Data/SupportCards/_synced.txt
