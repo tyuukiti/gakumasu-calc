@@ -16,6 +16,7 @@ public class MainViewModel : ViewModelBase
     private readonly CharacterLoaderService _characterLoader;
     private readonly MemoryPresetService _memoryPresetService;
     private readonly EventCountPresetService _eventCountPresetService;
+    private readonly HifConditionPresetService _hifConditionPresetService;
     private readonly VersionCheckService _versionCheckService;
     private List<SupportCard> _allCards = new();
     private List<CardInventoryEntry> _inventory = new();
@@ -173,6 +174,42 @@ public class MainViewModel : ViewModelBase
 
     public int MaxEventCountPresets => EventCountPresetService.MaxPresets;
     public string EventCountPresetCountText => $"{EventCountPresets.Count}/{MaxEventCountPresets}";
+
+    // --- HIF条件プリセット (HIFタブの入力条件一式) ---
+    public ObservableCollection<HifConditionPreset> HifConditionPresets { get; } = new();
+
+    private HifConditionPreset? _selectedHifConditionPreset;
+    public HifConditionPreset? SelectedHifConditionPreset
+    {
+        get => _selectedHifConditionPreset;
+        set
+        {
+            if (SetProperty(ref _selectedHifConditionPreset, value))
+            {
+                OnPropertyChanged(nameof(SelectedHifConditionPresetDisplay));
+                if (value != null)
+                {
+                    LoadHifConditionPreset(value);
+                    // 上書き保存しやすいよう、選択したプリセット名を保存欄に入れる
+                    NewHifConditionPresetName = value.Name;
+                }
+            }
+        }
+    }
+
+    /// <summary>Expanderヘッダ表示用。読込中の条件プリセット名（未選択なら空）。</summary>
+    public string SelectedHifConditionPresetDisplay =>
+        _selectedHifConditionPreset != null ? $": {_selectedHifConditionPreset.Name}" : "";
+
+    private string _newHifConditionPresetName = string.Empty;
+    public string NewHifConditionPresetName
+    {
+        get => _newHifConditionPresetName;
+        set => SetProperty(ref _newHifConditionPresetName, value);
+    }
+
+    public int MaxHifConditionPresets => HifConditionPresetService.MaxPresets;
+    public string HifConditionPresetCountText => $"{HifConditionPresets.Count}/{MaxHifConditionPresets}";
 
     public Character? SelectedCharacter
     {
@@ -356,6 +393,8 @@ public class MainViewModel : ViewModelBase
     public ICommand DeleteMemoryPresetCommand { get; private set; } = null!;
     public ICommand SaveEventCountPresetCommand { get; private set; } = null!;
     public ICommand DeleteEventCountPresetCommand { get; private set; } = null!;
+    public ICommand SaveHifConditionPresetCommand { get; private set; } = null!;
+    public ICommand DeleteHifConditionPresetCommand { get; private set; } = null!;
     public ICommand CheckUpdateCommand { get; private set; } = null!;
     public ICommand OpenReleasePageCommand { get; private set; } = null!;
     public ICommand DismissUpdateBannerCommand { get; private set; } = null!;
@@ -623,6 +662,203 @@ public class MainViewModel : ViewModelBase
                 "削除失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
         OnPropertyChanged(nameof(EventCountPresetCountText));
+    }
+
+    /// <summary>プリセットファイルから読み込んで HifConditionPresets コレクションに反映。</summary>
+    private void LoadHifConditionPresets()
+    {
+        try
+        {
+            var presets = _hifConditionPresetService.Load();
+            HifConditionPresets.Clear();
+            foreach (var p in presets)
+                HifConditionPresets.Add(p);
+            OnPropertyChanged(nameof(HifConditionPresetCountText));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"HIF条件プリセット読み込みエラー: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 現在選択されている条件プリセットを強制的に再読み込みする。
+    /// ComboBox の DropDownClosed から呼ばれ、同じ項目を再選択した時にも値が反映されるようにする。
+    /// </summary>
+    public void ReloadSelectedHifConditionPreset()
+    {
+        if (_selectedHifConditionPreset != null)
+            LoadHifConditionPreset(_selectedHifConditionPreset);
+    }
+
+    /// <summary>
+    /// 条件プリセットを HIFタブの入力条件一式へ復元する。
+    /// キャラ選択・凸トグル・HIFボーナスLv・MAX超過再抽選は対象外（別途永続化されるアカウント状態）。
+    /// </summary>
+    private void LoadHifConditionPreset(HifConditionPreset preset)
+    {
+        // 1. 先に古い計算結果をクリア (Result=null によりメモリー入力変更の逐次再計算も無効化される)
+        ClearResultState();
+        HifVm.ErrorMessage = null;
+
+        // 2. HIF側: スケジュール・試験配分・一括設定
+        var hif = preset.Hif ?? new HifConditionHifFields();
+        HifVm.ApplyScheduleState(hif.Choices ?? new(), hif.ExamAllocations ?? new());
+        if (hif.ExamAllocations == null || hif.ExamAllocations.Count == 0)
+        {
+            // 旧スキーマ等で配分が無ければ、保存された比率から按分生成（比率が不正でも正規化される）
+            HifVm.ApplyExamRatio(hif.ExamRatioVo, hif.ExamRatioDa, hif.ExamRatioVi);
+        }
+        if (IsValidStat(hif.BulkMainStat)) HifVm.BulkMainStat = hif.BulkMainStat;
+        if (IsValidStat(hif.BulkSubStat) && hif.BulkSubStat != HifVm.BulkMainStat) HifVm.BulkSubStat = hif.BulkSubStat;
+        if (IsValidStat(hif.BulkClassStat)) HifVm.BulkClassStat = hif.BulkClassStat;
+
+        // 3. 共有側: 育成タイプ → テンプレ名 → イベント回数 → トグル（この順序が必須）
+        var calc = preset.Calc ?? new HifConditionCalcFields();
+        if (calc.SelectedPlanType is "sense" or "logic" or "anomaly")
+            SelectedPlanType = calc.SelectedPlanType; // FilterEventCountTemplates が走りテンプレ選択が null 化される
+        VoSpCount = Math.Max(0, calc.VoSpCount);
+        DaSpCount = Math.Max(0, calc.DaSpCount);
+        ViSpCount = Math.Max(0, calc.ViSpCount);
+        // テンプレ名はバッキングフィールドへ直接復元（セッター経由だと ApplyEventTemplate が回数を上書きするため）
+        _selectedHifEventTemplate = calc.SelectedTemplateName != null
+            ? HifEventCountTemplates.FirstOrDefault(t => t.Name == calc.SelectedTemplateName)
+            : null;
+        OnPropertyChanged(nameof(SelectedHifEventTemplate));
+        ApplyCounts(calc.Counts ?? new AdditionalCounts());
+        OwnedOnly = calc.OwnedOnly;
+        ContestMode = calc.ContestMode;
+
+        // 4. カード復元（実在IDのみ・必須は上限キャップ・必須と除外は相互排他）
+        RequiredCards.Clear();
+        ExcludedCards.Clear();
+        foreach (var id in (calc.RequiredCardIds ?? new()).Distinct())
+        {
+            if (RequiredCards.Count >= MaxRequiredCards) break;
+            var card = _allCards.FirstOrDefault(c => c.Id == id);
+            if (card != null) RequiredCards.Add(card);
+        }
+        var requiredIdSet = RequiredCards.Select(c => c.Id).ToHashSet();
+        foreach (var id in (calc.ExcludedCardIds ?? new()).Distinct())
+        {
+            if (requiredIdSet.Contains(id)) continue;
+            var card = _allCards.FirstOrDefault(c => c.Id == id);
+            if (card != null) ExcludedCards.Add(card);
+        }
+        OnPropertyChanged(nameof(CanAddRequiredCard));
+
+        // 5. メモリー復元（4枠へ、不足は空）
+        for (int i = 0; i < MemoryBonuses.Count; i++)
+        {
+            var src = calc.MemoryBonuses != null && i < calc.MemoryBonuses.Count
+                ? calc.MemoryBonuses[i]
+                : new MemoryBonus();
+            var vm = MemoryBonuses[i];
+            vm.VoValue = src.Vo.Value;
+            vm.VoType = src.Vo.Type;
+            vm.DaValue = src.Da.Value;
+            vm.DaType = src.Da.Type;
+            vm.ViValue = src.Vi.Value;
+            vm.ViType = src.Vi.Type;
+        }
+    }
+
+    private static bool IsValidStat(string? s) => s is "vo" or "da" or "vi";
+
+    private bool CanSaveHifConditionPreset()
+    {
+        if (string.IsNullOrWhiteSpace(_newHifConditionPresetName)) return false;
+        // 同名は上書き扱い。同名が無くて上限超過なら不可
+        var existing = HifConditionPresets.FirstOrDefault(p => p.Name == _newHifConditionPresetName.Trim());
+        return existing != null || HifConditionPresets.Count < HifConditionPresetService.MaxPresets;
+    }
+
+    private void ExecuteSaveHifConditionPreset()
+    {
+        var name = _newHifConditionPresetName.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+
+        var (choices, allocs) = HifVm.CaptureScheduleState();
+        var preset = new HifConditionPreset
+        {
+            Name = name,
+            Hif = new HifConditionHifFields
+            {
+                Choices = choices,
+                ExamAllocations = allocs,
+                ExamRatioVo = HifVm.ExamRatioVo,
+                ExamRatioDa = HifVm.ExamRatioDa,
+                ExamRatioVi = HifVm.ExamRatioVi,
+                BulkMainStat = HifVm.BulkMainStat,
+                BulkSubStat = HifVm.BulkSubStat,
+                BulkClassStat = HifVm.BulkClassStat,
+            },
+            Calc = new HifConditionCalcFields
+            {
+                SelectedPlanType = SelectedPlanType,
+                VoSpCount = VoSpCount,
+                DaSpCount = DaSpCount,
+                ViSpCount = ViSpCount,
+                Counts = BuildAdditionalCounts(),
+                SelectedTemplateName = SelectedHifEventTemplate?.Name,
+                OwnedOnly = OwnedOnly,
+                ContestMode = ContestMode,
+                RequiredCardIds = RequiredCards.Select(c => c.Id).ToList(),
+                ExcludedCardIds = ExcludedCards.Select(c => c.Id).ToList(),
+                MemoryBonuses = BuildMemoryBonuses(),
+            },
+        };
+
+        var existing = HifConditionPresets.FirstOrDefault(p => p.Name == name);
+        if (existing != null)
+        {
+            // 同名は上書き
+            var idx = HifConditionPresets.IndexOf(existing);
+            HifConditionPresets[idx] = preset;
+        }
+        else
+        {
+            if (HifConditionPresets.Count >= HifConditionPresetService.MaxPresets) return;
+            HifConditionPresets.Add(preset);
+        }
+
+        try
+        {
+            _hifConditionPresetService.Save(HifConditionPresets.ToList());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"HIF条件プリセット保存エラー: {ex}");
+            System.Windows.MessageBox.Show(
+                $"プリセットの保存に失敗しました。\n\n{ex.Message}",
+                "保存失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            return;
+        }
+        OnPropertyChanged(nameof(HifConditionPresetCountText));
+        // セッター経由だと保存直後に読込（結果クリア）が走るため、バッキングフィールドへ直接反映
+        _selectedHifConditionPreset = preset;
+        OnPropertyChanged(nameof(SelectedHifConditionPreset));
+        OnPropertyChanged(nameof(SelectedHifConditionPresetDisplay));
+        NewHifConditionPresetName = string.Empty;
+    }
+
+    private void ExecuteDeleteHifConditionPreset()
+    {
+        if (_selectedHifConditionPreset == null) return;
+        HifConditionPresets.Remove(_selectedHifConditionPreset);
+        SelectedHifConditionPreset = null;
+        try
+        {
+            _hifConditionPresetService.Save(HifConditionPresets.ToList());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"HIF条件プリセット削除エラー: {ex}");
+            System.Windows.MessageBox.Show(
+                $"プリセットの削除に失敗しました。\n\n{ex.Message}",
+                "削除失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+        OnPropertyChanged(nameof(HifConditionPresetCountText));
     }
 
     /// <summary>
@@ -1026,6 +1262,7 @@ public class MainViewModel : ViewModelBase
         _characterLoader = new CharacterLoaderService(yamlService, Path.Combine(dataDir, "Characters"));
         _memoryPresetService = new MemoryPresetService(Path.Combine(dataDir, "MemoryPresets", "memory_presets.yaml"));
         _eventCountPresetService = new EventCountPresetService(Path.Combine(dataDir, "EventCountPresets", "event_count_presets.yaml"));
+        _hifConditionPresetService = new HifConditionPresetService(Path.Combine(dataDir, "HifConditionPresets", "hif_condition_presets.yaml"));
         HifVm = new HifViewModel(
             new HifSchedulePresetService(Path.Combine(dataDir, "HifSchedulePresets", "hif_schedule_presets.yaml")),
             new HifBonusLevelsService(Path.Combine(dataDir, "HifBonusLevels", "hif_bonus_levels.yaml")));
@@ -1083,6 +1320,11 @@ public class MainViewModel : ViewModelBase
         DeleteEventCountPresetCommand = new RelayCommand(_ => ExecuteDeleteEventCountPreset(),
             _ => _selectedEventCountPreset != null);
 
+        SaveHifConditionPresetCommand = new RelayCommand(_ => ExecuteSaveHifConditionPreset(),
+            _ => CanSaveHifConditionPreset());
+        DeleteHifConditionPresetCommand = new RelayCommand(_ => ExecuteDeleteHifConditionPreset(),
+            _ => _selectedHifConditionPreset != null);
+
         CheckUpdateCommand = new RelayCommand(async _ => await CheckUpdateAsync(manual: true));
         OpenReleasePageCommand = new RelayCommand(_ => OpenReleasePage());
         DismissUpdateBannerCommand = new RelayCommand(_ =>
@@ -1102,6 +1344,7 @@ public class MainViewModel : ViewModelBase
         LoadData();
         LoadMemoryPresets();
         LoadEventCountPresets();
+        LoadHifConditionPresets();
 
         // 起動時に非同期で更新確認（失敗は静かに無視）
         _ = CheckUpdateAsync(manual: false);
@@ -1779,6 +2022,12 @@ public class MainViewModel : ViewModelBase
 
         // 前プランの結果・パターンを完全にクリア (Web版 setSelectedPlanId と同等)。
         // 残すと別プランの古い _deckResults でパターン再適用される事故の温床になる。
+        ClearResultState();
+    }
+
+    /// <summary>計算結果・選択パターン関連の表示状態を全てクリアする（プラン切替・条件プリセット読込で共用）。</summary>
+    private void ClearResultState()
+    {
         Result = null;
         DeckCards.Clear();
         DeckAbilitySummary.Clear();

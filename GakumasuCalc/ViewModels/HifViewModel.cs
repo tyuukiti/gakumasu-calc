@@ -216,10 +216,17 @@ public class HifViewModel : ViewModelBase
     }
 
     private void LoadSchedulePresetIntoItems(HifSchedulePreset preset)
+        => ApplyScheduleState(preset.Choices, preset.ExamAllocations);
+
+    /// <summary>
+    /// 選択・試験配分のスナップショットを ScheduleItems に反映し、配分から代表比率を逆算する
+    /// （HIFスケジュールプリセット / 条件プリセットで共用）。
+    /// </summary>
+    public void ApplyScheduleState(List<HifScheduleChoiceEntry> choices, List<HifExamAllocationEntry> examAllocations)
     {
         // ScheduleItems の各日に Choices / ExamAllocations を反映
-        var choicesByWeek = preset.Choices.ToDictionary(c => c.Week);
-        var allocsByWeek = preset.ExamAllocations.ToDictionary(a => a.Week);
+        var choicesByWeek = choices.ToDictionary(c => c.Week);
+        var allocsByWeek = examAllocations.ToDictionary(a => a.Week);
         foreach (var item in ScheduleItems)
         {
             if (item.IsFixed)
@@ -250,12 +257,12 @@ public class HifViewModel : ViewModelBase
         DeriveExamRatioFromItems();
     }
 
-    private void ExecuteSaveSchedulePreset()
+    /// <summary>
+    /// 現在の ScheduleItems から選択・試験配分のスナップショットを構築する
+    /// （HIFスケジュールプリセット / 条件プリセットで共用）。
+    /// </summary>
+    public (List<HifScheduleChoiceEntry> Choices, List<HifExamAllocationEntry> ExamAllocations) CaptureScheduleState()
     {
-        if (_presetService == null) return;
-        var name = NewPresetName.Trim();
-        if (string.IsNullOrEmpty(name)) return;
-
         var choices = new List<HifScheduleChoiceEntry>();
         var allocs = new List<HifExamAllocationEntry>();
         foreach (var item in ScheduleItems)
@@ -291,6 +298,16 @@ public class HifViewModel : ViewModelBase
                 });
             }
         }
+        return (choices, allocs);
+    }
+
+    private void ExecuteSaveSchedulePreset()
+    {
+        if (_presetService == null) return;
+        var name = NewPresetName.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+
+        var (choices, allocs) = CaptureScheduleState();
 
         var preset = new HifSchedulePreset
         {
