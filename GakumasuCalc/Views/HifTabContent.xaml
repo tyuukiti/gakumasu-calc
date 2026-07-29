@@ -1191,12 +1191,12 @@
                 </StackPanel>
             </Border>
 
-            <!-- まるごとプリセット (このタブの入力条件一式を保存・呼び出し。読込と同時に計算実行) -->
+            <!-- 全体プリセット (このタブの入力条件一式を保存・呼び出し。読込と同時に計算実行) -->
             <Border Style="{StaticResource SectionCard}">
                 <Expander IsExpanded="False">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="まるごとプリセット" FontSize="14" FontWeight="SemiBold"
+                            <TextBlock Text="全体プリセット" FontSize="14" FontWeight="SemiBold"
                                        Foreground="#333" VerticalAlignment="Center"/>
                             <TextBlock Text="（キャラ選択以外の入力一式・任意）" FontSize="11" Foreground="#999"
                                        Margin="6,0,0,0" VerticalAlignment="Center"/>
@@ -1206,9 +1206,7 @@
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel Margin="0,8,0,0">
-                        <TextBlock Text="スケジュール・試験配分・育成タイプ・SP枚数・イベント回数・必須/除外カード・持ち込みメモリーを保存します（キャラ選択・HIFボーナスは含まれません）"
-                                   FontSize="11" Foreground="#999" TextWrapping="Wrap"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal">
                             <TextBlock Text="プリセット" FontSize="12" FontWeight="SemiBold"
                                        Foreground="#666" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding HifConditionPresetCountText}" FontSize="11"

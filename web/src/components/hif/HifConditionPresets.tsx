@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useHifStore, MAX_HIF_CONDITION_PRESETS } from '../../stores/hifStore';
 
 /**
- * まるごとプリセット（HIFタブの入力条件一式の保存・読み込み）。
+ * 全体プリセット（HIFタブの入力条件一式の保存・読み込み）。
  * 持ち込みメモリー (MemoryBonusInput) と同じ折りたたみ + プリセット管理のUIパターン。
  * - 保存対象: スケジュール・試験配分・一括設定 + calcStore側の入力条件
  * - 含めない: キャラ選択・凸トグル・HIFボーナスLv・MAX超過再抽選（別途永続化されるアカウント状態）
@@ -26,7 +26,7 @@ export default function HifConditionPresets() {
         className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-gray-900 cursor-pointer"
       >
         <span>
-          まるごとプリセット
+          全体プリセット
           <span className="text-xs text-gray-400 ml-1">（キャラ選択以外の入力一式・任意）</span>
           {selectedPresetName && (
             <span className="text-xs text-gray-600 ml-2">: {selectedPresetName}</span>
@@ -41,10 +41,6 @@ export default function HifConditionPresets() {
 
       {isOpen && (
         <div className="mt-3 space-y-2">
-          <p className="text-xs text-gray-500">
-            スケジュール・試験配分・育成タイプ・SP枚数・イベント回数・必須/除外カード・持ち込みメモリーを保存します（キャラ選択・HIFボーナスは含まれません）
-          </p>
-
           <div className="flex items-center gap-2 text-xs text-gray-600">
             <span className="font-semibold">プリセット</span>
             <span className="text-gray-400">{conditionPresets.length}/{MAX_HIF_CONDITION_PRESETS}</span>
