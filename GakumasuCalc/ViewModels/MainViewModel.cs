@@ -703,7 +703,8 @@ public class MainViewModel : ViewModelBase
 
     /// <summary>
     /// 条件プリセットを HIFタブの入力条件一式へ復元し、そのまま計算を実行する。
-    /// キャラ選択・凸トグル・HIFボーナスLv・MAX超過再抽選は対象外（別途永続化されるアカウント状態）。
+    /// 凸トグル・HIFボーナスLv・MAX超過再抽選は対象外（別途永続化されるアカウント状態。
+    /// 凸トグルは復元したキャラの永続設定から導出される）。
     /// </summary>
     private void LoadHifConditionPreset(HifConditionPreset preset)
     {
@@ -738,6 +739,17 @@ public class MainViewModel : ViewModelBase
         ApplyCounts(calc.Counts ?? new AdditionalCounts());
         OwnedOnly = calc.OwnedOnly;
         ContestMode = calc.ContestMode;
+
+        // キャラ復元: null=解除、実在IDのみ採用（空文字=未保存(旧ファイル)や実在しないIDは現状維持）。
+        // セッター経由なので凸トグルはキャラごとの永続設定から導出される
+        if (calc.SelectedCharacterId != "")
+        {
+            var character = calc.SelectedCharacterId == null
+                ? null
+                : CharacterTiles.Select(t => t.Character).FirstOrDefault(c => c.Id == calc.SelectedCharacterId);
+            if (calc.SelectedCharacterId == null || character != null)
+                SelectedCharacter = character;
+        }
 
         // 4. カード復元（実在IDのみ・必須は上限キャップ・必須と除外は相互排他）
         RequiredCards.Clear();
@@ -819,6 +831,7 @@ public class MainViewModel : ViewModelBase
                 RequiredCardIds = RequiredCards.Select(c => c.Id).ToList(),
                 ExcludedCardIds = ExcludedCards.Select(c => c.Id).ToList(),
                 MemoryBonuses = BuildMemoryBonuses(),
+                SelectedCharacterId = SelectedCharacter?.Id,
             },
         };
 

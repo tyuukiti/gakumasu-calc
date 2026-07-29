@@ -2,7 +2,7 @@ namespace GakumasuCalc.Models;
 
 /// <summary>
 /// HIF条件プリセット（HIFタブの入力条件一式を名前付きで保存・読み込み）。
-/// キャラ選択・凸トグル・HIFボーナスLv・MAX超過再抽選は別途永続化されるアカウント状態のため含めない。
+/// 凸トグル・HIFボーナスLv・MAX超過再抽選は別途永続化されるアカウント状態のため含めない。
 /// 旧バージョンのファイルは IgnoreUnmatchedProperties と既定値により部分読込される。
 /// </summary>
 public class HifConditionPreset
@@ -65,6 +65,12 @@ public class HifConditionCalcFields
 
     /// <summary>持ち込みメモリー（4枠）</summary>
     public List<MemoryBonus> MemoryBonuses { get; set; } = new();
+
+    /// <summary>
+    /// 選択キャラID。null=キャラなしとして復元する。
+    /// 既定値の空文字はフィールド未保存（旧ファイル等）を表し、復元時は現在の選択を維持する。
+    /// </summary>
+    public string? SelectedCharacterId { get; set; } = "";
 }
 
 public class HifConditionPresetFile

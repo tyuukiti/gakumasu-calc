@@ -1198,7 +1198,7 @@
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="全体プリセット" FontSize="14" FontWeight="SemiBold"
                                        Foreground="#333" VerticalAlignment="Center"/>
-                            <TextBlock Text="（キャラ選択以外の入力一式・任意）" FontSize="11" Foreground="#999"
+                            <TextBlock Text="（入力一式・任意）" FontSize="11" Foreground="#999"
                                        Margin="6,0,0,0" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding SelectedHifConditionPresetDisplay}"
                                        FontSize="12" Foreground="#666" Margin="4,0,0,0"

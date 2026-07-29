@@ -56,6 +56,7 @@ public class HifConditionPresetTests
             ContestMode = true,
             RequiredCardIds = new List<string> { "0001", "0002" },
             ExcludedCardIds = new List<string> { "0003" },
+            SelectedCharacterId = "char_saki",
             MemoryBonuses = new List<MemoryBonus>
             {
                 new()
@@ -110,11 +111,32 @@ public class HifConditionPresetTests
             Assert.True(p.Calc.ContestMode);
             Assert.Equal(new List<string> { "0001", "0002" }, p.Calc.RequiredCardIds);
             Assert.Equal(new List<string> { "0003" }, p.Calc.ExcludedCardIds);
+            Assert.Equal("char_saki", p.Calc.SelectedCharacterId);
             var m = Assert.Single(p.Calc.MemoryBonuses);
             Assert.Equal(100, m.Vo.Value);
             Assert.Equal(MemoryBonusType.Flat, m.Vo.Type);
             Assert.Equal(3.5, m.Da.Value);
             Assert.Equal(MemoryBonusType.ParaBonus, m.Da.Type);
+        }
+        finally
+        {
+            CleanUp(path);
+        }
+    }
+
+    [Fact]
+    public void Service_NullCharacter_RoundTripsAsNull()
+    {
+        var path = TempPath();
+        try
+        {
+            var svc = new HifConditionPresetService(path);
+            var preset = BuildFullPreset();
+            preset.Calc.SelectedCharacterId = null; // キャラ未選択で保存
+            svc.Save(new List<HifConditionPreset> { preset });
+            var p = Assert.Single(svc.Load());
+            // null(キャラなし) と 空文字(未保存=現状維持) が区別されること
+            Assert.Null(p.Calc.SelectedCharacterId);
         }
         finally
         {
@@ -178,6 +200,8 @@ public class HifConditionPresetTests
             Assert.Equal("sense", p.Calc.SelectedPlanType);
             Assert.Empty(p.Calc.RequiredCardIds);
             Assert.Empty(p.Calc.MemoryBonuses);
+            // キャラフィールド未保存の旧ファイルは空文字(=現状維持マーカー)のまま
+            Assert.Equal("", p.Calc.SelectedCharacterId);
         }
         finally
         {

@@ -301,7 +301,7 @@ export interface HifConditionHifFields {
 
 /**
  * HIF条件プリセット（このタブの入力条件一式を名前付きで保存・読込）。
- * キャラ選択・凸トグル・HIFボーナスLv・overflow設定は別途永続化されるアカウント状態のため含めない。
+ * 凸トグル・HIFボーナスLv・overflow設定は別途永続化されるアカウント状態のため含めない。
  * 読込は「存在し型が正しいフィールドのみ適用」の部分適用（スキーマ拡張への前方互換）。
  */
 export interface HifConditionPreset {
@@ -826,6 +826,7 @@ export const useHifStore = create<HifState>((set, get) => ({
         requiredCardIds: [...calc.requiredCardIds],
         excludedCardIds: [...calc.excludedCardIds],
         memoryBonuses: memorySnapshot,
+        selectedCharacterId: calc.selectedCharacterId,
       },
     };
 

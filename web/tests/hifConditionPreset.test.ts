@@ -232,6 +232,30 @@ describe('HIF条件プリセット: 読込時の検証', () => {
     expect(m[3]).toEqual(emptyMemoryBonus());
   });
 
+  it('キャラ選択も復元される (null=解除、実在しないIDやフィールド無しは現状維持)', () => {
+    const chars = loadCharacters();
+    const c0 = chars[0].id;
+    const c1 = chars[1].id;
+
+    // 保存したキャラが復元される
+    useCalcStore.setState({ selectedCharacterId: c0 });
+    useHifStore.getState().saveConditionPreset('キャラ付き');
+    useCalcStore.setState({ selectedCharacterId: c1 });
+    useHifStore.getState().loadConditionPreset('キャラ付き');
+    expect(useCalcStore.getState().selectedCharacterId).toBe(c0);
+
+    // null はキャラ解除として復元
+    injectPreset({ name: 'キャラなし', hif: {}, calc: { selectedCharacterId: null } });
+    useHifStore.getState().loadConditionPreset('キャラなし');
+    expect(useCalcStore.getState().selectedCharacterId).toBeNull();
+
+    // 実在しないIDは現状維持
+    useCalcStore.setState({ selectedCharacterId: c1 });
+    injectPreset({ name: 'ghost', hif: {}, calc: { selectedCharacterId: '__ghost__' } });
+    useHifStore.getState().loadConditionPreset('ghost');
+    expect(useCalcStore.getState().selectedCharacterId).toBe(c1);
+  });
+
   it('examAllocations が空なら保存された examRatio から按分生成される', () => {
     injectPreset({
       name: 'ratioOnly',

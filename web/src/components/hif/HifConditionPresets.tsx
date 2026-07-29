@@ -4,8 +4,8 @@ import { useHifStore, MAX_HIF_CONDITION_PRESETS } from '../../stores/hifStore';
 /**
  * 全体プリセット（HIFタブの入力条件一式の保存・読み込み）。
  * 持ち込みメモリー (MemoryBonusInput) と同じ折りたたみ + プリセット管理のUIパターン。
- * - 保存対象: スケジュール・試験配分・一括設定 + calcStore側の入力条件
- * - 含めない: キャラ選択・凸トグル・HIFボーナスLv・MAX超過再抽選（別途永続化されるアカウント状態）
+ * - 保存対象: スケジュール・試験配分・一括設定 + calcStore側の入力条件（キャラ選択含む）
+ * - 含めない: 凸トグル・HIFボーナスLv・MAX超過再抽選（別途永続化されるアカウント状態）
  * - 読込ボタンは読込と同時に計算を実行する（比較ワークフローを1クリックにするため）
  */
 export default function HifConditionPresets() {
@@ -27,7 +27,7 @@ export default function HifConditionPresets() {
       >
         <span>
           全体プリセット
-          <span className="text-xs text-gray-400 ml-1">（キャラ選択以外の入力一式・任意）</span>
+          <span className="text-xs text-gray-400 ml-1">（入力一式・任意）</span>
           {selectedPresetName && (
             <span className="text-xs text-gray-600 ml-2">: {selectedPresetName}</span>
           )}

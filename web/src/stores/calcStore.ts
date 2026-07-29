@@ -187,7 +187,7 @@ function persistSchedulePresetsByPlan(map: Record<string, SchedulePreset[]>) {
 
 /**
  * HIF条件プリセットの calcStore 側フィールド（hifStore.HifConditionPreset の calc セクション）。
- * キャラ選択・凸トグルはアカウント状態として別途永続化されるため含めない。
+ * 凸トグル（3凸/STEP4）は含めず、読込時にキャラごとの永続設定から導出する。
  */
 export interface HifConditionCalcFields {
   selectedPlanType: PlanType;
@@ -201,6 +201,8 @@ export interface HifConditionCalcFields {
   requiredCardIds: string[];
   excludedCardIds: string[];
   memoryBonuses: MemoryBonus[];
+  /** 選択キャラID。null=キャラなしとして復元。フィールド自体が無い場合は現在の選択を維持 */
+  selectedCharacterId: string | null;
 }
 
 interface CalcState {
@@ -1128,6 +1130,21 @@ export const useCalcStore = create<CalcState>((set, get) => ({
 
     if (typeof fields.ownedOnly === 'boolean') updates.ownedOnly = fields.ownedOnly;
     if (typeof fields.contestMode === 'boolean') updates.contestMode = fields.contestMode;
+
+    // キャラ選択: null=解除、実在IDのみ採用（実在しないIDやフィールド無しは現状維持）。
+    // setSelectedCharacter と同様に永続化し、凸トグルはキャラごとの永続設定から導出する。
+    if ('selectedCharacterId' in fields) {
+      const id = fields.selectedCharacterId;
+      if (id === null || (typeof id === 'string' && app.characters.some((c) => c.id === id))) {
+        if (typeof window !== 'undefined') {
+          if (id) localStorage.setItem(SELECTED_CHARACTER_KEY, id);
+          else localStorage.removeItem(SELECTED_CHARACTER_KEY);
+        }
+        updates.selectedCharacterId = id;
+        updates.uncap3BonusEnabled = isUncap3EnabledFor(state.uncap3BonusByChar, id);
+        updates.step4BonusEnabled = isStep4EnabledFor(state.step4BonusByChar, id);
+      }
+    }
 
     // カードIDは実在するもののみ採用。必須は上限あり、必須と除外は相互排他
     const existingCardIds = new Set(app.cards.map((c) => c.id));
