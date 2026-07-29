@@ -1238,3 +1238,13 @@ export function getActionCategory(action: ActionType): 'lesson' | 'class' | 'oth
 export function lessonActionToStat(action: 'vo_lesson' | 'da_lesson' | 'vi_lesson'): 'vo' | 'da' | 'vi' {
   return action.split('_')[0] as 'vo' | 'da' | 'vi';
 }
+
+// 条件プリセット一覧のタブ間同期。
+// 2タブ比較ワークフロー（タブAで保存→開きっぱなしのタブBで読込）のため、
+// 他のブラウザタブによる保存/削除を一覧へ即時反映する（storage イベントは他タブの書き込みでのみ発火）。
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== HIF_CONDITION_PRESETS_KEY) return;
+    useHifStore.setState({ conditionPresets: loadConditionPresetsFromStorage() });
+  });
+}
