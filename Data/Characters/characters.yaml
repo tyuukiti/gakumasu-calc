@@ -48,8 +48,8 @@ characters:
     name: "雨夜燕"
     color: "#7B68EE"
     initial: "燕"
-    base_status_bonus: { vo: 115, da: 135, vi: 95 }
-    para_bonus: { vo: 17.0, da: 24.0, vi: 12.0 }
+    base_status_bonus: { vo: 115, da: 140, vi: 110 }
+    para_bonus: { vo: 19.0, da: 24.0, vi: 13.0 }
     uncap3_bonus: { vo: 2.0, da: 4.0, vi: 0 }
 
   - id: "char_mao"
