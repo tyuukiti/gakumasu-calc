@@ -78,7 +78,7 @@ export default function SchedulePicker({ planId }: { planId: string }) {
         <span className="text-xs font-normal text-gray-500">— 一括設定で多くの週が設定済みです</span>
       </button>
       {expanded && (
-        <div className="border border-gray-200 rounded-md bg-gray-50 max-h-[480px] overflow-y-auto">
+        <div className="border border-gray-200 rounded-md bg-gray-50">
           <ul className="divide-y divide-gray-200">
             {items.map((week) => (
               <li key={week.week} className="flex items-center gap-3 px-3 py-2 text-sm">

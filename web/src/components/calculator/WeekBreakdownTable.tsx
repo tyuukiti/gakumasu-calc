@@ -27,7 +27,7 @@ export default function WeekBreakdownTable() {
       </button>
 
       {expanded && (
-        <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-md">
+        <div className="border border-gray-200 rounded-md">
           <table className="w-full text-sm">
             <thead className="bg-gray-100 sticky top-0">
               <tr>
