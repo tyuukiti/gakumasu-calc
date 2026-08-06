@@ -264,130 +264,146 @@
                     <!-- 個別調整 (折りたたみ) -->
                     <Expander Header="個別調整 (全 29 日)" IsExpanded="False" FontSize="12" Foreground="#666">
                     <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,6,0,0">
-                        <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding HifVm.ScheduleItems}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:HifScheduleItemViewModel}">
-                                        <Border Padding="8,4" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="80"/>
-                                                    <ColumnDefinition Width="100"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-
-                                                <!-- Day ラベル -->
-                                                <StackPanel Grid.Column="0">
-                                                    <TextBlock Text="{Binding DayLabel}" FontSize="12" FontWeight="SemiBold" Foreground="#555"/>
-                                                </StackPanel>
-
-                                                <!-- 種類ラベル -->
-                                                <TextBlock Grid.Column="1" Text="{Binding TypeLabel}" FontSize="11" Foreground="#888"
-                                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-
-                                                <!-- 選択UI -->
-                                                <Grid Grid.Column="2">
-                                                    <!-- 固定イベント (試験以外) -->
-                                                    <TextBlock Text="{Binding EventName}" FontSize="12" FontStyle="Italic" Foreground="#999"
-                                                               VerticalAlignment="Center">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Style.Triggers>
-                                                                    <MultiDataTrigger>
-                                                                        <MultiDataTrigger.Conditions>
-                                                                            <Condition Binding="{Binding IsFixed}" Value="True"/>
-                                                                            <Condition Binding="{Binding IsExam}" Value="False"/>
-                                                                        </MultiDataTrigger.Conditions>
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </MultiDataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-
-                                                    <!-- 試験日: 基礎値 + 配分入力 -->
-                                                    <StackPanel Orientation="Horizontal"
-                                                                Visibility="{Binding IsExam, Converter={StaticResource BoolToVis}}">
-                                                        <TextBlock Text="{Binding EventName}" FontSize="12" FontStyle="Italic" Foreground="#666"
-                                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                        <TextBlock Text="{Binding ExamBaseText}" FontSize="11" Foreground="#888"
-                                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                                        <!-- 一括設定のバー/プリセットで配分されるが、試験ごとに手入力で上書きもできる -->
-                                                        <TextBlock Text="Vo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource VoBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
-                                                        <TextBox Text="{Binding ExamVoAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                                                 Style="{StaticResource NumericTextBox}"
-                                                                 Width="42" FontSize="11" Padding="4,2"
-                                                                 HorizontalContentAlignment="Center" Margin="0,0,6,0"/>
-                                                        <TextBlock Text="Da" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource DaBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
-                                                        <TextBox Text="{Binding ExamDaAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                                                 Style="{StaticResource NumericTextBox}"
-                                                                 Width="42" FontSize="11" Padding="4,2"
-                                                                 HorizontalContentAlignment="Center" Margin="0,0,6,0"/>
-                                                        <TextBlock Text="Vi" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource ViBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
-                                                        <TextBox Text="{Binding ExamViAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
-                                                                 Style="{StaticResource NumericTextBox}"
-                                                                 Width="42" FontSize="11" Padding="4,2"
-                                                                 HorizontalContentAlignment="Center" Margin="0,0,6,0"/>
-                                                        <TextBlock Text="{Binding ExamAllocSummary}" FontSize="11" Foreground="#666"
-                                                                   VerticalAlignment="Center"/>
+                        <DockPanel>
+                            <!-- 下端のつまみ: ドラッグで表示高さを変更 (確定時に保存し次回起動時に復元) -->
+                            <Thumb DockPanel.Dock="Bottom" Height="10" Cursor="SizeNS"
+                                   ToolTip="ドラッグで表示領域の高さを変更"
+                                   DragDelta="ScheduleResizeThumb_DragDelta"
+                                   DragCompleted="ScheduleResizeThumb_DragCompleted">
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Border Background="#FAFAFA" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" CornerRadius="0,0,4,4">
+                                            <Rectangle Width="36" Height="3" RadiusX="1.5" RadiusY="1.5" Fill="#BDBDBD"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                            <ScrollViewer Height="{Binding HifSchedulePanelHeight}" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding HifVm.ScheduleItems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:HifScheduleItemViewModel}">
+                                            <Border Padding="8,4" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="80"/>
+                                                        <ColumnDefinition Width="100"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+        
+                                                    <!-- Day ラベル -->
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding DayLabel}" FontSize="12" FontWeight="SemiBold" Foreground="#555"/>
                                                     </StackPanel>
-
-                                                    <!-- 公開レッスン: メイン→サブの1ドロップダウン -->
-                                                    <StackPanel Orientation="Horizontal"
-                                                                Visibility="{Binding IsPublicLesson, Converter={StaticResource BoolToVis}}">
-                                                        <ComboBox ItemsSource="{Binding LessonComboOptions}"
-                                                                  SelectedValue="{Binding LessonCombo}"
+        
+                                                    <!-- 種類ラベル -->
+                                                    <TextBlock Grid.Column="1" Text="{Binding TypeLabel}" FontSize="11" Foreground="#888"
+                                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+        
+                                                    <!-- 選択UI -->
+                                                    <Grid Grid.Column="2">
+                                                        <!-- 固定イベント (試験以外) -->
+                                                        <TextBlock Text="{Binding EventName}" FontSize="12" FontStyle="Italic" Foreground="#999"
+                                                                   VerticalAlignment="Center">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsFixed}" Value="True"/>
+                                                                                <Condition Binding="{Binding IsExam}" Value="False"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </MultiDataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+        
+                                                        <!-- 試験日: 基礎値 + 配分入力 -->
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    Visibility="{Binding IsExam, Converter={StaticResource BoolToVis}}">
+                                                            <TextBlock Text="{Binding EventName}" FontSize="12" FontStyle="Italic" Foreground="#666"
+                                                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding ExamBaseText}" FontSize="11" Foreground="#888"
+                                                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                            <!-- 一括設定のバー/プリセットで配分されるが、試験ごとに手入力で上書きもできる -->
+                                                            <TextBlock Text="Vo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource VoBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                                            <TextBox Text="{Binding ExamVoAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                                                     Style="{StaticResource NumericTextBox}"
+                                                                     Width="42" FontSize="11" Padding="4,2"
+                                                                     HorizontalContentAlignment="Center" Margin="0,0,6,0"/>
+                                                            <TextBlock Text="Da" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource DaBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                                            <TextBox Text="{Binding ExamDaAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                                                     Style="{StaticResource NumericTextBox}"
+                                                                     Width="42" FontSize="11" Padding="4,2"
+                                                                     HorizontalContentAlignment="Center" Margin="0,0,6,0"/>
+                                                            <TextBlock Text="Vi" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource ViBrushDark}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                                            <TextBox Text="{Binding ExamViAlloc, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"
+                                                                     Style="{StaticResource NumericTextBox}"
+                                                                     Width="42" FontSize="11" Padding="4,2"
+                                                                     HorizontalContentAlignment="Center" Margin="0,0,6,0"/>
+                                                            <TextBlock Text="{Binding ExamAllocSummary}" FontSize="11" Foreground="#666"
+                                                                       VerticalAlignment="Center"/>
+                                                        </StackPanel>
+        
+                                                        <!-- 公開レッスン: メイン→サブの1ドロップダウン -->
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    Visibility="{Binding IsPublicLesson, Converter={StaticResource BoolToVis}}">
+                                                            <ComboBox ItemsSource="{Binding LessonComboOptions}"
+                                                                      SelectedValue="{Binding LessonCombo}"
+                                                                      SelectedValuePath="Value"
+                                                                      DisplayMemberPath="Label"
+                                                                      FontSize="11" Padding="4,2" MinWidth="100"/>
+                                                            <TextBlock Text="{Binding LessonComboText}" FontSize="11" Foreground="#888"
+                                                                       VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                                        </StackPanel>
+        
+                                                        <!-- 1選択肢のみ: ラベル表示 -->
+                                                        <TextBlock Text="{Binding TypeLabel}" FontSize="12" Foreground="#444"
+                                                                   VerticalAlignment="Center"
+                                                                   Visibility="{Binding IsSingleOption, Converter={StaticResource BoolToVis}}"/>
+        
+                                                        <!-- 本戦インターバル等 選択肢なし: サポート発動なし表示 -->
+                                                        <TextBlock Text="サポート発動なし" FontSize="12" FontStyle="Italic" Foreground="#999"
+                                                                   VerticalAlignment="Center"
+                                                                   Visibility="{Binding IsInterval, Converter={StaticResource BoolToVis}}"/>
+        
+                                                        <!-- 複数選択肢: ComboBox -->
+                                                        <ComboBox ItemsSource="{Binding ActionOptions}"
+                                                                  SelectedValue="{Binding SelectedAction}"
                                                                   SelectedValuePath="Value"
                                                                   DisplayMemberPath="Label"
-                                                                  FontSize="11" Padding="4,2" MinWidth="100"/>
-                                                        <TextBlock Text="{Binding LessonComboText}" FontSize="11" Foreground="#888"
-                                                                   VerticalAlignment="Center" Margin="6,0,0,0"/>
-                                                    </StackPanel>
-
-                                                    <!-- 1選択肢のみ: ラベル表示 -->
-                                                    <TextBlock Text="{Binding TypeLabel}" FontSize="12" Foreground="#444"
-                                                               VerticalAlignment="Center"
-                                                               Visibility="{Binding IsSingleOption, Converter={StaticResource BoolToVis}}"/>
-
-                                                    <!-- 本戦インターバル等 選択肢なし: サポート発動なし表示 -->
-                                                    <TextBlock Text="サポート発動なし" FontSize="12" FontStyle="Italic" Foreground="#999"
-                                                               VerticalAlignment="Center"
-                                                               Visibility="{Binding IsInterval, Converter={StaticResource BoolToVis}}"/>
-
-                                                    <!-- 複数選択肢: ComboBox -->
-                                                    <ComboBox ItemsSource="{Binding ActionOptions}"
-                                                              SelectedValue="{Binding SelectedAction}"
-                                                              SelectedValuePath="Value"
-                                                              DisplayMemberPath="Label"
-                                                              FontSize="11" Padding="4,2" MinWidth="160" HorizontalAlignment="Left">
-                                                        <ComboBox.Style>
-                                                            <Style TargetType="ComboBox">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsFixed}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding IsPublicLesson}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding IsSingleOption}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding IsInterval}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </ComboBox.Style>
-                                                    </ComboBox>
+                                                                  FontSize="11" Padding="4,2" MinWidth="160" HorizontalAlignment="Left">
+                                                            <ComboBox.Style>
+                                                                <Style TargetType="ComboBox">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsFixed}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding IsPublicLesson}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding IsSingleOption}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding IsInterval}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </ComboBox.Style>
+                                                        </ComboBox>
+                                                    </Grid>
                                                 </Grid>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </DockPanel>
                     </Border>
                     </Expander>
                 </StackPanel>

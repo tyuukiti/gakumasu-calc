@@ -39,6 +39,9 @@ Data/EventCountPresets/
 # HIF condition preset data (user-specific)
 Data/HifConditionPresets/
 
+# UI state (user-specific)
+Data/UiState/
+
 # Wiki sync state (auto-generated)
 Data/SupportCards/_synced.txt
 

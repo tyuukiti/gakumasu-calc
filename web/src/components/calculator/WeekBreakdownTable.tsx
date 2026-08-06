@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCalcStore } from '../../stores/calcStore';
 import { trackEvent, trackFunnelStep } from '../../utils/analytics';
+import ResizablePanel from '../ResizablePanel';
 
 export default function WeekBreakdownTable() {
   const [expanded, setExpanded] = useState(false);
@@ -27,7 +28,11 @@ export default function WeekBreakdownTable() {
       </button>
 
       {expanded && (
-        <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-md">
+        <ResizablePanel
+          storageKey="weekBreakdownPanelHeight"
+          defaultHeight={384}
+          className="border border-gray-200 rounded-md"
+        >
           <table className="w-full text-sm">
             <thead className="bg-gray-100 sticky top-0">
               <tr>
@@ -62,7 +67,7 @@ export default function WeekBreakdownTable() {
               })}
             </tbody>
           </table>
-        </div>
+        </ResizablePanel>
       )}
     </div>
   );

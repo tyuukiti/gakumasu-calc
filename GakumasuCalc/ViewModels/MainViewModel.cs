@@ -18,6 +18,7 @@ public class MainViewModel : ViewModelBase
     private readonly EventCountPresetService _eventCountPresetService;
     private readonly HifConditionPresetService _hifConditionPresetService;
     private readonly VersionCheckService _versionCheckService;
+    private readonly UiStateService _uiStateService;
     private List<SupportCard> _allCards = new();
     private List<CardInventoryEntry> _inventory = new();
     private Character? _selectedCharacter;
@@ -1261,6 +1262,38 @@ public class MainViewModel : ViewModelBase
 
     public int DeckTotal => DeckCards.Sum(c => c.StatValue);
 
+    // スケジュール個別調整パネルの高さ (下端のつまみドラッグで調整し、UiState に記憶)
+    private const string CalcSchedulePanelKey = "calc_schedule";
+    private const string HifSchedulePanelKey = "hif_schedule";
+    private const double SchedulePanelDefaultHeight = 400;
+    public const double SchedulePanelMinHeight = 150;
+    public const double SchedulePanelMaxHeight = 1600;
+
+    private double _calcSchedulePanelHeight = SchedulePanelDefaultHeight;
+    /// <summary>日程方式タブの個別調整パネルの表示高さ</summary>
+    public double CalcSchedulePanelHeight
+    {
+        get => _calcSchedulePanelHeight;
+        set => SetProperty(ref _calcSchedulePanelHeight,
+            Math.Clamp(value, SchedulePanelMinHeight, SchedulePanelMaxHeight));
+    }
+
+    private double _hifSchedulePanelHeight = SchedulePanelDefaultHeight;
+    /// <summary>HIFタブの個別調整パネルの表示高さ</summary>
+    public double HifSchedulePanelHeight
+    {
+        get => _hifSchedulePanelHeight;
+        set => SetProperty(ref _hifSchedulePanelHeight,
+            Math.Clamp(value, SchedulePanelMinHeight, SchedulePanelMaxHeight));
+    }
+
+    /// <summary>個別調整パネルの現在高さを保存する (つまみドラッグ確定時に呼ぶ)。</summary>
+    public void PersistSchedulePanelHeights()
+    {
+        _uiStateService.SavePanelHeight(CalcSchedulePanelKey, CalcSchedulePanelHeight);
+        _uiStateService.SavePanelHeight(HifSchedulePanelKey, HifSchedulePanelHeight);
+    }
+
     public ICommand CalculateCommand { get; }
     public ICommand ResetCommand { get; }
     public ICommand SelectPatternCommand { get; }
@@ -1300,6 +1333,13 @@ public class MainViewModel : ViewModelBase
         _versionCheckService = new VersionCheckService();
         _calculationService = new StatusCalculationService();
         _scoringService = new CardScoringService();
+        _uiStateService = new UiStateService(Path.Combine(dataDir, "UiState", "ui_state.yaml"));
+        _calcSchedulePanelHeight = Math.Clamp(
+            _uiStateService.GetPanelHeight(CalcSchedulePanelKey, SchedulePanelDefaultHeight),
+            SchedulePanelMinHeight, SchedulePanelMaxHeight);
+        _hifSchedulePanelHeight = Math.Clamp(
+            _uiStateService.GetPanelHeight(HifSchedulePanelKey, SchedulePanelDefaultHeight),
+            SchedulePanelMinHeight, SchedulePanelMaxHeight);
 
         LoadEventCountTemplates(yamlService, Path.Combine(dataDir, "Templates", "event_count_templates.yaml"));
 
