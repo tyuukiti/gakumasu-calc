@@ -193,4 +193,18 @@ public partial class HifTabContent : UserControl
         if (DataContext is ViewModels.MainViewModel vm)
             vm.ReloadSelectedHifConditionPreset();
     }
+
+    /// <summary>個別調整パネル下端のつまみドラッグで表示高さを変更する (範囲制限は VM 側)。</summary>
+    private void ScheduleResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)
+    {
+        if (DataContext is ViewModels.MainViewModel vm)
+            vm.HifSchedulePanelHeight += e.VerticalChange;
+    }
+
+    /// <summary>つまみドラッグ確定時に高さを保存する (次回起動時に復元)。</summary>
+    private void ScheduleResizeThumb_DragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        if (DataContext is ViewModels.MainViewModel vm)
+            vm.PersistSchedulePanelHeights();
+    }
 }
