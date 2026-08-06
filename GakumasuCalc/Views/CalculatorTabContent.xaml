@@ -124,42 +124,40 @@
                     <!-- 個別調整 (週ごと) -->
                     <Expander Header="個別調整 (週ごと)" IsExpanded="False" Margin="0,4,0,0">
                         <Border BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,8,0,0">
-                            <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding TurnChoices}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Padding="8,4" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="70"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <TextBlock Grid.Column="0" Text="{Binding WeekLabel}"
-                                                               FontSize="12" FontWeight="SemiBold"
-                                                               VerticalAlignment="Center" Foreground="#555"/>
-                                                    <!-- 固定イベント -->
-                                                    <TextBlock Grid.Column="1" Text="{Binding EventName}"
-                                                               FontSize="12" Foreground="#999" FontStyle="Italic"
-                                                               VerticalAlignment="Center"
-                                                               Visibility="{Binding IsFixedEvent, Converter={StaticResource BoolToVis}}"/>
-                                                    <!-- アクション選択 -->
-                                                    <ComboBox Grid.Column="1"
-                                                              ItemsSource="{Binding AvailableActions}"
-                                                              SelectedItem="{Binding SelectedAction}"
-                                                              FontSize="11" Padding="6,3" MinWidth="120"
-                                                              Visibility="{Binding IsFixedEvent, Converter={StaticResource InverseBoolToVis}}">
-                                                        <ComboBox.ItemTemplate>
-                                                            <DataTemplate>
-                                                                <TextBlock Text="{Binding Converter={StaticResource ActionToStr}}"/>
-                                                            </DataTemplate>
-                                                        </ComboBox.ItemTemplate>
-                                                    </ComboBox>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding TurnChoices}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="8,4" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="70"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding WeekLabel}"
+                                                           FontSize="12" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" Foreground="#555"/>
+                                                <!-- 固定イベント -->
+                                                <TextBlock Grid.Column="1" Text="{Binding EventName}"
+                                                           FontSize="12" Foreground="#999" FontStyle="Italic"
+                                                           VerticalAlignment="Center"
+                                                           Visibility="{Binding IsFixedEvent, Converter={StaticResource BoolToVis}}"/>
+                                                <!-- アクション選択 -->
+                                                <ComboBox Grid.Column="1"
+                                                          ItemsSource="{Binding AvailableActions}"
+                                                          SelectedItem="{Binding SelectedAction}"
+                                                          FontSize="11" Padding="6,3" MinWidth="120"
+                                                          Visibility="{Binding IsFixedEvent, Converter={StaticResource InverseBoolToVis}}">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Converter={StaticResource ActionToStr}}"/>
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </Border>
                     </Expander>
                 </StackPanel>
