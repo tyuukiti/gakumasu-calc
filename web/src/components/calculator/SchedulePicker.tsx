@@ -4,6 +4,7 @@ import { useCalcStore } from '../../stores/calcStore';
 import type { ScheduleChoice } from '../../stores/calcStore';
 import type { WeekSchedule } from '../../types/models';
 import type { ActionType } from '../../types/enums';
+import ResizablePanel from '../ResizablePanel';
 
 type Stat = 'vo' | 'da' | 'vi';
 const STAT_LABEL: Record<Stat, string> = { vo: 'Vo', da: 'Da', vi: 'Vi' };
@@ -78,7 +79,11 @@ export default function SchedulePicker({ planId }: { planId: string }) {
         <span className="text-xs font-normal text-gray-500">— 一括設定で多くの週が設定済みです</span>
       </button>
       {expanded && (
-        <div className="border border-gray-200 rounded-md bg-gray-50">
+        <ResizablePanel
+          storageKey="schedulePanelHeight"
+          defaultHeight={480}
+          className="border border-gray-200 rounded-md bg-gray-50"
+        >
           <ul className="divide-y divide-gray-200">
             {items.map((week) => (
               <li key={week.week} className="flex items-center gap-3 px-3 py-2 text-sm">
@@ -100,7 +105,7 @@ export default function SchedulePicker({ planId }: { planId: string }) {
               </li>
             ))}
           </ul>
-        </div>
+        </ResizablePanel>
       )}
     </div>
   );

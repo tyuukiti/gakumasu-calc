@@ -3,6 +3,7 @@ import { useAppStore } from '../../stores/appStore';
 import { useHifStore, defaultChoiceForWeek } from '../../stores/hifStore';
 import type { HifChoice } from '../../stores/hifStore';
 import type { WeekSchedule } from '../../types/models';
+import ResizablePanel from '../ResizablePanel';
 
 type Stat = 'vo' | 'da' | 'vi';
 const STATS: Stat[] = ['vo', 'da', 'vi'];
@@ -89,7 +90,11 @@ export default function ScheduleConfig() {
         <span className="text-xs font-normal text-gray-500">— 一括設定で多くの日が設定済みです</span>
       </button>
       {expanded && (
-      <div className="border border-gray-200 rounded-md bg-gray-50">
+      <ResizablePanel
+        storageKey="hifSchedulePanelHeight"
+        defaultHeight={480}
+        className="border border-gray-200 rounded-md bg-gray-50"
+      >
         <ul className="divide-y divide-gray-200">
           {items.map((week) => (
             <li key={week.week} className="flex items-center gap-3 px-3 py-2 text-sm">
@@ -120,7 +125,7 @@ export default function ScheduleConfig() {
             </li>
           ))}
         </ul>
-      </div>
+      </ResizablePanel>
       )}
     </div>
   );
