@@ -14,8 +14,8 @@ pwsh ./run-tests.ps1
 個別に走らせる場合:
 
 ```powershell
-cd web; npm test                 # Web版 (TS / Vitest) … 51 件
-dotnet test GakumasuCalc.Tests   # デスクトップ版 (C# / xUnit) … 44 件
+cd web; npm test                 # Web版 (TS / Vitest) … 54 件
+dotnet test GakumasuCalc.Tests   # デスクトップ版 (C# / xUnit) … 47 件
 ```
 
 通常モード(hatsu_legend) と **HIFモード(hif)** の両方を、実データ + **実イベント回数テンプレート**で検証する。
@@ -58,7 +58,7 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 
 > 各層の符号 — **L1**=合成データで最適性・制約・決定性を厳密検証 / **L2**=実データで「自動編成≧手動編成」(このツールの核心) / **L4**=C#版とWeb版が同結果か(クロス実装パリティ)。
 
-### Web版（`web/tests/`）— 51 件
+### Web版（`web/tests/`）— 54 件
 
 | ファイル | 件数 | 検証内容 |
 |---|---|---|
@@ -71,10 +71,11 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 | `cardScoringHif.requiredRental.test.ts` | 1 | **L1 回帰**(ユーザ報告2026-06「必須を増やすとレンタルが消える」): 紫雲清夏+HIF Lv5・sense・DaSP2・所持のみ・コンテスト・必須4枚(全てDaSP非カバー)で所持枠が6枚に達する overfill 下、各パターンにレンタルがちょうど1枚存在し最低凸カードに乗る。`TestFixtures/hif_repro_inventory.json` 使用 |
 | `cardScoring.requiredSpOverflow.test.ts` | 3 | **L1 回帰**(ユーザ報告2026-07「必須+SP指定で編成が7枚に膨張」): hatsu_legend/アノマリー・所持のみ・必須4枚(内 all型SP=食欲・vi型SP=のんびり)・SP Da2/Vi3 で、all型SPが両属性の必要数を同時に満たすため編成が常に6枚・SP充足・必須全含有・レンタル1枚。all型SP必須カードの過剰確保で7枚化する退行ガード |
 | `cardScoringHif.unownedRental.test.ts` | 1 | **L2 回帰**(ユーザ報告2026-07「未所持カードがレンタル選出されない」): 倉本千奈+HIF Lv5・sense・DaSP3・所持のみ・必須1枚・0069未所持で、自動最良 ≧ 手動編成(未所持0069を4凸レンタル+0071を0凸SP要員に残す)。インベントリが未所持を uncap:4 で保存するため「4凸所持」誤判定でレンタル候補から除外される問題と、SP要員レンタル固定時に未所持借用の複合手を取り逃す問題の退行ガード。`TestFixtures/hif_unowned_rental_inventory.json` 使用 |
+| `cardScoringHif.spTotal6.test.ts` | 3 | **L1 回帰**(issue #145「SP枚数設定が多いと編成パターンが見つからない」): hatsu_legend/アノマリー・SP Vo4+Da2(合計6)・必須2枚(as型SP=食欲・未所持vi型SP=不足なし)で、パターンスキップ判定がレンタル枠(6枚目)を吸収容量に数えず全パターン0件になる退行ガード。パターンが返り各6枚・必須全含・SP充足・レンタル1枚／必須なし(SP先取りoverfill経路)でも同様／レンタルなし時は従来どおり0件 |
 | `cardScoring.rental.test.ts` | 2 | **レンタル枠**: レンタルモードで6枚・レンタル枠ちょうど1・重複なし／4凸所持を浪費せず未所持の強カードを借用 |
 | `parity.test.ts` | 2 | **L4 パリティ**: `expected.json` と一致(なければ生成)／各シナリオが非空 |
 
-### デスクトップ版（`GakumasuCalc.Tests/`）— 44 件
+### デスクトップ版（`GakumasuCalc.Tests/`）— 47 件
 
 | ファイル | 件数 | 検証内容 |
 |---|---|---|
@@ -87,6 +88,7 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 | `ReproRequiredRentalTests.cs` | 1 | **L1 回帰**(Web版 `cardScoringHif.requiredRental` と対): 必須4枚 overfill 下でも各パターンにレンタルが1枚存在し最低凸カードに乗る |
 | `ReproRequiredSpOverflowTests.cs` | 3 | **L1 回帰**(Web版 `cardScoring.requiredSpOverflow` と対): 必須4枚+SP Da2/Vi3 で all型SP必須カードが両属性を同時に満たし編成が常に6枚(all型SPの過剰確保による7枚化の退行ガード) |
 | `ReproHifUnownedRentalTests.cs` | 1 | **L2 回帰**(Web版 `cardScoringHif.unownedRental` と対): 未所持カードを「4凸所持」誤判定でレンタル候補から除外しない・SP要員レンタル固定時も未所持借用の複合手で手動編成以上に到達 |
+| `ReproSpTotal6Tests.cs` | 3 | **L1 回帰**(Web版 `cardScoringHif.spTotal6` と対): SP合計6でもパターンが返り各6枚・必須全含・SP充足・レンタル1枚。レンタルなし時は従来どおり0件 |
 | `RentalTests.cs` | 2 | **レンタル枠**（Web版と同等） |
 | `ParityTests.cs` | 1 | **L4 パリティ**: TS生成の `expected.json`(11シナリオ) に C#実装が完全一致 |
 

@@ -3139,14 +3139,17 @@ export function selectMultiplePatternsHif(
       cardTypeSlots[p.stat] = p.count;
     }
 
-    // SP率必要枚数の検査: フリー枠でも吸収できるかチェック
+    // SP率必要枚数の検査: フリー枠でも吸収できるかチェック。
+    // レンタル枠(6枚目)にもSPカードを1枚置けるため容量に加算する。
+    // 加算しないと SP合計6 (例: Vo4+Da2) で全パターンがスキップされ
+    // 「有効な編成パターンが見つかりませんでした」になる (issue #145)。
     let spShortage = 0;
     for (const stat of ['vo', 'da', 'vi'] as const) {
       const required = spCounts?.[stat] ?? 0;
       const provided = cardTypeSlots[stat] ?? 0;
       spShortage += Math.max(0, required - provided);
     }
-    if (spShortage > p.free) continue;
+    if (spShortage > p.free + (rentalPool != null ? 1 : 0)) continue;
 
     const result = selectOptimalDeck(
       plan,

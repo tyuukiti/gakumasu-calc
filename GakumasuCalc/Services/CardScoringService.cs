@@ -2179,7 +2179,10 @@ public class CardScoringService
                 cardTypeSlots[stat] = count;
             }
 
-            // SP率カードの不足をフリー枠で吸収できるかチェック
+            // SP率カードの不足をフリー枠で吸収できるかチェック。
+            // レンタル枠(6枚目)にもSPカードを1枚置けるため容量に加算する。
+            // 加算しないと SP合計6 (例: Vo4+Da2) で全パターンがスキップされ
+            // 「有効な編成パターンが見つかりませんでした」になる (issue #145)。
             int spShortage = 0;
             foreach (var s in new[] { "vo", "da", "vi" })
             {
@@ -2187,7 +2190,7 @@ public class CardScoringService
                 int provided = cardTypeSlots.GetValueOrDefault(s);
                 spShortage += Math.Max(0, required - provided);
             }
-            if (spShortage > free) continue;
+            if (spShortage > free + (rentalPool != null ? 1 : 0)) continue;
 
             var result = SelectOptimalDeck(
                 plan, allCards, lessonAllocation, cardTypeSlots,
