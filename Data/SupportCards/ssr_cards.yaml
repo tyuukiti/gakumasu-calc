@@ -3294,3 +3294,72 @@ support_cards:
     stat: vi
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SSR_0107
+  name: 食レポ、得意かも！
+  rarity: SSR
+  type: vo
+  plan: anomaly
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vo
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: conserve_acquire
+    stat: vo
+    values: [16, 16, 22, 22, 22]
+    value_type: flat
+    max_count: 4
+    condition: 所持している温存効果のスキルカード>=8
+  - trigger: vo_sp_end
+    stat: vo
+    values: [13, 13, 13, 17, 17]
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    values: [28, 28, 28, 28, 38]
+    value_type: flat
+    max_count: 2
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
+  - trigger: special_training
+    stat: vo
+    values: [25, 25, 25, 25, 25]
+    value_type: flat
+    max_count: 1
+    source: item
+- id: SP_SSR_0106
+  name: 風紀が乱れるぞ！
+  rarity: SSR
+  type: vo
+  plan: anomaly
+  tag: skill
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vo
+    values: [52, 55, 59, 62, 65]
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [21, 21, 28, 28, 28]
+    value_type: sp_rate
+  - trigger: vo_sp_end
+    stat: vo
+    values: [13, 13, 13, 17, 17]
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
