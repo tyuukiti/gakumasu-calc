@@ -2424,6 +2424,24 @@ function selectOptimalDeckOnce(
         requiredRentalCard = contribution;
         usedIds.add(cardId);
         protectedIds.add(cardId);
+
+        // レンタル借用する必須カードも SP率を持つならデッキの SP要求を満たすため、
+        // 所持枠向けの先取り枚数 (spCountsForFill) から減算する。減算しないとステップ1が
+        // SPカードを過剰確保して所持枠が6枚に達し、「レンタル1枠」ブロックが発火せず
+        // 必須レンタルカードが編成から漏れる (2026-08 ユーザ報告)。
+        const rentalSpEffect = card.effects.find(
+          (e) => e.trigger === 'equip' && e.value_type === 'sp_rate',
+        );
+        if (rentalSpEffect != null) {
+          for (const key of Object.keys(spCountsForFill)) {
+            if (
+              (card.type === key || card.type === 'all' || card.type === 'as') &&
+              spCountsForFill[key] > 0
+            ) {
+              spCountsForFill[key]--;
+            }
+          }
+        }
       } else {
         // 所持 → 所持枠として追加
         selected.push(contribution);
@@ -2560,6 +2578,34 @@ function selectOptimalDeckOnce(
     accVo = fill.accVo - (requiredRentalCard?.raw_vo ?? 0);
     accDa = fill.accDa - (requiredRentalCard?.raw_da ?? 0);
     accVi = fill.accVi - (requiredRentalCard?.raw_vi ?? 0);
+  }
+
+  // 必須レンタルカードは所持枠が6枚埋まっていても最優先で投入する (必須 > SP枚数 > パターン)。
+  // 何らかの経路で所持枠が埋まりきった場合は、最弱の非必須カード (非保護優先) を1枚落として
+  // 必ずレンタル枠を空ける。落とした分の SP/属性枠は後続の enforceSpCounts / enforceTypeSlots が修復する。
+  if (rentalPool != null && requiredRentalCard != null && selected.length >= 6) {
+    let victimIdx = -1;
+    let victimKey = Infinity;
+    for (let i = 0; i < selected.length; i++) {
+      const s = selected[i];
+      if (s.is_required) continue;
+      const key =
+        (protectedIds.has(s.card.id) ? Number.MAX_SAFE_INTEGER / 2 : 0) +
+        s.raw_vo + s.raw_da + s.raw_vi;
+      if (key < victimKey) {
+        victimKey = key;
+        victimIdx = i;
+      }
+    }
+    if (victimIdx >= 0) {
+      const victim = selected[victimIdx];
+      selected.splice(victimIdx, 1);
+      usedIds.delete(victim.card.id);
+      protectedIds.delete(victim.card.id);
+      accVo -= victim.raw_vo * accVoMul;
+      accDa -= victim.raw_da * accDaMul;
+      accVi -= victim.raw_vi * accViMul;
+    }
   }
 
   // レンタル1枠: 全カードプールから4凸で最良の1枚を選択
