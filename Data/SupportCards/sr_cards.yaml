@@ -2534,3 +2534,69 @@ support_cards:
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SR_0078
+  name: こんにゃくなきもだめし
+  rarity: SR
+  type: vo
+  plan: anomaly
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vo
+    values: [37, 40, 43, 46, 49]
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [10.5, 21, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: vo_sp_end
+    stat: vo
+    values: [7, 7, 7, 13, 13]
+    value_type: flat
+  - trigger: sp_end
+    stat: vo
+    values: [8, 8, 8, 15, 15]
+    value_type: flat
+    max_count: 4
+    condition: deck>=20
+  - trigger: equip
+    stat: vo
+    values: [50, 50, 75, 75, 100]
+    value_type: event_param_boost
+- id: SP_SR_0077
+  name: 奇遇な必然
+  rarity: SR
+  type: vi
+  plan: anomaly
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [37, 40, 43, 46, 49]
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [10.5, 21, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: vi_sp_end
+    stat: vi
+    values: [7, 7, 7, 7, 13]
+    value_type: flat
+  - trigger: skill_delete
+    stat: vi
+    values: [4, 4, 4, 8, 8]
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 50, 75, 75, 100]
+    value_type: event_param_boost
