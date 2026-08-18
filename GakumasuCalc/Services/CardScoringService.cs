@@ -310,6 +310,25 @@ public class CardScoringService
                     requiredRentalCard = contribution;
                     usedIds.Add(cardId);
                     protectedIds.Add(cardId);
+
+                    // レンタル借用する必須カードも SP率を持つならデッキの SP要求を満たすため、
+                    // 所持枠向けの先取り枚数 (spCountsForFill) から減算する。減算しないとステップ1が
+                    // SPカードを過剰確保して所持枠が6枚に達し、「レンタル1枠」ブロックが発火せず
+                    // 必須レンタルカードが編成から漏れる (2026-08 ユーザ報告)。
+                    if (spCountsForFill != null)
+                    {
+                        var rentalSpEffect = card.Effects.FirstOrDefault(e => e.Trigger == "equip" && e.ValueType == "sp_rate");
+                        if (rentalSpEffect != null)
+                        {
+                            foreach (var key in spCountsForFill.Keys.ToList())
+                            {
+                                if ((card.Type == key || card.Type == "all" || card.Type == "as") && spCountsForFill[key] > 0)
+                                {
+                                    spCountsForFill[key]--;
+                                }
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -432,6 +451,36 @@ public class CardScoringService
         accVo = fillResult.AccVo - (int)((requiredRentalCard?.RawVo ?? 0) * accVoMul);
         accDa = fillResult.AccDa - (int)((requiredRentalCard?.RawDa ?? 0) * accDaMul);
         accVi = fillResult.AccVi - (int)((requiredRentalCard?.RawVi ?? 0) * accViMul);
+
+        // 必須レンタルカードは所持枠が6枚埋まっていても最優先で投入する (必須 > SP枚数 > パターン)。
+        // 何らかの経路で所持枠が埋まりきった場合は、最弱の非必須カード (非保護優先) を1枚落として
+        // 必ずレンタル枠を空ける。落とした分の SP/属性枠は後続の EnforceSpCounts / EnforceTypeSlots が修復する。
+        if (rentalPool != null && requiredRentalCard != null && selected.Count >= 6)
+        {
+            int victimIdx = -1;
+            double victimKey = double.PositiveInfinity;
+            for (int i = 0; i < selected.Count; i++)
+            {
+                var s = selected[i];
+                if (s.IsRequired) continue;
+                double key = (protectedIds.Contains(s.Card.Id) ? 1e12 : 0) + s.RawVo + s.RawDa + s.RawVi;
+                if (key < victimKey)
+                {
+                    victimKey = key;
+                    victimIdx = i;
+                }
+            }
+            if (victimIdx >= 0)
+            {
+                var victim = selected[victimIdx];
+                selected.RemoveAt(victimIdx);
+                usedIds.Remove(victim.Card.Id);
+                protectedIds.Remove(victim.Card.Id);
+                accVo -= (int)(victim.RawVo * accVoMul);
+                accDa -= (int)(victim.RawDa * accDaMul);
+                accVi -= (int)(victim.RawVi * accViMul);
+            }
+        }
 
         // レンタル1枠: 全カードプールから4凸で最良の1枚を選択
         if (rentalPool != null && selected.Count < 6)
