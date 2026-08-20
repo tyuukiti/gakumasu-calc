@@ -1,4 +1,4 @@
-export type { OverflowPenaltyConfig } from './types';
+﻿export type { OverflowPenaltyConfig } from './types';
 export type { TriggerBonusContributor, TriggerBonusEntry } from './contribution';
 export {
   countTriggers,
