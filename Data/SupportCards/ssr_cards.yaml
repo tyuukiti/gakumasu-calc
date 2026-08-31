@@ -892,6 +892,13 @@ support_cards:
     stat: vi
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: equip
+    stat: vi
+    values: [2, 2, 2, 2, 2]
+    value_type: trigger_count_bonus
+    trigger_target: skill_delete
+    description: 思い出カタメコイメ (授業・営業終了時にスキルカード削除・プロデュース中2回)
+    source: item
 - id: SP_SSR_0056
   name: 利用し合うのが友達！
   rarity: SSR
@@ -3404,4 +3411,11 @@ support_cards:
     value_type: flat
     max_count: 2
     condition: vo>=900
+    source: item
+  - trigger: equip
+    stat: vo
+    values: [2, 2, 2, 2, 2]
+    value_type: trigger_count_bonus
+    trigger_target: skill_delete
+    description: 真夏に咲く太陽 (集中効果カード獲得時にスキルカード削除・プロデュース中2回)
     source: item
