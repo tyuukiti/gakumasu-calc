@@ -95,6 +95,8 @@ def fetch_item_effects(html: str) -> dict[str, list[dict]]:
 
         card_name = None
         is_produce_item = False
+        item_cell_text = ""
+        card_stat = None
 
         for cell in cells:
             if card_name is None:
@@ -109,10 +111,18 @@ def fetch_item_effects(html: str) -> dict[str, list[dict]]:
                     except Exception:
                         pass
 
+            # タイプセル (例: 「ｱ Vo」) からカード属性を取得 (アビリティセルは値が続くので fullmatch で除外)
+            if card_stat is None:
+                type_match = re.fullmatch(r'\S{0,3}\s*(Vo|Da|Vi)', cell.get_text(separator=' ').strip())
+                if type_match:
+                    card_stat = {"Vo": "vo", "Da": "da", "Vi": "vi"}[type_match.group(1)]
+
             cell_html = str(cell)
             if "color:#ffffff" in cell_html or "color: #ffffff" in cell_html:
                 if re.search(r'プロデュース.{0,10}アイテム', cell.get_text()):
                     is_produce_item = True
+                    # アイテム名セルに「（プロデュース中N回）」が入ることがあるため保持
+                    item_cell_text = cell.get_text(separator="\n").strip()
 
         if not (card_name and is_produce_item):
             continue
@@ -120,21 +130,27 @@ def fetch_item_effects(html: str) -> dict[str, list[dict]]:
             continue
 
         effect_text = cells[5].get_text(separator="\n").strip()
-        parsed = _parse_item_effect_text(effect_text)
+        parsed = _parse_item_effect_text(effect_text, context_text=item_cell_text, card_stat=card_stat)
         if parsed:
             result[card_name] = parsed
 
     return result
 
 
-def _parse_item_effect_text(text: str) -> list[dict]:
+def _parse_item_effect_text(text: str, context_text: str = "", card_stat: str | None = None) -> list[dict]:
     """アイテム効果テキストからステータス上昇効果と Pドリンク供給効果を抽出。
     検出できるパターン:
       - ステータス上昇 (例: Da+30, ボーカル上昇+15)
       - Pドリンク獲得 (例: 「ランダムなPドリンクを獲得 (プロデュース中2回)」)
-    両方が同一アイテムに含まれる場合は両方の effect を返す。何も検出されなければ [] を返す。
+      - スキルカード削除の誘発 (例: 「スキルカードを選択して削除」→ skill_delete 回数+N)
+    複数パターンが同一アイテムに含まれる場合はすべての effect を返す。何も検出されなければ [] を返す。
+
+    context_text: アイテム名セルのテキスト。「（プロデュース中N回）」が効果セルではなく
+    アイテム名セルに書かれる行があるため、回数抽出のみ両方から探す。
+    card_stat: カードの属性 (vo/da/vi)。削除誘発 effect の stat 表記に使う (計算では未参照の装飾値)。
     """
     flat = text.replace('\n', '')
+    context_flat = context_text.replace('\n', '')
 
     effects: list[dict] = []
 
@@ -161,9 +177,10 @@ def _parse_item_effect_text(text: str) -> list[dict]:
             if cond_match_hp:
                 condition = f"hp>={cond_match_hp.group(1)}%"
 
-    # max_count 抽出 (両 effect で共通)
+    # max_count 抽出 (各 effect で共通)。効果セルに無ければアイテム名セルからも探す
     max_count = None
-    mc_match = re.search(r'[（(]プロデュース中(\d+)回[）)]', flat)
+    mc_match = re.search(r'[（(]プロデュース中(\d+)回[）)]', flat) or \
+        re.search(r'[（(]プロデュース中(\d+)回[）)]', context_flat)
     if mc_match:
         max_count = int(mc_match.group(1))
 
@@ -224,6 +241,21 @@ def _parse_item_effect_text(text: str) -> list[dict]:
             if max_count:
                 drink_eff["max_count"] = max_count
             effects.append(drink_eff)
+
+    # === effect 3: スキルカード削除の誘発 ===
+    # アイテムがスキルカードを削除する場合、装備カード全体の skill_delete トリガー回数が
+    # 発動回数ぶん増える (発動条件は他アイテム同様に無視して常時発動扱い)。
+    # 「トラブルカードを削除」は skill_delete を発火するか不明なため対象外。
+    if re.search(r'スキルカードを.{0,10}削除', flat):
+        delete_count = max_count if max_count else 1
+        effects.append({
+            "trigger": "equip",
+            "stat": card_stat or "da",
+            "values": [delete_count] * 5,
+            "value_type": "trigger_count_bonus",
+            "trigger_target": "skill_delete",
+            "source": "item",
+        })
 
     return effects
 
