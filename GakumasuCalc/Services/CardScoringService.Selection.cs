@@ -298,17 +298,23 @@ public partial class CardScoringService
             }
         }
 
+        // レンタルモード: 所持5枠 + レンタル1枠
+        int ownedSlots = rentalPool != null ? 5 : 6;
+
         // ステップ1: SP率カードをユーザ指定枚数分、先に確保
         var spCardSlotStat = new Dictionary<string, string>(); // cardId -> 消費したスロットのstat key
         var spCardUsedFree = new HashSet<string>(); // フリー枠を消費したcardId
         if (spCountsForFill != null)
         {
+            // 空きレンタル枠は SP カード1枚の受け皿になる (EnforceSpCounts が最終補充する)
+            int rentalCanHostSp = rentalPool != null && requiredRentalCard == null ? 1 : 0;
+            int RemainingNeedTotal() => spCountsForFill.Values.Where(n => n > 0).Sum();
+            int NeededStatCount() => spCountsForFill.Values.Count(n => n > 0);
+
             // 必須カードで消費済みの分を差し引いた残り枚数のみ先取りする
-            foreach (var kvp in spCountsForFill)
+            foreach (var stat in spCountsForFill.Keys.ToList())
             {
-                var stat = kvp.Key;
-                int need = kvp.Value;
-                if (need <= 0) continue;
+                if (spCountsForFill[stat] <= 0) continue;
 
                 // この属性のSP率を持つカードをステータス寄与順で選ぶ ("as" は "all" と同等)
                 var spCandidates = cardContributions
@@ -317,9 +323,24 @@ public partial class CardScoringService
                                  && cs.Card.Effects.Any(e => e.Trigger == "equip" && e.ValueType == "sp_rate"))
                     .ToList();
 
-                for (int i = 0; i < need; i++)
+                // 所持枠の容量 (ownedSlots) を超えて先取りしない。必須カードで枠が埋まっている場合に
+                // 無条件に spCounts 分を追加するとデッキが6枚を超える (非SP必須3枚 + SP指定4枚で
+                // 7枚に膨張するバグの原因)。
+                while (spCountsForFill[stat] > 0 && selected.Count < ownedSlots)
                 {
-                    var best = SelectBestCard(spCandidates, usedIds, accVo, accDa, accVi, statCap, character, overflowPenalty);
+                    // 残り容量 (所持枠 + 空きレンタル枠) が残り要求数より少ない場合、複数属性を
+                    // 同時にカバーする all/as 型を優先して要求を圧縮する (2属性以上が未充足の時のみ)
+                    bool tight = ownedSlots - selected.Count + rentalCanHostSp < RemainingNeedTotal()
+                                 && NeededStatCount() >= 2;
+                    var wildcardCandidates = tight
+                        ? spCandidates
+                            .Where(cs => (cs.Card.Type == "all" || cs.Card.Type == "as")
+                                         && !usedIds.Contains(cs.Card.Id))
+                            .ToList()
+                        : new List<CardScore>();
+                    var pickPool = wildcardCandidates.Count > 0 ? wildcardCandidates : spCandidates;
+
+                    var best = SelectBestCard(pickPool, usedIds, accVo, accDa, accVi, statCap, character, overflowPenalty);
                     if (best == null) break;
 
                     selected.Add(best);
@@ -340,12 +361,20 @@ public partial class CardScoringService
                         spCardUsedFree.Add(best.Card.Id);
                         remainingFree = Math.Max(0, remainingFree - 1);
                     }
+
+                    // カバーする全属性の残り要求数を減算する (all/as 型は複数属性を同時に満たす。
+                    // 自属性のみ減算すると他属性のループが同カバー分を過剰確保する)
+                    foreach (var key in spCountsForFill.Keys.ToList())
+                    {
+                        if ((best.Card.Type == key || best.Card.Type == "all" || best.Card.Type == "as")
+                            && spCountsForFill[key] > 0)
+                        {
+                            spCountsForFill[key]--;
+                        }
+                    }
                 }
             }
         }
-
-        // レンタルモード: 所持5枠 + レンタル1枠
-        int ownedSlots = rentalPool != null ? 5 : 6;
 
         // チェックポイント保存（レンタルパターンC用）
         var checkpointSelected = new List<CardScore>(selected);

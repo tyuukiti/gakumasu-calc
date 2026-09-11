@@ -340,13 +340,23 @@ export function selectOptimalDeckOnce(
     }
   }
 
+  // レンタルモード: 所持5枠 + レンタル1枠
+  const ownedSlots = rentalPool != null ? 5 : 6;
+
   // ステップ1: SP率カードをユーザ指定枚数分、先に確保
   const spCardSlotStat: Record<string, string> = {}; // cardId -> 消費したスロットのstat key
   const spCardUsedFree = new Set<string>(); // フリー枠を消費したcardId
   if (spCounts != null) {
+    // 空きレンタル枠は SP カード1枚の受け皿になる (enforceSpCounts が最終補充する)
+    const rentalCanHostSp = rentalPool != null && requiredRentalCard == null ? 1 : 0;
+    const remainingNeedTotal = () =>
+      Object.values(spCountsForFill).reduce((a, b) => a + Math.max(0, b), 0);
+    const neededStatCount = () =>
+      Object.values(spCountsForFill).filter((n) => n > 0).length;
+
     // 必須カードで消費済みの分を差し引いた残り枚数のみ先取りする
-    for (const [stat, need] of Object.entries(spCountsForFill)) {
-      if (need <= 0) continue;
+    for (const stat of Object.keys(spCountsForFill)) {
+      if (spCountsForFill[stat] <= 0) continue;
 
       // この属性のSP率を持つカードをステータス寄与順で選ぶ ("as" は "all" と同等)
       const spCandidates = cardContributions.filter(
@@ -358,9 +368,27 @@ export function selectOptimalDeckOnce(
           ),
       );
 
-      for (let i = 0; i < need; i++) {
+      // 所持枠の容量 (ownedSlots) を超えて先取りしない。必須カードで枠が埋まっている場合に
+      // 無条件に spCounts 分を push するとデッキが6枚を超える (非SP必須3枚 + SP指定4枚で
+      // 7枚に膨張するバグの原因)。
+      while (spCountsForFill[stat] > 0 && selected.length < ownedSlots) {
+        // 残り容量 (所持枠 + 空きレンタル枠) が残り要求数より少ない場合、複数属性を
+        // 同時にカバーする all/as 型を優先して要求を圧縮する (2属性以上が未充足の時のみ)
+        const tight =
+          ownedSlots - selected.length + rentalCanHostSp < remainingNeedTotal() &&
+          neededStatCount() >= 2;
+        const wildcardCandidates = tight
+          ? spCandidates.filter(
+              (cs) =>
+                (cs.card.type === 'all' || cs.card.type === 'as') &&
+                !usedIds.has(cs.card.id),
+            )
+          : [];
+        const pickPool =
+          wildcardCandidates.length > 0 ? wildcardCandidates : spCandidates;
+
         const best = selectBestCard(
-          spCandidates,
+          pickPool,
           usedIds,
           accVo,
           accDa,
@@ -386,12 +414,22 @@ export function selectOptimalDeckOnce(
           spCardUsedFree.add(best.card.id);
           remainingFree = Math.max(0, remainingFree - 1);
         }
+
+        // カバーする全属性の残り要求数を減算する (all/as 型は複数属性を同時に満たす。
+        // 自属性のみ減算すると他属性のループが同カバー分を過剰確保する)
+        for (const key of Object.keys(spCountsForFill)) {
+          if (
+            (best.card.type === key ||
+              best.card.type === 'all' ||
+              best.card.type === 'as') &&
+            spCountsForFill[key] > 0
+          ) {
+            spCountsForFill[key]--;
+          }
+        }
       }
     }
   }
-
-  // レンタルモード: 所持5枠 + レンタル1枠
-  const ownedSlots = rentalPool != null ? 5 : 6;
 
   // チェックポイント保存（レンタルパターンC用）
   const checkpointSelected = [...selected];
