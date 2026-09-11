@@ -3419,3 +3419,65 @@ support_cards:
     trigger_target: skill_delete
     description: 真夏に咲く太陽 (集中効果カード獲得時にスキルカード削除・プロデュース中2回)
     source: item
+- id: SP_SSR_0110
+  name: もうすぐ本番ですね
+  rarity: SSR
+  type: vi
+  plan: free
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: skill_change
+    stat: vi
+    values: [29, 29, 29, 39, 39]
+    value_type: flat
+    max_count: 3
+  - trigger: exam_end
+    stat: vi
+    values: [27, 27, 27, 37, 37]
+    value_type: flat
+    max_count: 5
+    condition: deck>=15
+  - trigger: skill_change
+    stat: vi
+    values: [25, 25, 25, 25, 25]
+    value_type: flat
+    max_count: 3
+    source: item
+- id: SP_SSR_0109
+  name: イクラ〜♪　ウニ〜♪
+  rarity: SSR
+  type: vi
+  plan: logic
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [52, 55, 59, 62, 65]
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [14, 14, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: p_item_acquire
+    stat: vi
+    values: [8, 8, 8, 8, 11]
+    value_type: flat
+    max_count: 6
+  - trigger: good_impression_acquire
+    stat: vi
+    values: [2, 2, 2, 3, 3]
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
