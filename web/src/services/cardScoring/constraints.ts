@@ -96,12 +96,20 @@ export function enforceSpCounts(
         (e.stat === stat || e.stat === 'all'),
     );
 
-  // このカードが「まだ要求枚数 > 0 のいずれかの属性」のSPをカバーしているか
-  // (= 外すと別属性のSP要件を壊しうるカードか)
-  const coversAnyNeededSp = (card: SupportCard): boolean =>
-    (['vo', 'da', 'vi'] as const).some(
-      (s) => (spCounts[s] ?? 0) > 0 && coversStat(card, s),
-    );
+  // このカードを外すと、いずれかの属性の SP 充足数が要求枚数を割るか (現在枚数ベース)。
+  // 「要求>0の属性をカバーしていたら一律外せない」だと、all/as 型で余剰カバーが
+  // ある場合 (例: vi要求1 を all型が充足済みで vi SP がもう1枚居る) にレンタル枠の
+  // 差し替えが封じられ、別属性の SP 不足を補充できない。
+  const wouldBreakSpCoverage = (card: SupportCard): boolean => {
+    for (const s of ['vo', 'da', 'vi']) {
+      const need = spCounts[s] ?? 0;
+      if (need <= 0) continue;
+      if (!coversStat(card, s)) continue;
+      const cur = selected.filter((cs) => coversStat(cs.card, s)).length;
+      if (cur <= need) return true;
+    }
+    return false;
+  };
 
   const rawTotal = (cs: CardScore): number => cs.raw_vo + cs.raw_da + cs.raw_vi;
 
@@ -120,10 +128,10 @@ export function enforceSpCounts(
 
     // 1) 所持枠を所持SPカードで補充
     while (current < need && ownedSpCandidates.length > 0) {
-      // 外せる犠牲カード: 非レンタル・非必須・他のSP要件を満たしていない、寄与の弱い順
+      // 外せる犠牲カード: 非レンタル・非必須・外しても他属性のSP充足を割らない、寄与の弱い順
       // 同属性のカードを優先的に外して編成バランスへの影響を抑える
       const removable = selected.filter(
-        (cs) => !cs.is_rental && !cs.is_required && !coversAnyNeededSp(cs.card),
+        (cs) => !cs.is_rental && !cs.is_required && !wouldBreakSpCoverage(cs.card),
       );
       if (removable.length === 0) break;
       removable.sort((a, b) => {
@@ -147,7 +155,7 @@ export function enforceSpCounts(
       if (
         rentalIdx >= 0 &&
         !coversStat(selected[rentalIdx].card, stat) &&
-        !coversAnyNeededSp(selected[rentalIdx].card)
+        !wouldBreakSpCoverage(selected[rentalIdx].card)
       ) {
         const used = inDeck();
         const rentalSp = rentalPool

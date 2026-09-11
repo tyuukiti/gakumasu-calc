@@ -94,10 +94,22 @@ public partial class CardScoringService
                 e.ValueType == "sp_rate" &&
                 (e.Stat == stat || e.Stat == "all"));
 
-        // このカードが「まだ要求枚数 > 0 のいずれかの属性」のSPをカバーしているか
-        // (= 外すと別属性のSP要件を壊しうるカードか)
-        bool CoversAnyNeededSp(SupportCard card) =>
-            new[] { "vo", "da", "vi" }.Any(s => spCounts.GetValueOrDefault(s) > 0 && CoversStat(card, s));
+        // このカードを外すと、いずれかの属性の SP 充足数が要求枚数を割るか (現在枚数ベース)。
+        // 「要求>0の属性をカバーしていたら一律外せない」だと、all/as 型で余剰カバーが
+        // ある場合 (例: vi要求1 を all型が充足済みで vi SP がもう1枚居る) にレンタル枠の
+        // 差し替えが封じられ、別属性の SP 不足を補充できない。
+        bool WouldBreakSpCoverage(SupportCard card)
+        {
+            foreach (var s in new[] { "vo", "da", "vi" })
+            {
+                int need = spCounts.GetValueOrDefault(s);
+                if (need <= 0) continue;
+                if (!CoversStat(card, s)) continue;
+                int cur = selected.Count(cs => CoversStat(cs.Card, s));
+                if (cur <= need) return true;
+            }
+            return false;
+        }
 
         static int RawTotal(CardScore cs) => cs.RawVo + cs.RawDa + cs.RawVi;
 
@@ -121,10 +133,10 @@ public partial class CardScoringService
             int ownedIdx = 0;
             while (current < need && ownedIdx < ownedSpCandidates.Count)
             {
-                // 外せる犠牲カード: 非レンタル・非必須・他のSP要件を満たしていない、寄与の弱い順
+                // 外せる犠牲カード: 非レンタル・非必須・外しても他属性のSP充足を割らない、寄与の弱い順
                 // 同属性のカードを優先的に外して編成バランスへの影響を抑える
                 var victim = selected
-                    .Where(cs => !cs.IsRental && !cs.IsRequired && !CoversAnyNeededSp(cs.Card))
+                    .Where(cs => !cs.IsRental && !cs.IsRequired && !WouldBreakSpCoverage(cs.Card))
                     .OrderBy(cs => cs.Card.Type == stat ? 0 : 1)
                     .ThenBy(RawTotal)
                     .FirstOrDefault();
@@ -143,7 +155,7 @@ public partial class CardScoringService
                 int rentalIdx = selected.FindIndex(cs => cs.IsRental);
                 if (rentalIdx >= 0 &&
                     !CoversStat(selected[rentalIdx].Card, stat) &&
-                    !CoversAnyNeededSp(selected[rentalIdx].Card))
+                    !WouldBreakSpCoverage(selected[rentalIdx].Card))
                 {
                     var used = InDeck();
                     var rentalSp = rentalPool
