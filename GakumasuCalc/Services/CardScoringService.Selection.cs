@@ -451,7 +451,9 @@ public partial class CardScoringService
             // ユーザが4凸所持のカードはレンタル枠に置いても upgrade 恩恵がゼロ
             // (owned 4凸 = rental 4凸 で同値)。レンタル枠は本来「未所持/低凸カードを4凸として
             // 借りる」用途なので、4凸所持カードを意図的に rental に置くのは枠の浪費。→ 除外。
-            // ただし全候補が4凸所持で空になる場合はフォールバックで除外しない。
+            // ただし未使用の候補が4凸所持で空になる場合はフォールバックで除外しない。
+            // (残った候補が全てデッキ内の必須カードだけ、というケースも「候補なし」。ここで
+            //  空にすると6枚目が立たず5枚編成になり、EnsureRentalSlot が必須カードを借用先に回す)
             // 注意: uncapLevels は未所持カードにもエントリを持つ (インベントリは全カードを
             // デフォルト uncap=4 で保存する) ため、uncap だけで判定すると未所持カード全てを
             // 「4凸所持」と誤判定しレンタル候補から除外してしまう。所持集合との積で判定する。
@@ -465,7 +467,7 @@ public partial class CardScoringService
                             || c.Plan == "free")
                 .ToList();
             var rentalPoolForCandidates = planFiltered.Where(c => !IsUserOwned4Star(c.Id)).ToList();
-            if (rentalPoolForCandidates.Count == 0)
+            if (!rentalPoolForCandidates.Any(c => !usedIds.Contains(c.Id)))
                 rentalPoolForCandidates = planFiltered;
 
             // レンタル候補: 所持で選ばれたカードも含めて全カードから計算
@@ -653,7 +655,7 @@ public partial class CardScoringService
         // SP枚数の強制保証: PostOptimize 後、SP カードが要求枚数に満たない場合は
         // プール内の余剰 SP カードで補充する (優先順位 必須カード > SP枚数 > 編成パターン)。
         // PostOptimize は total を最大化するため非SPカードを優先しうるので、必ずこの後に実行する。
-        EnforceSpCounts(selected, cardContributions, rentalPool, triggerCounts,
+        EnforceSpCounts(selected, cardContributions, rentalPool, planType, triggerCounts,
             lessonAllocation, lessonStatTotals, uncapLevels, triggerBonusInfo, protectedIds, spCounts);
 
         // 編成パターンの強制保証: EnforceSpCounts 後、属性枠 (cardTypeSlots) が要求枚数に

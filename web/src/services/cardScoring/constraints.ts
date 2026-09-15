@@ -72,12 +72,18 @@ export function unprotectExcessSpCards(
  * - 必須カード (is_required) は絶対に外さない
  * - 既に別属性のSP要件を満たしているカードも外さない
  * - 所持枠は所持プール(cardContributions)のSPカードで、レンタル枠はレンタルプールのSPカードで補充
+ * - レンタル枠の補充候補も planType でフィルタする (所持プールは呼び出し側で既にフィルタ済み)。
+ *   ここだけ未フィルタだと、別プランの SP カードが素の寄与順で先頭に来た時にそのまま
+ *   採用され「別プランのサポカが1枚だけ選出される」(2026-09 ユーザ報告)
+ * - レンタル枠に必須カードが載っている (ensureRentalSlot が低凸の必須カードを借用先に指定した)
+ *   場合は差し替えない。差し替えると必須カードがデッキから消える (必須 > SP枚数)
  * - 補充のために編成パターン(cardTypeSlots)を崩すことは許容する (SP枚数 > 編成パターン)
  */
 export function enforceSpCounts(
   selected: CardScore[],
   cardContributions: CardScore[],
   rentalPool: SupportCard[] | undefined,
+  planType: string | undefined,
   triggerCounts: Record<string, number>,
   lessonAllocation: Record<string, number>,
   lessonStatTotals: StatusValues,
@@ -150,16 +156,21 @@ export function enforceSpCounts(
     }
 
     // 2) まだ不足 → レンタル枠をこの属性のレンタルSPカードに差し替え
+    //    (必須カードが載ったレンタル枠は差し替えない / 候補は planType でフィルタ)
     if (current < need && rentalPool != null) {
       const rentalIdx = selected.findIndex((cs) => cs.is_rental);
       if (
         rentalIdx >= 0 &&
+        !selected[rentalIdx].is_required &&
         !coversStat(selected[rentalIdx].card, stat) &&
         !wouldBreakSpCoverage(selected[rentalIdx].card)
       ) {
         const used = inDeck();
+        const planOk = (c: SupportCard): boolean =>
+          planType == null || planType === '' ||
+          c.plan == null || c.plan === '' || c.plan === planType || c.plan === 'free';
         const rentalSp = rentalPool
-          .filter((c) => coversStat(c, stat) && !used.has(c.id))
+          .filter((c) => coversStat(c, stat) && planOk(c) && !used.has(c.id))
           .map((c) =>
             calculateCardContribution(
               c,
