@@ -72,12 +72,18 @@ public partial class CardScoringService
     /// - 必須カード (IsRequired) は絶対に外さない
     /// - 既に別属性のSP要件を満たしているカードも外さない
     /// - 所持枠は所持プール(cardContributions)のSPカードで、レンタル枠はレンタルプールのSPカードで補充
+    /// - レンタル枠の補充候補も planType でフィルタする (所持プールは呼び出し側で既にフィルタ済み)。
+    ///   ここだけ未フィルタだと、別プランの SP カードが素の寄与順で先頭に来た時にそのまま
+    ///   採用され「別プランのサポカが1枚だけ選出される」(2026-09 ユーザ報告)
+    /// - レンタル枠に必須カードが載っている (EnsureRentalSlot が低凸の必須カードを借用先に指定した)
+    ///   場合は差し替えない。差し替えると必須カードがデッキから消える (必須 > SP枚数)
     /// - 補充のために編成パターン(cardTypeSlots)を崩すことは許容する (SP枚数 > 編成パターン)
     /// </summary>
     private void EnforceSpCounts(
         List<CardScore> selected,
         List<CardScore> cardContributions,
         List<SupportCard>? rentalPool,
+        string? planType,
         Dictionary<string, int> triggerCounts,
         Dictionary<string, int> lessonAllocation,
         StatusValues lessonStatTotals,
@@ -150,16 +156,20 @@ public partial class CardScoringService
             }
 
             // 2) まだ不足 → レンタル枠をこの属性のレンタルSPカードに差し替え
+            //    (必須カードが載ったレンタル枠は差し替えない / 候補は planType でフィルタ)
             if (current < need && rentalPool != null)
             {
                 int rentalIdx = selected.FindIndex(cs => cs.IsRental);
                 if (rentalIdx >= 0 &&
+                    !selected[rentalIdx].IsRequired &&
                     !CoversStat(selected[rentalIdx].Card, stat) &&
                     !WouldBreakSpCoverage(selected[rentalIdx].Card))
                 {
                     var used = InDeck();
+                    bool PlanOk(SupportCard c) =>
+                        string.IsNullOrEmpty(planType) || string.IsNullOrEmpty(c.Plan) || c.Plan == planType || c.Plan == "free";
                     var rentalSp = rentalPool
-                        .Where(c => CoversStat(c, stat) && !used.Contains(c.Id))
+                        .Where(c => CoversStat(c, stat) && PlanOk(c) && !used.Contains(c.Id))
                         .Select(c =>
                         {
                             var uc = uncapLevels != null

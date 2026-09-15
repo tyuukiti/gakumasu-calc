@@ -526,7 +526,9 @@ export function selectOptimalDeckOnce(
     // ユーザが4凸所持のカードはレンタル枠に置いても upgrade 恩恵がゼロ
     // (owned 4凸 = rental 4凸 で同値)。レンタル枠は本来「未所持/低凸カードを4凸として
     // 借りる」用途なので、4凸所持カードを意図的に rental に置くのは枠の浪費。→ 除外。
-    // ただし全候補が4凸所持で空になる場合はフォールバックで除外しない。
+    // ただし未使用の候補が4凸所持で空になる場合はフォールバックで除外しない。
+    // (残った候補が全てデッキ内の必須カードだけ、というケースも「候補なし」。ここで
+    //  空にすると6枚目が立たず5枚編成になり、ensureRentalSlot が必須カードを借用先に回す)
     // 注意: uncapLevels は未所持カードにもエントリを持つ (inventory は全カードを
     // デフォルト uncap=4 で保存する) ため、uncap だけで判定すると未所持カード全てを
     // 「4凸所持」と誤判定しレンタル候補から除外してしまう。所持集合との積で判定する。
@@ -535,7 +537,7 @@ export function selectOptimalDeckOnce(
       ownedIdSet.has(cardId) && (uncapLevels?.[cardId] ?? 0) >= 4;
     const rentalPoolForCandidates = (() => {
       const filtered = filteredRentalPool.filter((c) => !isUserOwned4Star(c.id));
-      return filtered.length > 0 ? filtered : filteredRentalPool;
+      return filtered.some((c) => !usedIds.has(c.id)) ? filtered : filteredRentalPool;
     })();
 
     const allRentalContributions = new Map<string, CardScore>();
@@ -819,6 +821,7 @@ export function selectOptimalDeckOnce(
     selected,
     cardContributions,
     rentalPool,
+    planType,
     triggerCounts,
     lessonAllocation,
     lessonStatTotals,

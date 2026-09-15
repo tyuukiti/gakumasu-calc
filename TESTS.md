@@ -73,6 +73,7 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 | `cardScoringHif.unownedRental.test.ts` | 1 | **L2 回帰**(ユーザ報告2026-07「未所持カードがレンタル選出されない」): 倉本千奈+HIF Lv5・sense・DaSP3・所持のみ・必須1枚・0069未所持で、自動最良 ≧ 手動編成(未所持0069を4凸レンタル+0071を0凸SP要員に残す)。インベントリが未所持を uncap:4 で保存するため「4凸所持」誤判定でレンタル候補から除外される問題と、SP要員レンタル固定時に未所持借用の複合手を取り逃す問題の退行ガード。`TestFixtures/hif_unowned_rental_inventory.json` 使用 |
 | `cardScoring.requiredRentalDropped.test.ts` | 1 | **L1 回帰**(ユーザ報告2026-08「未所持の必須カードが編成に入らない」): 雨夜燕+hatsu_legend/アノマリー・所持のみ・SP Vo3/Da2・必須3枚(内 vo型SP=0073が未所持=レンタル必須)で、必須レンタルカードのSP率が spCountsForFill から減算されずステップ1がSPを過剰確保→所持枠6枚で「レンタル1枠」ブロックが発火せず必須が漏れる退行ガード。全パターンで6枚・必須全含有・0073がレンタル枠・SP充足。`TestFixtures/hif_repro_inventory.json` 使用 |
 | `cardScoringHif.spTotal6.test.ts` | 3 | **L1 回帰**(issue #145「SP枚数設定が多いと編成パターンが見つからない」): hatsu_legend/アノマリー・SP Vo4+Da2(合計6)・必須2枚(as型SP=食欲・未所持vi型SP=不足なし)で、パターンスキップ判定がレンタル枠(6枚目)を吸収容量に数えず全パターン0件になる退行ガード。パターンが返り各6枚・必須全含・SP充足・レンタル1枚／必須なし(SP先取りoverfill経路)でも同様／レンタルなし時は従来どおり0件 |
+| `cardScoringHif.crossPlanCard.test.ts` | 3 | **L1 回帰**(ユーザ報告2026-09「別プランのサポカが1枚だけ選出される」): 十王星南+HIF Lv5・logic・VoSP3・所持のみ・必須3枚(0007/0081/0094 低凸)で、所持セット3種(報告編成の再現／プラン内全4凸所持／全カード所持)すべてで 6枚・必須全含・VoSP≧3・レンタル1枚・**必須以外に別プラン(sense/anomaly)が混ざらない**。`enforceSpCounts` のレンタルSP補充だけ planType 未フィルタだった退行ガード(必須が載ったレンタル枠を差し替えて必須が消える／レンタル候補が必須のみで5枚編成になる隣接不具合も含む) |
 | `cardScoring.rental.test.ts` | 2 | **レンタル枠**: レンタルモードで6枚・レンタル枠ちょうど1・重複なし／4凸所持を浪費せず未所持の強カードを借用 |
 | `parity.test.ts` | 2 | **L4 パリティ**: `expected.json` と一致(なければ生成)／各シナリオが非空 |
 
@@ -91,6 +92,7 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 | `ReproRequiredRentalDroppedTests.cs` | 1 | **L1 回帰**(Web版 `cardScoring.requiredRentalDropped` と対): 未所持の必須カード(vo型SP)がSP過剰確保による所持枠overfillでレンタル枠から漏れない。全パターンで必須全含有・未所持必須がレンタル枠 |
 | `ReproHifUnownedRentalTests.cs` | 1 | **L2 回帰**(Web版 `cardScoringHif.unownedRental` と対): 未所持カードを「4凸所持」誤判定でレンタル候補から除外しない・SP要員レンタル固定時も未所持借用の複合手で手動編成以上に到達 |
 | `ReproSpTotal6Tests.cs` | 3 | **L1 回帰**(Web版 `cardScoringHif.spTotal6` と対): SP合計6でもパターンが返り各6枚・必須全含・SP充足・レンタル1枚。レンタルなし時は従来どおり0件 |
+| `ReproHifCrossPlanCardTests.cs` | 3 | **L1 回帰**(Web版 `cardScoringHif.crossPlanCard` と対): 所持セット3種で 6枚・必須全含・VoSP≧3・レンタル1枚・必須以外に別プランが混ざらない (`EnforceSpCounts` レンタル補充の planType フィルタ／必須レンタル枠の保護／レンタル候補フォールバック) |
 | `RentalTests.cs` | 2 | **レンタル枠**（Web版と同等） |
 | `ParityTests.cs` | 1 | **L4 パリティ**: TS生成の `expected.json`(11シナリオ) に C#実装が完全一致 |
 
