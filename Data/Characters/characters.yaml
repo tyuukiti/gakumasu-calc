@@ -43,6 +43,9 @@ characters:
     nia_criteria: "concentrate"
     nia_trend: ["da", "vi", "vo"]
     uncap3_bonus: { vo: 0, da: 5.0, vi: 3.0 }
+    step4_bonus:
+      base_status_bonus: { vo: 5, da: 15, vi: 15 }
+      para_bonus: { vo: 3.0, da: 0, vi: 0 }
 
   - id: "char_tsubame"
     name: "雨夜燕"
@@ -126,6 +129,9 @@ characters:
     nia_criteria: "balance"
     nia_trend: ["vi", "vo", "da"]
     uncap3_bonus: { vo: 2.0, da: 0, vi: 4.0 }
+    step4_bonus:
+      base_status_bonus: { vo: 0, da: 0, vi: 0 }
+      para_bonus: { vo: 1.0, da: 5.0, vi: 2.0 }
 
   - id: "char_misuzu"
     name: "秦谷美鈴"
