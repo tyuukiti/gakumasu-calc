@@ -37,7 +37,7 @@ const COUNT_LABELS: Record<string, string> = {
   consultation_drink: '相談Pドリンク交換',
 };
 
-const PLAN_TYPE_LABELS: Record<string, string> = {
+export const PLAN_TYPE_LABELS: Record<string, string> = {
   sense: 'センス',
   logic: 'ロジック',
   anomaly: 'アノマリー',

@@ -17,6 +17,7 @@ import OwnedOnlyToggle from '../components/calculator/OwnedOnlyToggle';
 import ContestModeToggle from '../components/calculator/ContestModeToggle';
 import ResultDisplay from '../components/calculator/ResultDisplay';
 import DiagnosticCopyButton from '../components/calculator/DiagnosticCopyButton';
+import ShareResultButton from '../components/calculator/ShareResultButton';
 import PatternResultList from '../components/calculator/PatternResultList';
 import DeckCardList from '../components/calculator/DeckCardList';
 import WeekBreakdownTable from '../components/calculator/WeekBreakdownTable';
@@ -104,7 +105,8 @@ export default function CalculatorPage({ fixedPlanId, heading }: CalculatorPageP
               <div className="flex-1 order-2 sm:order-1">
                 <ResultDisplay />
               </div>
-              <div className="self-end order-1 sm:order-2 sm:self-auto">
+              <div className="flex flex-wrap justify-end gap-2 self-end order-1 sm:order-2 sm:self-auto">
+                <ShareResultButton />
                 <DiagnosticCopyButton />
               </div>
             </div>
