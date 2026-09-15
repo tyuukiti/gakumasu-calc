@@ -11,6 +11,7 @@ import HifOverflowPenaltyToggle from '../components/hif/HifOverflowPenaltyToggle
 import SpCountConfig from '../components/hif/SpCountConfig';
 import HifResultDisplay from '../components/hif/HifResultDisplay';
 import DiagnosticCopyButton from '../components/calculator/DiagnosticCopyButton';
+import ShareResultButton from '../components/calculator/ShareResultButton';
 import HifPatternResultList from '../components/hif/HifPatternResultList';
 import HifDeckCardList from '../components/hif/HifDeckCardList';
 import PlanTypeSelector from '../components/calculator/PlanTypeSelector';
@@ -112,7 +113,8 @@ export default function HifPage() {
               <div className="flex-1 order-2 sm:order-1">
                 <HifResultDisplay />
               </div>
-              <div className="self-end order-1 sm:order-2 sm:self-auto">
+              <div className="flex flex-wrap justify-end gap-2 self-end order-1 sm:order-2 sm:self-auto">
+                <ShareResultButton mode="hif" />
                 <DiagnosticCopyButton mode="hif" />
               </div>
             </div>

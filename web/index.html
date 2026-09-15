@@ -17,9 +17,34 @@
     <meta property="og:url" content="https://tyuukiti.github.io/gakumasu-calc/" />
     <meta property="og:locale" content="ja_JP" />
     <meta property="og:site_name" content="GakumasuCalc" />
-    <meta name="twitter:card" content="summary" />
+    <!-- og-image.png は HIF タブで計算した結果画面の実スクリーンショット (2400x1260, 表示比 1200x630)。
+         差し替えるときは同じ比率の PNG を public/og-image.png に上書きする (カード画像が写らない画面にすること)。 -->
+    <meta property="og:image" content="https://tyuukiti.github.io/gakumasu-calc/og-image.png" />
+    <meta property="og:image:width" content="2400" />
+    <meta property="og:image:height" content="1260" />
+    <meta property="og:image:alt" content="GakumasuCalc - 学マス サポカ編成 最適化計算ツール" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="GakumasuCalc - 学マス サポカ最適化計算ツール" />
     <meta name="twitter:description" content="GakumasuCalc - 所持サポカと凸数を入力するだけで、ステータス理論値が最大となる最適なサポートカード編成を自動算出。" />
+    <meta name="twitter:image" content="https://tyuukiti.github.io/gakumasu-calc/og-image.png" />
+
+    <!--
+      #root 内の静的説明文 (.seo-intro) は、そのままだと React マウント前の一瞬だけ画面に出てしまう。
+      JS が動く環境では描画前に <html> へ js クラスを付け、CSS で非表示にする (バンドルの読込速度に依存しない)。
+      JS 無効の環境ではクラスが付かないので説明文がそのまま見える。
+      JS 有効でもバンドルの読込に失敗して 8 秒経っても React が来ない場合は、保険として説明文を出す。
+      検索エンジンは HTML 中のテキストとして読める。
+    -->
+    <script>
+      document.documentElement.classList.add('js');
+      setTimeout(function () {
+        // React がマウントしていれば .seo-intro は消えている。残っていれば読込失敗とみなして表示する
+        if (document.querySelector('.seo-intro')) document.documentElement.classList.remove('js');
+      }, 8000);
+    </script>
+    <style>
+      .js .seo-intro { display: none; }
+    </style>
 
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-WTZ6LLEQBR"></script>
@@ -31,7 +56,27 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!--
+        検索エンジン向けの静的な説明文。React がマウントすると root 配下は丸ごと置き換わる
+        (createRoot().render は既存の子要素を消す) ので、アプリ表示には影響しない。
+        ルート別ページ (dist/hif/index.html 等) では scripts/postbuild-pages.mjs が
+        seo:start〜seo:end の間をルート固有の文章に差し替える。
+      -->
+      <!-- seo:start -->
+      <div class="seo-intro" style="max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem; font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; color: #333; line-height: 1.7;">
+        <h1 style="font-size: 1.25rem;">GakumasuCalc - 学マス サポカ編成 最適化計算ツール</h1>
+        <p>学園アイドルマスター（学マス）の育成で、所持しているサポートカードと凸数から、到達ステータスの理論値が最大になる6枚編成（所持5枚＋レンタル1枚）を自動で選び出すツールです。スケジュール、SPレッスン回数、キャラ補正、持ち込みメモリーを含めて計算します。インストール不要でブラウザだけで動作し、入力した所持データはブラウザ内に保存されます。</p>
+        <ul>
+          <li><a href="/gakumasu-calc/hif">H.I.F（Hatsuboshi IDOL FESTIVAL）のサポカ編成・理論値計算</a></li>
+          <li><a href="/gakumasu-calc/legend">初レジェンドのサポカ編成・理論値計算</a></li>
+          <li><a href="/gakumasu-calc/nia">N.I.A（NIAマスター）のサポカ編成・理論値計算</a></li>
+          <li><a href="/gakumasu-calc/inventory">サポカ所持管理（所持カードと凸数の登録）</a></li>
+          <li><a href="/gakumasu-calc/usage">使い方</a></li>
+        </ul>
+      </div>
+      <!-- seo:end -->
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
