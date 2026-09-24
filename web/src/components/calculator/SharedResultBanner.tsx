@@ -127,9 +127,13 @@ export default function SharedResultBanner({ mode }: Props) {
           type="button"
           onClick={handleOwnCalc}
           className="shrink-0 px-4 py-2 bg-[var(--color-accent)] text-white rounded text-sm font-bold hover:opacity-90 cursor-pointer whitespace-nowrap"
-          title="共有元の条件 (日程・育成タイプ・キャラなど) を引き継いで、自分の所持カードで最適編成を計算します"
+          title={
+            hasInventory
+              ? '共有元の条件 (日程・育成タイプ・キャラなど) を引き継いで、自分の所持カードで最適編成を計算します'
+              : '共有元の条件を引き継いで計算します。所持カードが未登録のため全カード4凸で計算されます'
+          }
         >
-          {hasInventory ? 'この条件で自分の手持ちで計算' : 'この条件で計算する（全カード4凸）'}
+          この条件で自分の手持ちで計算
         </button>
       </div>
 
@@ -152,11 +156,11 @@ export default function SharedResultBanner({ mode }: Props) {
 
       {!hasInventory && (
         <p className="text-xs text-blue-800">
-          所持カードを
+          所持カードが未登録のため、上のボタンは全カード4凸で計算します。
           <Link to="/inventory" className="underline hover:opacity-80">
             所持管理
           </Link>
-          で登録すると、自分の手持ちでの最適編成を計算できます。
+          で登録すると、自分の手持ちでの最適編成になります。
         </p>
       )}
       <p className="text-[11px] text-blue-700">
