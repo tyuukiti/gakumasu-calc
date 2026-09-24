@@ -17,11 +17,15 @@ import { applyCharacterToggles } from '../services/characterBonus';
 import { trackEvent } from '../utils/analytics';
 import {
   type HifBonusLevels,
+  HIF_BONUS_MAX_LEVELS,
   defaultHifBonusLevels,
   getVoFlatBonus, getDaFlatBonus, getViFlatBonus,
   getVoParaBonus, getDaParaBonus, getViParaBonus,
   getFinalCapBonus,
 } from '../types/hifBonus';
+import type { SharePayload, ShareViewInfo } from '../services/shareState';
+import { clearShareHashFromUrl } from '../services/shareState';
+import { buildFixedDeckResult, resolveSharedDeck } from '../services/fixedDeck';
 
 /**
  * HIFモードでユーザが各日に行う選択。
@@ -368,6 +372,12 @@ interface HifState {
   /** MAX大幅超過時の再抽選 (× 2 overflow罰則) */
   overflowPenalty: HifOverflowPenaltySettings;
 
+  /**
+   * 共有 URL から復元した結果を表示中か (null=通常)。表示中は編成が共有元の6枚に固定され、
+   * HIFボーナスLv・凸トグルも共有元の値 (メモリ上のみ、永続化しない)。計算実行で終了する。
+   */
+  shareView: ShareViewInfo | null;
+
   setScheduleChoice: (week: number, choice: HifChoice) => void;
   /** 配分比率を更新し、全試験の examAllocations を按分し直す（バーのドラッグで呼ばれる） */
   setExamRatio: (ratio: ExamAllocation) => void;
@@ -406,6 +416,16 @@ interface HifState {
   resetScheduleChoices: () => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
+  /**
+   * 共有 URL の結果を復元して表示する。編成を共有元の6枚に固定し、最適化なしで計算だけを行うので
+   * 開いた人の所持カードに依らず共有元と同じ結果になる。失敗時は利用者向けエラーメッセージを返す。
+   */
+  applySharedResult: (payload: SharePayload) => string | null;
+  /**
+   * 共有結果の表示を終える。HIFボーナスLv・凸トグルを自分の設定へ戻し、
+   * persistCharacter=true なら共有元のキャラ選択を自分の設定として保存する。
+   */
+  exitShareView: (persistCharacter: boolean) => void;
 }
 
 /** TurnChoice 配列から mainStats を自動推論（レッスン日の出現数 desc 上位2属性） */
@@ -584,8 +604,13 @@ function applySelectedPatternImpl(
   const app = useAppStore.getState();
 
   const uncapLevels = buildUncapLevels(app.cards, calc.ownedOnly);
+  // 選択デッキの各カードは選出時に使った凸数 (uncap_level) で再計算する。通常は所持データと同値だが、
+  // 共有 URL から復元した固定編成では開いた人の所持データと無関係な凸数のため、こちらを正とする。
+  // レンタルは常に4凸。
   for (const cs of pattern.selected_cards) {
-    if (cs.is_rental) uncapLevels[cs.card.id] = 4;
+    uncapLevels[cs.card.id] = cs.is_rental
+      ? 4
+      : (Number.isFinite(cs.uncap_level) ? cs.uncap_level : (uncapLevels[cs.card.id] ?? 4));
   }
 
   const selectedCards = pattern.selected_cards.map((cs) => cs.card);
@@ -643,6 +668,7 @@ export const useHifStore = create<HifState>((set, get) => ({
   _lastMainStats: [],
   _lastPlan: null,
   _lastTurnChoices: [],
+  shareView: null,
 
   setScheduleChoice: (week, choice) =>
     set((s) => ({ scheduleChoices: { ...s.scheduleChoices, [week]: choice } })),
@@ -844,6 +870,8 @@ export const useHifStore = create<HifState>((set, get) => ({
   },
 
   loadConditionPreset: (name) => {
+    // 共有結果の表示中にプリセットを読み込んだら共有ビューは終了 (ボーナスLv・凸トグルを自分の設定へ戻す)
+    if (get().shareView) get().exitShareView(false);
     const state = get();
     const preset = state.conditionPresets.find((p) => p.name === name);
     if (!preset) return;
@@ -970,6 +998,8 @@ export const useHifStore = create<HifState>((set, get) => ({
 
   executeCalculate: () => {
     try {
+      // 共有結果の表示中に計算したら、以降は自分の所持カード・設定での通常計算に戻る
+      if (get().shareView) get().exitShareView(false);
       const state = get();
       const { plans, cards: allCards, inventory } = useAppStore.getState();
       const calc = useCalcStore.getState();
@@ -1227,6 +1257,117 @@ export const useHifStore = create<HifState>((set, get) => ({
         pattern_index: index,
       });
     }
+  },
+
+  applySharedResult: (payload) => {
+    const app = useAppStore.getState();
+    const hifPlan = app.plans.find((p) => p.id === 'hif');
+    if (!hifPlan) return 'HIFプランが読み込まれていません';
+    if (payload.plan !== 'hif' || !payload.hif) return 'この共有リンクはこのタブでは表示できません';
+    const deck = resolveSharedDeck(payload.deck, app.cards);
+    if (!deck) return '共有された編成に、現在のカードデータに存在しないカードが含まれています';
+
+    // スケジュール: 共有元の選択をそのまま復元する (現行週で不正な値のみデフォルト置換、欠落週は補完しない。
+    // 補完すると共有元が計算した turnChoices と食い違い、結果が再現できない)
+    const choices: Record<number, HifChoice> = {};
+    for (const week of hifPlan.schedule) {
+      const raw = payload.hif.scheduleChoices[String(week.week)];
+      if (raw === undefined) continue;
+      const valid = sanitizeChoiceForWeek(week, raw);
+      if (valid) choices[week.week] = valid;
+    }
+
+    // 試験配分: 試験週のみ採用・非負整数化
+    const allocs: Record<number, ExamAllocation> = {};
+    for (const w of hifPlan.schedule) {
+      if (w.type !== 'audition' || (w.hif_exam_distributed ?? 0) <= 0) continue;
+      const raw = payload.hif.examAllocations[String(w.week)];
+      if (!raw) continue;
+      allocs[w.week] = {
+        vo: Math.max(0, Math.floor(raw.vo)),
+        da: Math.max(0, Math.floor(raw.da)),
+        vi: Math.max(0, Math.floor(raw.vi)),
+      };
+    }
+
+    // HIFボーナスLv: 共有元の値 (範囲内のみ採用、欠落は既定=MAX)
+    const bonusLevels = defaultHifBonusLevels();
+    for (const key of Object.keys(HIF_BONUS_MAX_LEVELS) as (keyof HifBonusLevels)[]) {
+      const v = payload.hif.bonusLevels[key];
+      if (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= HIF_BONUS_MAX_LEVELS[key]) {
+        bonusLevels[key] = v;
+      }
+    }
+
+    const built = buildPlanAndChoices(hifPlan, choices, allocs);
+    const turnChoices = built.turnChoices;
+    if (turnChoices.length === 0) return '共有データにスケジュールが含まれていません';
+    // executeCalculate と同じく本戦上限増加を status_limit に加算した動的プランを使う
+    const finalCapBonus = getFinalCapBonus(bonusLevels.finalStatLimitLevel);
+    const plan: TrainingPlan = finalCapBonus > 0
+      ? { ...built.plan, status_limit: built.plan.status_limit + finalCapBonus }
+      : built.plan;
+
+    // calc 側の条件 (育成タイプ・キャラ・メモリー・イベント回数等) を共有元の値にする (永続化なし)
+    useCalcStore.getState().applySharedCalcFields(payload.calc);
+    const calc = useCalcStore.getState();
+
+    const [main1, main2] = inferMainStats(turnChoices);
+    const mainStats: string[] = [main1, main2];
+    const lessonAllocation: Record<string, number> = { vo: 0, da: 0, vi: 0 };
+    for (const tc of turnChoices) {
+      if (tc.chosen_action === 'vo_lesson') lessonAllocation.vo++;
+      else if (tc.chosen_action === 'da_lesson') lessonAllocation.da++;
+      else if (tc.chosen_action === 'vi_lesson') lessonAllocation.vi++;
+    }
+
+    const deckResult = buildFixedDeckResult(
+      plan,
+      deck,
+      lessonAllocation,
+      mainStats,
+      calc.additionalCounts,
+      turnChoices,
+      payload.label || '共有された編成',
+    );
+
+    set({
+      scheduleChoices: choices,
+      examAllocations: allocs,
+      examRatio: deriveExamRatio(allocs),
+      // 一括設定の表示値も共有元に揃える (無ければ現状維持)
+      bulkLessonDefault: payload.hif.bulkLessonDefault ?? get().bulkLessonDefault,
+      bulkClassStat: payload.hif.bulkClassStat ?? get().bulkClassStat,
+      bonusLevels,
+      deckResults: [deckResult],
+      selectedPatternIndex: 0,
+      _lastMainStats: mainStats,
+      _lastPlan: plan,
+      _lastTurnChoices: turnChoices,
+      errorMessage: null,
+      shareView: { planId: 'hif', sharedAt: payload.at, label: deckResult.label },
+    });
+
+    // 固定編成の到達ステータスは通常のパターン適用と同じ経路で計算する (表示との整合)
+    const updates = applySelectedPatternImpl(get(), 0);
+    // パターン表示の合計は executeCalculate と同じく cap 後合計にする
+    const fs = updates.calculationResult?.final_status;
+    if (fs) {
+      const cap = plan.status_limit;
+      deckResult.total_value = Math.min(fs.vo, cap) + Math.min(fs.da, cap) + Math.min(fs.vi, cap);
+    }
+    set(updates as Partial<HifState>);
+    trackEvent('shared_result_viewed', { plan_id: 'hif' });
+    return null;
+  },
+
+  exitShareView: (persistCharacter) => {
+    const state = get();
+    if (!state.shareView) return;
+    // HIFボーナスLv は自分の永続設定へ戻す。凸トグルの復元・キャラ選択の保存は calcStore 側で行う
+    set({ shareView: null, bonusLevels: loadBonusLevelsFromStorage() });
+    useCalcStore.getState().finishSharedView(persistCharacter);
+    clearShareHashFromUrl();
   },
 }));
 

@@ -47,6 +47,7 @@ export default function EventCountConfig({ planIdOverride }: Props = {}) {
   const templates = useAppStore((s) => s.templates);
   const selectedPlanId = useCalcStore((s) => s.selectedPlanId);
   const selectedPlanType = useCalcStore((s) => s.selectedPlanType);
+  const selectedTemplateName = useCalcStore((s) => s.selectedTemplateName);
   const additionalCounts = useCalcStore((s) => s.additionalCounts);
   const setAdditionalCount = useCalcStore((s) => s.setAdditionalCount);
   const applyTemplate = useCalcStore((s) => s.applyTemplate);
@@ -71,7 +72,8 @@ export default function EventCountConfig({ planIdOverride }: Props = {}) {
         </label>
         <select
           className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
-          defaultValue=""
+          // ストアの選択テンプレ名に追従させる (全体プリセット読込・共有URL復元で外から変わるため)
+          value={filteredTemplates.some((t) => t.name === selectedTemplateName) ? (selectedTemplateName ?? '') : ''}
           onChange={(e) => {
             const tmpl = filteredTemplates.find((t) => t.name === e.target.value);
             if (tmpl) {

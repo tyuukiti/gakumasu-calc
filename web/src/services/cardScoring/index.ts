@@ -5,7 +5,14 @@ export {
   estimateBaseStats,
   calculateLessonStatTotals,
   calculateCardContribution,
+  computeTriggerBonusInfo,
 } from './contribution';
-export { buildTurnChoices, buildAbilitySummary, generateLabel } from './results';
+export {
+  buildTurnChoices,
+  buildAbilitySummary,
+  generateLabel,
+  recomputeBreakdownsDeckAware,
+  recalculateWithCap,
+} from './results';
 export { selectOptimalDeck } from './selection';
 export { selectMultiplePatterns, selectMultiplePatternsHif } from './patterns';
