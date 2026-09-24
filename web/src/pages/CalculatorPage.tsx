@@ -18,6 +18,8 @@ import ContestModeToggle from '../components/calculator/ContestModeToggle';
 import ResultDisplay from '../components/calculator/ResultDisplay';
 import DiagnosticCopyButton from '../components/calculator/DiagnosticCopyButton';
 import ShareResultButton from '../components/calculator/ShareResultButton';
+import SharedResultBanner from '../components/calculator/SharedResultBanner';
+import { useSharedResultFromUrl } from '../hooks/useSharedResultFromUrl';
 import PatternResultList from '../components/calculator/PatternResultList';
 import DeckCardList from '../components/calculator/DeckCardList';
 import WeekBreakdownTable from '../components/calculator/WeekBreakdownTable';
@@ -37,6 +39,7 @@ export default function CalculatorPage({ fixedPlanId, heading }: CalculatorPageP
     errorMessage,
     setSelectedPlanId,
     selectedPlanId,
+    applySharedResult,
   } = useCalcStore();
 
   // タブでプランを固定する場合、マウント時/タブ切替時に選択プランを設定する
@@ -47,11 +50,22 @@ export default function CalculatorPage({ fixedPlanId, heading }: CalculatorPageP
   const planId = fixedPlanId ?? selectedPlanId;
   const isSchedulePlan = SCHEDULE_PLAN_IDS.has(planId);
 
+  // 共有 URL (#s=...) で開かれた場合は共有元の結果を復元して表示する
+  const shareError = useSharedResultFromUrl(planId, applySharedResult);
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">
         {heading ? `${heading} 育成ステータス理論値計算` : '育成ステータス理論値計算'}
       </h2>
+
+      {/* 共有結果の表示中バナー (共有 URL で開いたとき) */}
+      <SharedResultBanner mode="calc" />
+      {shareError && (
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-4">
+          <p className="text-sm text-yellow-800">{shareError}</p>
+        </div>
+      )}
 
       {/* 設定セクション */}
       <div className="bg-white rounded-lg p-4 shadow-sm mb-4 space-y-4">

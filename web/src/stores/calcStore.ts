@@ -26,6 +26,9 @@ import { selectMultiplePatterns, selectMultiplePatternsHif } from '../services/c
 import { calculate } from '../services/statusCalculation';
 import { applyCharacterToggles } from '../services/characterBonus';
 import { trackEvent, startTimer, endTimer, incrementCounter, trackFunnelStep } from '../utils/analytics';
+import type { SharePayload, SharePayloadCalc, ShareViewInfo } from '../services/shareState';
+import { clearShareHashFromUrl } from '../services/shareState';
+import { buildFixedDeckResult, resolveSharedDeck } from '../services/fixedDeck';
 
 /** 必須カードの最大登録枚数。デッキ全6枠を固定し、決め打ち編成の最終パラメータを直接評価する使い方も許容する */
 export const MAX_REQUIRED_CARDS = 6;
@@ -260,6 +263,12 @@ interface CalcState {
   /** NIAオーディション: week → 選択した種別名。未設定の週は先頭(最強)種別を使う。 */
   niaAuditionTierByWeek: Record<number, string>;
 
+  /**
+   * 共有 URL から復元した結果を表示中か (null=通常)。表示中は編成が共有元の6枚に固定され、
+   * 開いた人の所持カードは使っていない。計算実行・タブ切替で終了する。
+   */
+  shareView: ShareViewInfo | null;
+
   setSelectedPlanId: (id: string) => void;
   setSelectedPlanType: (type: PlanType) => void;
   setRole: (stat: 'vo' | 'da' | 'vi', role: RoleType) => void;
@@ -292,6 +301,23 @@ interface CalcState {
    * 存在し型が正しいフィールドのみ適用する部分適用（欠落フィールドは現状維持）。
    */
   applyHifConditionCalcFields: (fields: Partial<HifConditionCalcFields>) => void;
+  /**
+   * 共有 URL の calc 側条件を適用する。localStorage には書かず、凸トグルは共有元の値をそのまま使う
+   * (開いた人のキャラ毎設定で導出すると共有元と結果が変わってしまう)。hifStore の復元からも呼ばれる。
+   */
+  applySharedCalcFields: (calc: SharePayloadCalc) => void;
+  /**
+   * 共有 URL の結果を復元して表示する (日程方式プラン)。編成を固定して計算だけを行う。
+   * 失敗時は利用者向けのエラーメッセージを返す (成功時 null)。
+   */
+  applySharedResult: (payload: SharePayload) => string | null;
+  /**
+   * 共有結果の表示を終える。persistCharacter=true なら共有元のキャラ選択を自分の設定として保存する
+   * (「この条件で自分の手持ちで計算」)。凸トグルは自分のキャラ毎設定へ戻す。
+   */
+  exitShareView: (persistCharacter: boolean) => void;
+  /** 共有結果表示の終了に伴う calc 側の後始末 (凸トグル復元・キャラ保存)。hifStore の終了処理から呼ばれる。 */
+  finishSharedView: (persistCharacter: boolean) => void;
   executeCalculate: () => void;
   selectPattern: (index: number) => void;
 
@@ -654,11 +680,13 @@ function applySelectedPatternImpl(
   const { cards: allCards, inventory } = useAppStore.getState();
   const uncapLevels = buildUncapLevels(allCards, inventory, state.ownedOnly);
 
-  // Rental cards are 4 uncap
+  // 選択デッキの各カードは選出時に使った凸数 (uncap_level) で再計算する。通常は所持データと同値だが、
+  // 共有 URL から復元した固定編成では開いた人の所持データと無関係な凸数のため、こちらを正とする。
+  // レンタルは常に4凸。
   for (const cs of pattern.selected_cards) {
-    if (cs.is_rental) {
-      uncapLevels[cs.card.id] = 4;
-    }
+    uncapLevels[cs.card.id] = cs.is_rental
+      ? 4
+      : (Number.isFinite(cs.uncap_level) ? cs.uncap_level : (uncapLevels[cs.card.id] ?? 4));
   }
 
   const selectedCards = pattern.selected_cards.map((cs) => cs.card);
@@ -703,6 +731,136 @@ function applySelectedPatternImpl(
     calculationResult: result,
     calculationResultWithoutCharacter: resultWithoutCharacter,
     errorMessage: null,
+  };
+}
+
+/**
+ * HIF条件プリセット / 共有 URL の calc 側フィールドを検証して state 更新に変換する。
+ * 存在し型が正しいフィールドのみ採用する部分適用（欠落フィールドは現状維持）。
+ * persistCharacter=true のときだけキャラ選択を localStorage に保存する (プリセット読込)。
+ * 共有 URL の復元 (false) では開いた人の保存設定を汚さない。
+ */
+function buildCalcFieldUpdates(
+  fields: Partial<HifConditionCalcFields>,
+  state: CalcState,
+  app: ReturnType<typeof useAppStore.getState>,
+  persistCharacter: boolean,
+): Partial<CalcState> {
+  const updates: Partial<CalcState> = {};
+
+  if (
+    fields.selectedPlanType === 'sense' ||
+    fields.selectedPlanType === 'logic' ||
+    fields.selectedPlanType === 'anomaly'
+  ) {
+    updates.selectedPlanType = fields.selectedPlanType;
+  }
+
+  const toSpCount = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : null;
+  const voSp = toSpCount(fields.voSpCount);
+  if (voSp != null) updates.voSpCount = voSp;
+  const daSp = toSpCount(fields.daSpCount);
+  if (daSp != null) updates.daSpCount = daSp;
+  const viSp = toSpCount(fields.viSpCount);
+  if (viSp != null) updates.viSpCount = viSp;
+
+  if (fields.additionalCounts && typeof fields.additionalCounts === 'object') {
+    // 既知キーのみ反映した独立コピー（未知キーは破棄、欠落キーは0）
+    const counts = emptyAdditionalCounts();
+    for (const key of Object.keys(counts)) {
+      const raw = (fields.additionalCounts as Record<string, unknown>)[key];
+      if (typeof raw === 'number' && Number.isFinite(raw)) {
+        (counts as Record<string, number>)[key] = Math.max(0, Math.floor(raw));
+      }
+    }
+    updates.additionalCounts = counts;
+  }
+
+  if ('selectedTemplateName' in fields) {
+    const name = fields.selectedTemplateName;
+    updates.selectedTemplateName =
+      typeof name === 'string' && app.templates.some((t) => t.name === name) ? name : null;
+  }
+
+  if (typeof fields.ownedOnly === 'boolean') updates.ownedOnly = fields.ownedOnly;
+  if (typeof fields.contestMode === 'boolean') updates.contestMode = fields.contestMode;
+
+  // キャラ選択: null=解除、実在IDのみ採用（実在しないIDやフィールド無しは現状維持）。
+  // 凸トグルはキャラごとの永続設定から導出する。
+  if ('selectedCharacterId' in fields) {
+    const id = fields.selectedCharacterId;
+    if (id === null || (typeof id === 'string' && app.characters.some((c) => c.id === id))) {
+      if (persistCharacter && typeof window !== 'undefined') {
+        if (id) localStorage.setItem(SELECTED_CHARACTER_KEY, id);
+        else localStorage.removeItem(SELECTED_CHARACTER_KEY);
+      }
+      updates.selectedCharacterId = id;
+      updates.uncap3BonusEnabled = isUncap3EnabledFor(state.uncap3BonusByChar, id);
+      updates.step4BonusEnabled = isStep4EnabledFor(state.step4BonusByChar, id);
+    }
+  }
+
+  // カードIDは実在するもののみ採用。必須は上限あり、必須と除外は相互排他
+  const existingCardIds = new Set(app.cards.map((c) => c.id));
+  let requiredIds = state.requiredCardIds;
+  if (Array.isArray(fields.requiredCardIds)) {
+    requiredIds = [
+      ...new Set(
+        fields.requiredCardIds.filter(
+          (id): id is string => typeof id === 'string' && existingCardIds.has(id),
+        ),
+      ),
+    ].slice(0, MAX_REQUIRED_CARDS);
+    updates.requiredCardIds = requiredIds;
+  }
+  if (Array.isArray(fields.excludedCardIds)) {
+    const requiredSet = new Set(requiredIds);
+    updates.excludedCardIds = [
+      ...new Set(
+        fields.excludedCardIds.filter(
+          (id): id is string =>
+            typeof id === 'string' && existingCardIds.has(id) && !requiredSet.has(id),
+        ),
+      ),
+    ];
+  }
+
+  if (Array.isArray(fields.memoryBonuses)) {
+    // 4枠に正規化（不足は空、不正typeは'flat'）
+    const toAttr = (src: unknown): MemoryAttributeBonus => {
+      const o = (src ?? {}) as Partial<MemoryAttributeBonus>;
+      return {
+        value: typeof o.value === 'number' && Number.isFinite(o.value) ? o.value : 0,
+        type: o.type === 'para' ? 'para' : 'flat',
+      };
+    };
+    const newList: MemoryBonus[] = [];
+    for (let i = 0; i < 4; i++) {
+      const src = fields.memoryBonuses[i] as Partial<MemoryBonus> | undefined;
+      newList.push(
+        src ? { vo: toAttr(src.vo), da: toAttr(src.da), vi: toAttr(src.vi) } : emptyMemoryBonus(),
+      );
+    }
+    updates.memoryBonuses = newList;
+  }
+
+  return updates;
+}
+
+/**
+ * 共有結果表示の終了に伴う calc 側の更新。凸トグルを自分のキャラ毎設定へ戻し、
+ * persistCharacter=true なら共有元のキャラ選択を自分の設定として保存する。
+ */
+function sharedViewFinishUpdates(state: CalcState, persistCharacter: boolean): Partial<CalcState> {
+  const id = state.selectedCharacterId;
+  if (persistCharacter && typeof window !== 'undefined') {
+    if (id) localStorage.setItem(SELECTED_CHARACTER_KEY, id);
+    else localStorage.removeItem(SELECTED_CHARACTER_KEY);
+  }
+  return {
+    uncap3BonusEnabled: isUncap3EnabledFor(state.uncap3BonusByChar, id),
+    step4BonusEnabled: isStep4EnabledFor(state.step4BonusByChar, id),
   };
 }
 
@@ -751,9 +909,14 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   scheduleBulkClassStat: 'vo',
   schedulePresetsByPlan: loadSchedulePresetsByPlan(),
   niaAuditionTierByWeek: {},
+  shareView: null,
 
-  setSelectedPlanId: (id) =>
+  setSelectedPlanId: (id) => {
+    const state = get();
+    // 共有結果の表示中にタブを切り替えたら共有ビューは終了 (凸トグルを自分の設定へ戻す)
+    const exit = state.shareView ? { ...sharedViewFinishUpdates(state, false), shareView: null } : {};
     set({
+      ...exit,
       selectedPlanId: id,
       selectedTemplateName: null,
       deckResults: [],
@@ -761,7 +924,8 @@ export const useCalcStore = create<CalcState>((set, get) => ({
       calculationResultWithoutCharacter: null,
       errorMessage: null,
       selectedPatternIndex: 0,
-    }),
+    });
+  },
 
   setSelectedPlanType: (type) => set({ selectedPlanType: type }),
 
@@ -1091,106 +1255,8 @@ export const useCalcStore = create<CalcState>((set, get) => ({
   applyHifConditionCalcFields: (fields) => {
     const state = get();
     const app = useAppStore.getState();
-    const updates: Partial<CalcState> = {};
-
-    if (
-      fields.selectedPlanType === 'sense' ||
-      fields.selectedPlanType === 'logic' ||
-      fields.selectedPlanType === 'anomaly'
-    ) {
-      updates.selectedPlanType = fields.selectedPlanType;
-    }
-
-    const toSpCount = (v: unknown): number | null =>
-      typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : null;
-    const voSp = toSpCount(fields.voSpCount);
-    if (voSp != null) updates.voSpCount = voSp;
-    const daSp = toSpCount(fields.daSpCount);
-    if (daSp != null) updates.daSpCount = daSp;
-    const viSp = toSpCount(fields.viSpCount);
-    if (viSp != null) updates.viSpCount = viSp;
-
-    if (fields.additionalCounts && typeof fields.additionalCounts === 'object') {
-      // 既知キーのみ反映した独立コピー（未知キーは破棄、欠落キーは0）
-      const counts = emptyAdditionalCounts();
-      for (const key of Object.keys(counts)) {
-        const raw = (fields.additionalCounts as Record<string, unknown>)[key];
-        if (typeof raw === 'number' && Number.isFinite(raw)) {
-          (counts as Record<string, number>)[key] = Math.max(0, Math.floor(raw));
-        }
-      }
-      updates.additionalCounts = counts;
-    }
-
-    if ('selectedTemplateName' in fields) {
-      const name = fields.selectedTemplateName;
-      updates.selectedTemplateName =
-        typeof name === 'string' && app.templates.some((t) => t.name === name) ? name : null;
-    }
-
-    if (typeof fields.ownedOnly === 'boolean') updates.ownedOnly = fields.ownedOnly;
-    if (typeof fields.contestMode === 'boolean') updates.contestMode = fields.contestMode;
-
-    // キャラ選択: null=解除、実在IDのみ採用（実在しないIDやフィールド無しは現状維持）。
-    // setSelectedCharacter と同様に永続化し、凸トグルはキャラごとの永続設定から導出する。
-    if ('selectedCharacterId' in fields) {
-      const id = fields.selectedCharacterId;
-      if (id === null || (typeof id === 'string' && app.characters.some((c) => c.id === id))) {
-        if (typeof window !== 'undefined') {
-          if (id) localStorage.setItem(SELECTED_CHARACTER_KEY, id);
-          else localStorage.removeItem(SELECTED_CHARACTER_KEY);
-        }
-        updates.selectedCharacterId = id;
-        updates.uncap3BonusEnabled = isUncap3EnabledFor(state.uncap3BonusByChar, id);
-        updates.step4BonusEnabled = isStep4EnabledFor(state.step4BonusByChar, id);
-      }
-    }
-
-    // カードIDは実在するもののみ採用。必須は上限あり、必須と除外は相互排他
-    const existingCardIds = new Set(app.cards.map((c) => c.id));
-    let requiredIds = state.requiredCardIds;
-    if (Array.isArray(fields.requiredCardIds)) {
-      requiredIds = [
-        ...new Set(
-          fields.requiredCardIds.filter(
-            (id): id is string => typeof id === 'string' && existingCardIds.has(id),
-          ),
-        ),
-      ].slice(0, MAX_REQUIRED_CARDS);
-      updates.requiredCardIds = requiredIds;
-    }
-    if (Array.isArray(fields.excludedCardIds)) {
-      const requiredSet = new Set(requiredIds);
-      updates.excludedCardIds = [
-        ...new Set(
-          fields.excludedCardIds.filter(
-            (id): id is string =>
-              typeof id === 'string' && existingCardIds.has(id) && !requiredSet.has(id),
-          ),
-        ),
-      ];
-    }
-
-    if (Array.isArray(fields.memoryBonuses)) {
-      // 4枠に正規化（不足は空、不正typeは'flat'）
-      const toAttr = (src: unknown): MemoryAttributeBonus => {
-        const o = (src ?? {}) as Partial<MemoryAttributeBonus>;
-        return {
-          value: typeof o.value === 'number' && Number.isFinite(o.value) ? o.value : 0,
-          type: o.type === 'para' ? 'para' : 'flat',
-        };
-      };
-      const newList: MemoryBonus[] = [];
-      for (let i = 0; i < 4; i++) {
-        const src = fields.memoryBonuses[i] as Partial<MemoryBonus> | undefined;
-        newList.push(
-          src ? { vo: toAttr(src.vo), da: toAttr(src.da), vi: toAttr(src.vi) } : emptyMemoryBonus(),
-        );
-      }
-      updates.memoryBonuses = newList;
-    }
-
-    set(updates);
+    // プリセット読込は setSelectedCharacter と同様にキャラ選択を永続化する
+    set(buildCalcFieldUpdates(fields, state, app, true));
 
     // 計算機タブに結果表示中なら、新しい入力条件で現在の選択パターンを再計算（loadMemoryPreset と同じ挙動）
     const after = get();
@@ -1198,6 +1264,139 @@ export const useCalcStore = create<CalcState>((set, get) => ({
       const patternUpdates = applySelectedPatternImpl(after, after.selectedPatternIndex);
       set(patternUpdates as Partial<CalcState>);
     }
+  },
+
+  applySharedCalcFields: (calc) => {
+    const state = get();
+    const app = useAppStore.getState();
+
+    // イベント回数: 共有側は 0 のキーを省くので、既知キー全体へ展開する
+    const counts = emptyAdditionalCounts();
+    for (const key of Object.keys(counts)) {
+      const v = calc.additionalCounts[key];
+      if (typeof v === 'number' && Number.isFinite(v)) (counts as Record<string, number>)[key] = v;
+    }
+
+    const fields: Partial<HifConditionCalcFields> = {
+      selectedPlanType: calc.planType,
+      voSpCount: calc.spCounts.vo,
+      daSpCount: calc.spCounts.da,
+      viSpCount: calc.spCounts.vi,
+      additionalCounts: counts,
+      selectedTemplateName: calc.templateName,
+      contestMode: calc.contestMode,
+      requiredCardIds: calc.requiredCardIds,
+      excludedCardIds: calc.excludedCardIds,
+      memoryBonuses: calc.memoryBonuses,
+      // 実在しないキャラ ID はキャラなしとして復元する (現状維持にすると開いた人のキャラで計算が変わる)
+      selectedCharacterId:
+        calc.characterId && app.characters.some((c) => c.id === calc.characterId)
+          ? calc.characterId
+          : null,
+    };
+    // 所持のみ (ownedOnly) は開いた人の環境に属するので触らない。キャラ選択は永続化しない
+    const updates = buildCalcFieldUpdates(fields, state, app, false);
+    // 凸トグルは共有元の値をそのまま使う
+    updates.uncap3BonusEnabled = calc.uncap3;
+    updates.step4BonusEnabled = calc.step4;
+    set(updates);
+  },
+
+  applySharedResult: (payload) => {
+    const app = useAppStore.getState();
+    const plan = app.plans.find((p) => p.id === payload.plan);
+    if (!plan || !SCHEDULE_PLAN_IDS.has(plan.id) || !payload.sched) {
+      return 'この共有リンクはこのタブでは表示できません';
+    }
+    const deck = resolveSharedDeck(payload.deck, app.cards);
+    if (!deck) {
+      return '共有された編成に、現在のカードデータに存在しないカードが含まれています';
+    }
+
+    // 日程: 共有元の選択をそのまま復元する (現行プランで選べる行動のみ採用、欠落週は補完しない)
+    const choices: Record<number, ScheduleChoice> = {};
+    for (const w of plan.schedule) {
+      if (w.type === 'audition' || w.type === 'fixed_event' || w.type === 'exam') continue;
+      const raw = payload.sched.scheduleChoices[String(w.week)];
+      if (raw && w.available_actions.includes(raw.action)) {
+        choices[w.week] = { action: raw.action as ActionType };
+      }
+    }
+    const turnChoices = buildTurnChoicesFromSchedule(plan, choices);
+    if (turnChoices.length === 0) {
+      return '共有データにスケジュールが含まれていません';
+    }
+
+    // NIAオーディション種別: 現行プランの当該週に存在する種別名のみ採用
+    const tierByWeek: Record<number, string> = {};
+    for (const w of plan.schedule) {
+      const name = payload.sched.niaAuditionTierByWeek[String(w.week)];
+      if (name && w.nia_audition_tiers?.some((t) => t.name === name)) tierByWeek[w.week] = name;
+    }
+
+    get().applySharedCalcFields(payload.calc);
+    const state = get();
+
+    const [main1, main2] = inferMainStats(turnChoices);
+    const mainStats: string[] = [main1, main2];
+    const lessonAllocation: Record<string, number> = { vo: 0, da: 0, vi: 0 };
+    for (const tc of turnChoices) {
+      if (tc.chosen_action === 'vo_lesson') lessonAllocation.vo++;
+      else if (tc.chosen_action === 'da_lesson') lessonAllocation.da++;
+      else if (tc.chosen_action === 'vi_lesson') lessonAllocation.vi++;
+    }
+
+    // 選出時 (executeCalculate) と同じくオーディション獲得込みのプランで寄与を出す
+    const character = state.selectedCharacterId
+      ? app.characters.find((c) => c.id === state.selectedCharacterId) ?? null
+      : null;
+    const effPlan = buildNiaAuditionPlan(plan, character, tierByWeek);
+    const deckResult = buildFixedDeckResult(
+      effPlan,
+      deck,
+      lessonAllocation,
+      mainStats,
+      state.additionalCounts,
+      turnChoices,
+      payload.label || '共有された編成',
+    );
+
+    set({
+      selectedPlanId: plan.id,
+      scheduleChoices: { ...state.scheduleChoices, [plan.id]: choices },
+      niaAuditionTierByWeek: tierByWeek,
+      // 一括設定の表示値も共有元に揃える (無ければ現状維持)
+      scheduleBulkLessonStat: payload.sched.bulkLessonStat ?? state.scheduleBulkLessonStat,
+      scheduleBulkClassStat: payload.sched.bulkClassStat ?? state.scheduleBulkClassStat,
+      deckResults: [deckResult],
+      selectedPatternIndex: 0,
+      _lastMainStats: mainStats,
+      _lastTurnChoices: turnChoices,
+      errorMessage: null,
+      shareView: { planId: plan.id, sharedAt: payload.at, label: deckResult.label },
+    });
+
+    const updates = applySelectedPatternImpl(get(), 0);
+    // パターン表示の合計は executeCalculate と同じく cap 後合計にする
+    const fs = updates.calculationResult?.final_status;
+    if (fs) {
+      const cap = plan.status_limit;
+      deckResult.total_value = Math.min(fs.vo, cap) + Math.min(fs.da, cap) + Math.min(fs.vi, cap);
+    }
+    set(updates as Partial<CalcState>);
+    trackEvent('shared_result_viewed', { plan_id: plan.id });
+    return null;
+  },
+
+  finishSharedView: (persistCharacter) => {
+    set(sharedViewFinishUpdates(get(), persistCharacter));
+  },
+
+  exitShareView: (persistCharacter) => {
+    const state = get();
+    if (!state.shareView) return;
+    set({ ...sharedViewFinishUpdates(state, persistCharacter), shareView: null });
+    clearShareHashFromUrl();
   },
 
   setScheduleChoice: (planId, week, choice) => {
@@ -1334,6 +1533,8 @@ export const useCalcStore = create<CalcState>((set, get) => ({
 
   executeCalculate: () => {
     try {
+      // 共有結果の表示中に計算したら、以降は自分の所持カード・設定での通常計算に戻る
+      if (get().shareView) get().exitShareView(false);
       const state = get();
       const { cards: allCards, plans, inventory } = useAppStore.getState();
 

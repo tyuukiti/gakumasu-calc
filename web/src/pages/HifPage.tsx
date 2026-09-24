@@ -12,6 +12,8 @@ import SpCountConfig from '../components/hif/SpCountConfig';
 import HifResultDisplay from '../components/hif/HifResultDisplay';
 import DiagnosticCopyButton from '../components/calculator/DiagnosticCopyButton';
 import ShareResultButton from '../components/calculator/ShareResultButton';
+import SharedResultBanner from '../components/calculator/SharedResultBanner';
+import { useSharedResultFromUrl } from '../hooks/useSharedResultFromUrl';
 import HifPatternResultList from '../components/hif/HifPatternResultList';
 import HifDeckCardList from '../components/hif/HifDeckCardList';
 import PlanTypeSelector from '../components/calculator/PlanTypeSelector';
@@ -25,12 +27,15 @@ import MemoryBonusInput from '../components/calculator/MemoryBonusInput';
 
 export default function HifPage() {
   const { plans } = useAppStore();
-  const { executeCalculate, errorMessage, calculationResult, deckResults } = useHifStore();
+  const { executeCalculate, errorMessage, calculationResult, deckResults, applySharedResult } = useHifStore();
 
   // HIFページ訪問イベント (一般の page_view と別に HIF 専用シグナルとして送る)
   useEffect(() => {
     trackEvent('hif_page_viewed');
   }, []);
+
+  // 共有 URL (#s=...) で開かれた場合は共有元の結果を復元して表示する
+  const shareError = useSharedResultFromUrl('hif', applySharedResult);
 
   const hifPlan = plans.find((p) => p.id === 'hif');
 
@@ -50,6 +55,14 @@ export default function HifPage() {
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">HIF (Hatsuboshi IDOL FESTIVAL)</h2>
+
+      {/* 共有結果の表示中バナー (共有 URL で開いたとき) */}
+      <SharedResultBanner mode="hif" />
+      {shareError && (
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-4">
+          <p className="text-sm text-yellow-800">{shareError}</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg p-4 shadow-sm mb-4 space-y-4">
         {/* 育成タイプ */}
