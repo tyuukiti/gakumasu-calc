@@ -92,6 +92,9 @@ TRIGGER_MAP = [
 
 # アイテム効果用トリガーマッピング
 ITEM_TRIGGER_MAP = [
+    # 「◯◯効果のスキルカード強化時」は獲得ではなく強化なので効果名より先に判定する
+    ("スキルカード強化", "skill_enhance"),
+    ("スキルカードチェンジ", "skill_change"),
     ("集中効果", "concentrate_acquire"),
     ("やる気効果", "motivation_acquire"),
     ("全力効果", "fullpower_acquire"),
