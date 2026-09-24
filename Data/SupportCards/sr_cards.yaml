@@ -2652,3 +2652,45 @@ support_cards:
     stat: vo
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SR_0080
+  name: 激辛！　初星カレー！！
+  rarity: SR
+  type: da
+  plan: anomaly
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: da
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: da
+    values: [37, 40, 43, 46, 49]
+    value_type: flat
+  - trigger: equip
+    stat: da
+    values: [10.5, 21, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: outing_end
+    stat: da
+    values: [13, 13, 13, 13, 26]
+    value_type: flat
+    max_count: 2
+  - trigger: conserve_acquire
+    stat: da
+    values: [8, 8, 8, 16, 16]
+    value_type: flat
+    max_count: 4
+    condition: 所持している温存効果のスキルカード>=8
+  - trigger: equip
+    stat: da
+    values: [50, 50, 75, 75, 100]
+    value_type: event_param_boost
+  - trigger: skill_enhance
+    stat: da
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 3
+    condition: da>=700
+    source: item

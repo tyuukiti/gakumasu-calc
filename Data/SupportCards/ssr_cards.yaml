@@ -3433,12 +3433,12 @@ support_cards:
     event_param: true
   - trigger: skill_change
     stat: vi
-    values: [29, 29, 29, 39, 39]
+    values: [27, 27, 27, 39, 39]
     value_type: flat
     max_count: 3
   - trigger: exam_end
     stat: vi
-    values: [27, 27, 27, 37, 37]
+    values: [26, 26, 26, 26, 37]
     value_type: flat
     max_count: 5
     condition: deck>=15
@@ -3447,6 +3447,7 @@ support_cards:
     values: [25, 25, 25, 25, 25]
     value_type: flat
     max_count: 3
+    condition: vi>=400
     source: item
 - id: SP_SSR_0109
   name: イクラ〜♪　ウニ〜♪
@@ -3479,5 +3480,35 @@ support_cards:
     value_type: flat
   - trigger: equip
     stat: vi
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
+- id: SP_SSR_0111
+  name: わたしに、まかせて
+  rarity: SSR
+  type: vo
+  plan: anomaly
+  tag: skill
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vo
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: fullpower_acquire
+    stat: vo
+    values: [16, 16, 22, 22, 22]
+    value_type: flat
+    max_count: 4
+    condition: 所持している全力効果のスキルカード>=8
+  - trigger: vo_sp_end
+    stat: vo
+    values: [13, 13, 13, 17, 17]
+    value_type: flat
+  - trigger: equip
+    stat: vo
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
