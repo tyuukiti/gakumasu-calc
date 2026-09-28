@@ -1,5 +1,9 @@
 ﻿import { describe, it, expect } from 'vitest';
-import { calculate, getEffectValue } from '../src/services/statusCalculation';
+import {
+  calculate,
+  getEffectValue,
+  getEventParamBoostPercent,
+} from '../src/services/statusCalculation';
 import { emptyAdditionalCounts } from '../src/types/models';
 import type { CardEffect, SupportCard } from '../src/types/models';
 import { makeCard, makePlan } from './helpers/factories';
@@ -96,9 +100,14 @@ describe('同一カード内の同一トリガー・同一属性の flat 効果�
     // 前提: 通常アビリティ + Pアイテム効果の2効果 (データが変わったらこのテストの意味も変わる)
     expect(changes).toHaveLength(2);
 
+    // 初期値ボーナス: event_param 付き flat には同カードの event_param_boost% が乗る
+    const boostMul = 1 + getEventParamBoostPercent(card, uncap) / 100;
     const equip = card.effects
       .filter((e) => e.trigger === 'equip' && e.value_type === 'flat' && e.stat === 'vi')
-      .reduce((s, e) => s + getEffectValue(e, uncap), 0);
+      .reduce((s, e) => {
+        const raw = getEffectValue(e, uncap);
+        return s + Math.floor(e.event_param ? raw * boostMul : raw);
+      }, 0);
     const expected = changes.reduce(
       (s, e) => s + getEffectValue(e, uncap) * Math.min(3, e.max_count ?? 3),
       0,

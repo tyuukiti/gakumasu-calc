@@ -1,7 +1,7 @@
 """カード構築・エフェクトマッチング"""
 import re
 
-from .constants import TRIGGER_MAP, parse_uncap_values
+from .constants import TRIGGER_MAP, parse_uncap_values, parse_value
 from .parsers import WikiCardEntry, guess_type_from_lesson, guess_plan_from_lesson
 
 
@@ -202,15 +202,25 @@ def classify_and_match(
             matched_wiki_indices.add(wi)
 
             old_values = matched_effect.get("values", [])
-            if old_values != values:
+            # Wiki の空欄セルは parse_uncap_values が前後の値で補完した推定値なので比較対象にしない。
+            # 明記されたセルが既存値と一致していれば更新しない (空欄補完で正しい既存値を壊さない)
+            explicit = [parse_value(v) is not None for v in wiki_abi["uncap_values"]]
+            differs = (
+                len(old_values) != len(values)
+                or any(ex and old_values[i] != values[i] for i, ex in enumerate(explicit))
+            )
+            if differs:
                 matched_effect["values"] = values
                 updated = True
                 logs.append(f"    ✓ {target_trigger}/{target_vtype}: {old_values} → {values}")
 
     # Phase 3候補: Phase 2で追加する前に収集
+    # trigger_count_bonus は常にアイテム由来 (source 未設定でも) なのでアビリティ表との突合で削除しない
     remove_candidates = [
         e for e in effects
-        if id(e) not in matched_effect_ids and e.get("source") != "item"
+        if id(e) not in matched_effect_ids
+        and e.get("source") != "item"
+        and e.get("value_type") != "trigger_count_bonus"
     ]
 
     # Phase 2: Wikiにあるが既存effectsにない → 新規追加

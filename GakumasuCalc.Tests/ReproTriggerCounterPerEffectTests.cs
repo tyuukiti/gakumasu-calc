@@ -107,9 +107,15 @@ public class ReproTriggerCounterPerEffectTests
         // 前提: 通常アビリティ + Pアイテム効果の2効果 (データが変わったらこのテストの意味も変わる)
         Assert.Equal(2, changes.Count);
 
+        // 初期値ボーナス: EventParam 付き flat には同カードの event_param_boost% が乗る
+        var boostMul = 1.0 + card.GetEventParamBoostPercent(uncap) / 100.0;
         int equip = card.Effects
             .Where(e => e.Trigger == "equip" && e.ValueType == "flat" && e.Stat == "vi")
-            .Sum(e => (int)e.GetValue(uncap));
+            .Sum(e =>
+            {
+                var raw = e.GetValue(uncap);
+                return (int)(e.EventParam ? raw * boostMul : raw);
+            });
         int expected = changes.Sum(e => (int)e.GetValue(uncap) * Math.Min(3, e.MaxCount ?? 3));
 
         // Pアイテム条件 (vi>=400) を満たすよう初期 Vi=400
