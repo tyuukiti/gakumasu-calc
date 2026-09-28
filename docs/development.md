@@ -101,4 +101,4 @@ Wikiのアビリティ名→ `trigger` の解決は `scripts/wiki_sync/constants
 
 ### Web版のデプロイ
 
-`main` への push で `.github/workflows/deploy-web.yml` が起動し、GitHub Pages（[tyuukiti.github.io/gakumasu-calc](https://tyuukiti.github.io/gakumasu-calc/)）へ自動デプロイされる。
+`main` への push で `.github/workflows/deploy-web.yml` が起動し、GitHub Pages（[gakumasu.tyuukiti.com](https://gakumasu.tyuukiti.com/)）へ自動デプロイされる。

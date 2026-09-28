@@ -8,7 +8,7 @@
 
 | 種別 | リンク |
 |---|---|
-| 🌐 Web版 | [tyuukiti.github.io/gakumasu-calc](https://tyuukiti.github.io/gakumasu-calc/) |
+| 🌐 Web版 | [gakumasu.tyuukiti.com](https://gakumasu.tyuukiti.com/) |
 | 📦 デスクトップ版 | [Releases](https://github.com/tyuukiti/gakumasu-calc/releases) |
 
 ## ⚠️ 注意事項
