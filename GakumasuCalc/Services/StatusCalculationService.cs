@@ -27,7 +27,7 @@ public class StatusCalculationService
         // Step 3: ターン逐次計算
         var accumulated = StatusValues.Zero;
         var weekDetails = new List<WeekBreakdown>();
-        var triggerCounters = new Dictionary<string, int>(); // カードID_トリガー → 発動回数
+        var triggerCounters = new Dictionary<string, int>(); // カードID#効果index → 発動回数
 
         foreach (var week in plan.Schedule)
         {
@@ -411,12 +411,15 @@ public class StatusCalculationService
         foreach (var card in cards)
         {
             var uncap = GetUncapLevel(card, uncapLevels);
-            foreach (var effect in card.GetEffectsByTrigger(trigger))
+            for (int index = 0; index < card.Effects.Count; index++)
             {
-                if (effect.ValueType != "flat") continue;
+                var effect = card.Effects[index];
+                if (effect.Trigger != trigger || effect.ValueType != "flat") continue;
 
-                // 発動回数チェック
-                var counterKey = $"{card.Id}_{trigger}_{effect.Stat}";
+                // 発動回数チェック。カウンタは効果単位 (カード内の Effects index) で持つ。
+                // 同一カード内に同じトリガー・同じ属性の flat 効果が複数ある場合 (通常アビリティ + Pアイテム効果) でも
+                // MaxCount はそれぞれ独立に数える (旧キー "カードID_トリガー_属性" では共有され、後続効果が早く止まっていた)。
+                var counterKey = $"{card.Id}#{index}";
                 triggerCounters.TryGetValue(counterKey, out int count);
 
                 if (effect.MaxCount.HasValue && count >= effect.MaxCount.Value)

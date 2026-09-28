@@ -1,0 +1,295 @@
+{
+  "_comment": [
+    "ユーザ報告 (2026-09) 「もうすぐ本番ですね (SP_SSR_0110) を採用した方が数字が下がる」の共有URL 2本を復号したもの。",
+    "HIF / アノマリー / 花海咲季 / 3凸OFF / STEP4 ON / DaSP3 / ボーナスLv全MAX。calc・hif は 2本で同一。",
+    "deck = 0110 を1凸で採用した編成 (URL 2)、deck_without_0110 = 0110 の代わりに SP_SR_0063 が入った編成 (URL 1)。",
+    "Web 版はこの JSON から共有ペイロードを組み立ててストア経由で復元し、C# 版は同じ JSON から手動で再構築する。"
+  ],
+  "v": 1,
+  "plan": "hif",
+  "at": 1790263111,
+  "label": "Visual 2 / フリー 3 編成",
+  "deck": [
+    {
+      "id": "SP_SSR_0069",
+      "uncap": 4,
+      "rental": false,
+      "required": false
+    },
+    {
+      "id": "SP_SSR_0059",
+      "uncap": 4,
+      "rental": true,
+      "required": false
+    },
+    {
+      "id": "SP_SSR_0084",
+      "uncap": 4,
+      "rental": false,
+      "required": false
+    },
+    {
+      "id": "SP_SSR_0110",
+      "uncap": 1,
+      "rental": false,
+      "required": false
+    },
+    {
+      "id": "SP_SR_0010",
+      "uncap": 4,
+      "rental": false,
+      "required": false
+    },
+    {
+      "id": "SP_SR_0008",
+      "uncap": 4,
+      "rental": false,
+      "required": false
+    }
+  ],
+  "deck_without_0110": [
+    {
+      "id": "SP_SSR_0069",
+      "uncap": 4,
+      "rental": false,
+      "required": false
+    },
+    {
+      "id": "SP_SSR_0059",
+      "uncap": 4,
+      "rental": true,
+      "required": false
+    },
+    {
+      "id": "SP_SSR_0084",
+      "uncap": 4,
+      "rental": false,
+      "required": false
+    },
+    {
+      "id": "SP_SR_0010",
+      "uncap": 4,
+      "rental": false,
+      "required": false
+    },
+    {
+      "id": "SP_SR_0063",
+      "uncap": 4,
+      "rental": false,
+      "required": false
+    },
+    {
+      "id": "SP_SR_0008",
+      "uncap": 4,
+      "rental": false,
+      "required": false
+    }
+  ],
+  "calc": {
+    "planType": "anomaly",
+    "characterId": "char_saki",
+    "uncap3": false,
+    "step4": true,
+    "spCounts": {
+      "vo": 0,
+      "da": 3,
+      "vi": 0
+    },
+    "additionalCounts": {
+      "p_drink_acquire": 15,
+      "p_item_acquire": 6,
+      "skill_acquire": 20,
+      "skill_ssr_acquire": 8,
+      "skill_enhance": 4,
+      "skill_delete": 4,
+      "skill_custom": 3,
+      "skill_change": 3,
+      "active_enhance": 3,
+      "active_delete": 2,
+      "mental_acquire": 8,
+      "mental_enhance": 1,
+      "mental_delete": 2,
+      "active_acquire": 8,
+      "conserve_acquire": 8,
+      "fullpower_acquire": 4,
+      "aggressive_acquire": 8,
+      "consultation_drink": 6
+    },
+    "templateName": "アノマリー(強気)",
+    "contestMode": false,
+    "requiredCardIds": [],
+    "excludedCardIds": [],
+    "memoryBonuses": [
+      {
+        "vo": {
+          "value": 80,
+          "type": "flat"
+        },
+        "da": {
+          "value": 0,
+          "type": "flat"
+        },
+        "vi": {
+          "value": 0,
+          "type": "flat"
+        }
+      },
+      {
+        "vo": {
+          "value": 0,
+          "type": "para"
+        },
+        "da": {
+          "value": 11.9,
+          "type": "para"
+        },
+        "vi": {
+          "value": 11.9,
+          "type": "para"
+        }
+      },
+      {
+        "vo": {
+          "value": 0,
+          "type": "flat"
+        },
+        "da": {
+          "value": 0,
+          "type": "flat"
+        },
+        "vi": {
+          "value": 0,
+          "type": "flat"
+        }
+      },
+      {
+        "vo": {
+          "value": 0,
+          "type": "flat"
+        },
+        "da": {
+          "value": 0,
+          "type": "flat"
+        },
+        "vi": {
+          "value": 0,
+          "type": "flat"
+        }
+      }
+    ]
+  },
+  "hif": {
+    "scheduleChoices": {
+      "1": {
+        "action": "activity_supply"
+      },
+      "2": {
+        "action": "da_lesson",
+        "sub_stat": "vi"
+      },
+      "3": {
+        "action": "vo_class"
+      },
+      "4": {
+        "action": "da_lesson",
+        "sub_stat": "vi"
+      },
+      "5": {
+        "action": "outing"
+      },
+      "6": {
+        "action": "vo_class"
+      },
+      "8": {
+        "action": "activity_supply"
+      },
+      "9": {
+        "action": "da_lesson",
+        "sub_stat": "vi"
+      },
+      "10": {
+        "action": "vo_class"
+      },
+      "11": {
+        "action": "da_lesson",
+        "sub_stat": "vi"
+      },
+      "12": {
+        "action": "special_training"
+      },
+      "14": {
+        "action": "outing"
+      },
+      "15": {
+        "action": "da_lesson",
+        "sub_stat": "vi"
+      },
+      "16": {
+        "action": "activity_supply"
+      },
+      "17": {
+        "action": "vo_class"
+      },
+      "18": {
+        "action": "da_lesson",
+        "sub_stat": "vi"
+      },
+      "19": {
+        "action": "consultation"
+      },
+      "21": {
+        "action": "vi_class"
+      },
+      "22": {
+        "action": "da_lesson",
+        "sub_stat": "vi"
+      },
+      "23": {
+        "action": "activity_supply"
+      },
+      "24": {
+        "action": "vi_class"
+      },
+      "25": {
+        "action": "da_lesson",
+        "sub_stat": "vi"
+      },
+      "26": {
+        "action": "consultation"
+      }
+    },
+    "examAllocations": {
+      "7": {
+        "vo": 4,
+        "da": 4,
+        "vi": 72
+      },
+      "13": {
+        "vo": 10,
+        "da": 10,
+        "vi": 180
+      },
+      "20": {
+        "vo": 11,
+        "da": 11,
+        "vi": 198
+      }
+    },
+    "bonusLevels": {
+      "voUpLevel": 5,
+      "daUpLevel": 5,
+      "viUpLevel": 5,
+      "spRateLevel": 5,
+      "hpRecoveryLevel": 6,
+      "finalStatLimitLevel": 6,
+      "preExamPpLevel": 6,
+      "finalPpLevel": 6,
+      "consultationDiscountLevel": 6
+    },
+    "bulkLessonDefault": {
+      "mainStat": "da",
+      "subStat": "vi"
+    },
+    "bulkClassStat": "vo"
+  }
+}
