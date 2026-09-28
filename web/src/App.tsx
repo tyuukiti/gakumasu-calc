@@ -6,6 +6,7 @@ import CalculatorPage from './pages/CalculatorPage'
 import InventoryPage from './pages/InventoryPage'
 import HifPage from './pages/HifPage'
 import UsagePage from './pages/UsagePage'
+import LegacyMigrationNotice from './components/LegacyMigrationNotice'
 
 // デフォルト表示タブ。新シナリオが増えたらここを変更する。
 const DEFAULT_PATH = '/hif'
@@ -84,6 +85,7 @@ export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Header />
+      <LegacyMigrationNotice />
       <main className="max-w-5xl mx-auto px-4 py-6">
         <Routes>
           <Route path="/" element={<Navigate to={DEFAULT_PATH} replace />} />

@@ -1,0 +1,134 @@
+﻿<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>GakumasuCalc - 新しい URL へ移動中</title>
+    <!--
+      旧 URL (https://tyuukiti.github.io/gakumasu-calc/) のブラウザ保存データ (localStorage) を
+      新ドメイン (https://gakumasu.tyuukiti.com/) へ引き継ぐためのページ。
+
+      localStorage はホスト単位なので、旧ホスト tyuukiti.github.io 上で動くこのページからは旧データが読める。
+      新ドメイン側 (web/src/services/legacyMigration.ts) が初回訪問時に ?to=<戻り先パス> を付けてここへ遷移し、
+      このページが対象キーを読んで #m=<token> に載せ、新ドメインの戻り先パスへ即座に戻す。
+      token はフラグメント (#) に載るのでサーバーには送られない。
+      戻り先は常に ORIGIN 固定 (to はパスだけを受け付ける) なので、外部サイトへの転送には使えない。
+
+      token: 'z' + base64url(deflate-raw(JSON)) / 'j' + base64url(JSON) (CompressionStream 非対応時) / '0' (データなし)
+      JSON:  { v: 1, keys: { <localStorage キー>: <値>, ... } }
+
+      公開先: https://tyuukiti.github.io/gakumasu-anomaly-sim/gakumasu-calc-migrate.html
+        旧 URL と同じホストで公開中の別プロダクト gakumasu-anomaly-sim (Vite) の public/ に、このファイルを
+        同じ名前でそのまま置く (通常のデプロイで配信される)。anomaly-sim にカスタムドメインを付けると
+        旧ホストで動かなくなるので、期限まで付けないこと。
+      期限: 2027-03-31 まで (legacyMigration.ts の MIGRATION_DEADLINE_MS)。以降は削除してよい。
+    -->
+    <style>
+      body {
+        font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+        color: #333;
+        text-align: center;
+        padding: 3rem 1rem;
+        line-height: 1.7;
+      }
+      a { color: #5c6bc0; }
+    </style>
+  </head>
+  <body>
+    <p>GakumasuCalc の新しい URL へ移動しています…</p>
+    <p><a id="fallback" href="https://gakumasu.tyuukiti.com/">自動で移動しない場合はこちら</a></p>
+    <script>
+      (function () {
+        var ORIGIN = 'https://gakumasu.tyuukiti.com';
+        // legacyMigration.ts の LEGACY_STORAGE_KEYS と同一 (テストで照合)
+        var KEYS = [
+          'gakumasu_inventory',
+          'selectedCharacterId',
+          'uncap3CharacterBonusEnabled',
+          'uncap3BonusByChar',
+          'step4BonusByChar',
+          'memoryPresets',
+          'eventCountPresets',
+          'scheduleChoicePresets',
+          'hifSchedulePresets',
+          'hifBonusLevels',
+          'hifOverflowPenalty',
+          'hifConditionPresets',
+          'schedulePanelHeight',
+          'weekBreakdownPanelHeight',
+          'hifSchedulePanelHeight'
+        ];
+
+        // 戻り先は ORIGIN 配下のパスのみ。'//host' や '/\host' (プロトコル相対) は '/' に落とす
+        function safePath(p) {
+          if (typeof p !== 'string' || p.charAt(0) !== '/') return '/';
+          if (p.charAt(1) === '/' || p.charAt(1) === '\\') return '/';
+          return p;
+        }
+
+        function toBase64Url(bytes) {
+          var bin = '';
+          for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+          return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function collect() {
+          var out = {};
+          var n = 0;
+          for (var i = 0; i < KEYS.length; i++) {
+            var v = localStorage.getItem(KEYS[i]);
+            if (v !== null && v !== undefined) {
+              out[KEYS[i]] = v;
+              n++;
+            }
+          }
+          return n > 0 ? out : null;
+        }
+
+        function encodePlain(payload) {
+          return 'j' + toBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+        }
+
+        function encodeDeflate(payload) {
+          var bytes = new TextEncoder().encode(JSON.stringify(payload));
+          var cs = new CompressionStream('deflate-raw');
+          var collected = new Response(cs.readable).arrayBuffer();
+          var writer = cs.writable.getWriter();
+          var written = writer.write(bytes).then(function () { return writer.close(); });
+          return Promise.all([collected, written]).then(function (r) {
+            return 'z' + toBase64Url(new Uint8Array(r[0]));
+          });
+        }
+
+        function go(token) {
+          var to = '/';
+          try { to = safePath(new URLSearchParams(location.search).get('to')); } catch (e) { to = '/'; }
+          var i = to.indexOf('#');
+          var extra = i >= 0 ? to.slice(i + 1) : '';
+          if (i >= 0) to = to.slice(0, i);
+          var target = ORIGIN + to + '#m=' + token + (extra ? '&' + extra : '');
+          var a = document.getElementById('fallback');
+          if (a) a.href = target;
+          location.replace(target);
+        }
+
+        var payload = null;
+        try {
+          var keys = collect();
+          if (keys) payload = { v: 1, keys: keys };
+        } catch (e) {
+          payload = null;
+        }
+        if (!payload) { go('0'); return; }
+        if (typeof CompressionStream === 'undefined') {
+          try { go(encodePlain(payload)); } catch (e) { go('0'); }
+          return;
+        }
+        encodeDeflate(payload).then(go, function () {
+          try { go(encodePlain(payload)); } catch (e) { go('0'); }
+        });
+      })();
+    </script>
+  </body>
+</html>
