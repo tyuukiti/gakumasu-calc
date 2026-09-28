@@ -1,6 +1,7 @@
 """Wiki HTMLページの解析 (BeautifulSoup使用)"""
 import re
 import urllib.parse
+from html import unescape as html_unescape
 from bs4 import BeautifulSoup, Tag
 
 from .constants import (
@@ -149,8 +150,9 @@ def _parse_item_effect_text(text: str, context_text: str = "", card_stat: str | 
     アイテム名セルに書かれる行があるため、回数抽出のみ両方から探す。
     card_stat: カードの属性 (vo/da/vi)。削除誘発 effect の stat 表記に使う (計算では未参照の装飾値)。
     """
-    flat = text.replace('\n', '')
-    context_flat = context_text.replace('\n', '')
+    # Wiki 側の表記揺れ (「全力 カード獲得時」のような語中の空白) を吸収するため空白類を全て除去
+    flat = re.sub(r'\s+', '', text)
+    context_flat = re.sub(r'\s+', '', context_text)
 
     effects: list[dict] = []
 
@@ -160,6 +162,16 @@ def _parse_item_effect_text(text: str, context_text: str = "", card_stat: str | 
         if keyword in flat:
             trigger = trig
             break
+    if trigger is None:
+        # 「全力カード獲得時」「好調のスキルカード獲得時」など「◯◯効果」を省いた表記のフォールバック
+        m = re.search(r'(集中|やる気|全力|強気|好調|好印象|温存|元気)(?:効果)?の?(?:スキル)?カード獲得', flat)
+        if m:
+            trigger = {
+                "集中": "concentrate_acquire", "やる気": "motivation_acquire",
+                "全力": "fullpower_acquire", "強気": "aggressive_acquire",
+                "好調": "good_condition_acquire", "好印象": "good_impression_acquire",
+                "温存": "conserve_acquire", "元気": "genki_acquire",
+            }[m.group(1)]
 
     # condition 抽出 (両 effect で共通)
     condition = None
@@ -286,7 +298,9 @@ def parse_list_page() -> list[WikiCardEntry]:
         path_match = re.search(r"/d/([^#]+)", href)
         if path_match:
             try:
-                name = urllib.parse.unquote(path_match.group(1), encoding="euc-jp")
+                # EUC-JP で表せない文字 (♡ 等) は &#9825; 形式の実体参照として
+                # パスに埋め込まれるため、復号後に unescape してカード名と一致させる
+                name = html_unescape(urllib.parse.unquote(path_match.group(1), encoding="euc-jp"))
                 if name not in link_map:
                     link_map[name] = href
             except Exception:
@@ -413,6 +427,16 @@ def parse_detail_page(url: str, debug: bool = False) -> dict | None:
         if debug:
             print(f"  [DEBUG]   -> ★選択 (データ行数: {len(rows) - 3})")
 
+        # 3行目は各凸の上限Lv (末尾5列)。解放Lvが上限Lvを超える凸では
+        # アビリティ自体が取得不能なので、空欄セルを '0' として扱う
+        # (例: R カードの Lv21 解放アビリティは 0凸=Lv20 上限で未取得)
+        header_texts = [c.get_text().strip() for c in rows[2].find_all(["td", "th"])]
+        max_levels: list[int | None] = []
+        for t in header_texts[-5:]:
+            max_levels.append(int(t) if t.isdigit() else None)
+        if len(max_levels) != 5:
+            max_levels = [None] * 5
+
         for ri, row in enumerate(rows[3:]):
             cells = row.find_all(["td", "th"])
             cell_texts = [c.get_text().strip() for c in cells]
@@ -422,6 +446,13 @@ def parse_detail_page(url: str, debug: bool = False) -> dict | None:
                 continue
             # 末尾5列が凸別値
             uncap_values = cell_texts[-5:]
+            unlock_match = re.match(r"Lv(\d+)", cell_texts[0])
+            if unlock_match:
+                unlock_lv = int(unlock_match.group(1))
+                uncap_values = [
+                    "0" if (v == "" and ml is not None and unlock_lv > ml) else v
+                    for v, ml in zip(uncap_values, max_levels)
+                ]
             result["abilities"].append({
                 "unlock": cell_texts[0],
                 "name": cell_texts[1],

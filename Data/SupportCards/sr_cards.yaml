@@ -68,6 +68,10 @@ support_cards:
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: skill_acquire
+    stat: da
+    values: [1, 2, 2, 2, 2]
+    value_type: flat
 - id: SP_SR_0067
   name: 一番星と王子様
   rarity: SR
@@ -650,6 +654,10 @@ support_cards:
     stat: vi
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: skill_acquire
+    stat: vi
+    values: [1, 2, 2, 2, 2]
+    value_type: flat
 - id: SP_SR_0052
   name: 今日は見学なんです
   rarity: SR
@@ -961,6 +969,7 @@ support_cards:
     stat: da
     values: [15, 15, 15, 15, 15]
     value_type: flat
+    event_param: true
   - trigger: equip
     stat: da
     values: [37, 40, 43, 46, 49]
@@ -971,12 +980,16 @@ support_cards:
     value_type: flat
   - trigger: da_sp_end
     stat: da
-    values: [13, 13, 13, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: mental_enhance
     stat: da
-    values: [6, 6, 6, 6, 6]
+    values: [4, 4, 4, 6, 6]
     value_type: flat
+  - trigger: equip
+    stat: da
+    values: [50, 50, 75, 75, 100]
+    value_type: event_param_boost
 - id: SP_SR_0042
   name: 虫愛づる王子様
   rarity: SR
@@ -2295,6 +2308,10 @@ support_cards:
     stat: vi
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: skill_acquire
+    stat: vi
+    values: [1, 1, 1, 1, 2]
+    value_type: flat
 - id: SP_SR_0071
   name: ひっぱり じゅーなん
   rarity: SR
@@ -2405,6 +2422,10 @@ support_cards:
     stat: vi
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+  - trigger: skill_acquire
+    stat: vi
+    values: [1, 2, 2, 2, 2]
+    value_type: flat
 - id: SP_SR_0073
   name: のんびり美味しいひととき
   rarity: SR
@@ -2427,7 +2448,7 @@ support_cards:
     value_type: sp_rate
   - trigger: sp_end
     stat: vi
-    values: [15, 15, 15, 15, 21]
+    values: [8, 8, 8, 8, 15]
     value_type: flat
     max_count: 4
     condition: deck>=20
@@ -2461,7 +2482,7 @@ support_cards:
     value_type: sp_rate
   - trigger: vo_sp_end
     stat: vo
-    values: [7, 7, 7, 13, 13]
+    values: [7, 7, 7, 7, 13]
     value_type: flat
   - trigger: activity_supply
     stat: vo
