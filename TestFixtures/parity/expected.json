@@ -2,14 +2,14 @@
   "voda": [
     {
       "ids": [
-        "SP_SSR_0067",
         "SP_SSR_0071",
         "SP_SSR_0077",
         "SP_SSR_0097",
         "SP_SSR_0107",
-        "SP_SSR_0108"
+        "SP_SSR_0108",
+        "SP_SSR_0110"
       ],
-      "total": 5322
+      "total": 5357
     },
     {
       "ids": [
@@ -20,7 +20,7 @@
         "SP_SSR_0107",
         "SP_SSR_0108"
       ],
-      "total": 5307
+      "total": 5339
     },
     {
       "ids": [
@@ -31,75 +31,75 @@
         "SP_SSR_0107",
         "SP_SSR_0108"
       ],
-      "total": 5307
+      "total": 5339
     },
     {
       "ids": [
-        "SP_SSR_0067",
         "SP_SSR_0071",
         "SP_SSR_0077",
         "SP_SSR_0097",
         "SP_SSR_0107",
-        "SP_SSR_0108"
+        "SP_SSR_0108",
+        "SP_SSR_0110"
       ],
-      "total": 5322
+      "total": 5357
     },
     {
       "ids": [
-        "SP_SSR_0058",
         "SP_SSR_0067",
         "SP_SSR_0072",
         "SP_SSR_0077",
         "SP_SSR_0107",
-        "SP_SSR_0108"
+        "SP_SSR_0108",
+        "SP_SSR_0110"
       ],
-      "total": 5316
+      "total": 5378
     }
   ],
   "davi": [
     {
       "ids": [
-        "SP_SSR_0064",
         "SP_SSR_0069",
         "SP_SSR_0071",
         "SP_SSR_0085",
         "SP_SSR_0094",
-        "SP_SSR_0097"
+        "SP_SSR_0097",
+        "SP_SSR_0110"
       ],
-      "total": 5352
+      "total": 5390
     },
     {
       "ids": [
-        "SP_SSR_0058",
         "SP_SSR_0064",
         "SP_SSR_0069",
         "SP_SSR_0085",
         "SP_SSR_0094",
-        "SP_SSR_0097"
+        "SP_SSR_0097",
+        "SP_SSR_0110"
       ],
-      "total": 5319
+      "total": 5337
     },
     {
       "ids": [
-        "SP_SSR_0058",
         "SP_SSR_0064",
         "SP_SSR_0069",
         "SP_SSR_0085",
         "SP_SSR_0094",
-        "SP_SSR_0097"
+        "SP_SSR_0097",
+        "SP_SSR_0110"
       ],
-      "total": 5319
+      "total": 5337
     },
     {
       "ids": [
-        "SP_SSR_0064",
         "SP_SSR_0069",
         "SP_SSR_0071",
         "SP_SSR_0085",
         "SP_SSR_0094",
-        "SP_SSR_0097"
+        "SP_SSR_0097",
+        "SP_SSR_0110"
       ],
-      "total": 5352
+      "total": 5390
     },
     {
       "ids": [
@@ -123,29 +123,29 @@
         "SP_SSR_0107",
         "SP_SSR_0108"
       ],
-      "total": 5364
+      "total": 5396
     },
     {
       "ids": [
         "SP_SSR_0058",
-        "SP_SSR_0064",
         "SP_SSR_0067",
         "SP_SSR_0077",
         "SP_SSR_0094",
-        "SP_SSR_0108"
+        "SP_SSR_0108",
+        "SP_SSR_0110"
       ],
-      "total": 5359
+      "total": 5395
     },
     {
       "ids": [
         "SP_SSR_0058",
-        "SP_SSR_0064",
         "SP_SSR_0067",
         "SP_SSR_0077",
         "SP_SSR_0094",
-        "SP_SSR_0108"
+        "SP_SSR_0108",
+        "SP_SSR_0110"
       ],
-      "total": 5359
+      "total": 5395
     },
     {
       "ids": [
@@ -156,18 +156,18 @@
         "SP_SSR_0107",
         "SP_SSR_0108"
       ],
-      "total": 5364
+      "total": 5396
     },
     {
       "ids": [
         "SP_SSR_0056",
-        "SP_SSR_0058",
-        "SP_SSR_0067",
         "SP_SSR_0077",
         "SP_SSR_0094",
-        "SP_SSR_0108"
+        "SP_SSR_0107",
+        "SP_SSR_0108",
+        "SP_SSR_0110"
       ],
-      "total": 5327
+      "total": 5369
     }
   ],
   "voda_sp_vo2": [
@@ -180,7 +180,7 @@
         "SP_SSR_0098",
         "SP_SSR_0108"
       ],
-      "total": 5211
+      "total": 5243
     },
     {
       "ids": [
@@ -191,7 +191,7 @@
         "SP_SSR_0098",
         "SP_SSR_0108"
       ],
-      "total": 5181
+      "total": 5213
     },
     {
       "ids": [
@@ -202,7 +202,7 @@
         "SP_SSR_0098",
         "SP_SSR_0108"
       ],
-      "total": 5181
+      "total": 5213
     },
     {
       "ids": [
@@ -213,18 +213,18 @@
         "SP_SSR_0098",
         "SP_SSR_0108"
       ],
-      "total": 5211
+      "total": 5243
     },
     {
       "ids": [
-        "SP_SSR_0058",
-        "SP_SSR_0067",
-        "SP_SSR_0073",
         "SP_SSR_0077",
+        "SP_SSR_0079",
         "SP_SSR_0098",
-        "SP_SSR_0108"
+        "SP_SSR_0107",
+        "SP_SSR_0108",
+        "SP_SSR_0110"
       ],
-      "total": 5223
+      "total": 5272
     }
   ],
   "hif_voda": [
@@ -237,7 +237,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3550
+      "total": 3671
     },
     {
       "ids": [
@@ -248,7 +248,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3522
+      "total": 3653
     },
     {
       "ids": [
@@ -259,7 +259,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3515
+      "total": 3636
     },
     {
       "ids": [
@@ -270,7 +270,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3550
+      "total": 3671
     }
   ],
   "hif_vovi": [
@@ -283,18 +283,18 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3566
+      "total": 3687
     },
     {
       "ids": [
         "SP_SSR_0056",
         "SP_SSR_0067",
-        "SP_SSR_0071",
         "SP_SSR_0077",
+        "SP_SSR_0092",
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3471
+      "total": 3617
     },
     {
       "ids": [
@@ -305,7 +305,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3566
+      "total": 3687
     },
     {
       "ids": [
@@ -316,7 +316,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3566
+      "total": 3687
     }
   ],
   "hif_davo": [
@@ -329,7 +329,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3516
+      "total": 3637
     },
     {
       "ids": [
@@ -337,10 +337,10 @@
         "SP_SSR_0069",
         "SP_SSR_0071",
         "SP_SSR_0085",
-        "SP_SSR_0097",
+        "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3519
+      "total": 3637
     },
     {
       "ids": [
@@ -351,7 +351,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3472
+      "total": 3593
     },
     {
       "ids": [
@@ -359,10 +359,10 @@
         "SP_SSR_0069",
         "SP_SSR_0071",
         "SP_SSR_0085",
-        "SP_SSR_0097",
+        "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3519
+      "total": 3637
     }
   ],
   "hif_davi": [
@@ -375,7 +375,7 @@
         "SP_SSR_0089",
         "SP_SSR_0110"
       ],
-      "total": 3480
+      "total": 3569
     },
     {
       "ids": [
@@ -386,7 +386,7 @@
         "SP_SSR_0097",
         "SP_SSR_0110"
       ],
-      "total": 3519
+      "total": 3608
     },
     {
       "ids": [
@@ -397,7 +397,7 @@
         "SP_SSR_0094",
         "SP_SSR_0110"
       ],
-      "total": 3513
+      "total": 3602
     },
     {
       "ids": [
@@ -408,7 +408,7 @@
         "SP_SSR_0097",
         "SP_SSR_0110"
       ],
-      "total": 3519
+      "total": 3608
     }
   ],
   "hif_vivo": [
@@ -421,18 +421,18 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3589
+      "total": 3710
     },
     {
       "ids": [
         "SP_SSR_0056",
-        "SP_SSR_0058",
         "SP_SSR_0067",
-        "SP_SSR_0071",
+        "SP_SSR_0092",
         "SP_SSR_0094",
+        "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3470
+      "total": 3591
     },
     {
       "ids": [
@@ -443,7 +443,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3589
+      "total": 3710
     },
     {
       "ids": [
@@ -454,7 +454,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3589
+      "total": 3710
     }
   ],
   "hif_vida": [
@@ -463,11 +463,11 @@
         "SP_SSR_0058",
         "SP_SSR_0064",
         "SP_SSR_0067",
-        "SP_SSR_0089",
         "SP_SSR_0094",
+        "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3531
+      "total": 3634
     },
     {
       "ids": [
@@ -478,7 +478,7 @@
         "SP_SSR_0094",
         "SP_SSR_0110"
       ],
-      "total": 3521
+      "total": 3620
     },
     {
       "ids": [
@@ -489,7 +489,7 @@
         "SP_SSR_0094",
         "SP_SSR_0110"
       ],
-      "total": 3564
+      "total": 3653
     },
     {
       "ids": [
@@ -500,7 +500,7 @@
         "SP_SSR_0094",
         "SP_SSR_0110"
       ],
-      "total": 3564
+      "total": 3653
     }
   ],
   "hif_voda_sp_vo2": [
@@ -513,18 +513,18 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3460
+      "total": 3581
     },
     {
       "ids": [
         "SP_SSR_0056",
-        "SP_SSR_0067",
         "SP_SSR_0071",
         "SP_SSR_0073",
         "SP_SSR_0098",
-        "SP_SSR_0108"
+        "SP_SSR_0108",
+        "SP_SSR_0110"
       ],
-      "total": 3390
+      "total": 3507
     },
     {
       "ids": [
@@ -535,7 +535,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3399
+      "total": 3520
     },
     {
       "ids": [
@@ -546,7 +546,7 @@
         "SP_SSR_0108",
         "SP_SSR_0110"
       ],
-      "total": 3460
+      "total": 3581
     }
   ]
 }

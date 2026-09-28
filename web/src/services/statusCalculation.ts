@@ -61,10 +61,6 @@ export function getEventParamBoostPercent(card: SupportCard, uncapLevel: number)
   return total;
 }
 
-function getEffectsByTrigger(card: SupportCard, trigger: string): CardEffect[] {
-  return card.effects.filter((e) => e.trigger === trigger);
-}
-
 // ---------------------------------------------------------------------------
 // Exported: uncap level resolution
 // ---------------------------------------------------------------------------
@@ -545,11 +541,14 @@ function fireTrigger(
 
   for (const card of cards) {
     const uncap = getUncapLevel(card, uncapLevels);
-    for (const effect of getEffectsByTrigger(card, trigger)) {
-      if (effect.value_type !== 'flat') continue;
+    for (let index = 0; index < card.effects.length; index++) {
+      const effect = card.effects[index];
+      if (effect.trigger !== trigger || effect.value_type !== 'flat') continue;
 
-      // Check fire count
-      const counterKey = `${card.id}_${trigger}_${effect.stat}`;
+      // 発動回数チェック。カウンタは効果単位 (カード内の effect index) で持つ。
+      // 同一カード内に同じトリガー・同じ属性の flat 効果が複数ある場合 (通常アビリティ + Pアイテム効果) でも
+      // max_count はそれぞれ独立に数える (旧キー `カードID_トリガー_属性` では共有され、後続効果が早く止まっていた)。
+      const counterKey = `${card.id}#${index}`;
       const count = triggerCounters[counterKey] ?? 0;
 
       if (effect.max_count != null && count >= effect.max_count) {
