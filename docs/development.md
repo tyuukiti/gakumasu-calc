@@ -101,4 +101,20 @@ Wikiのアビリティ名→ `trigger` の解決は `scripts/wiki_sync/constants
 
 ### Web版のデプロイ
 
-`main` への push で `.github/workflows/deploy-web.yml` が起動し、GitHub Pages（[tyuukiti.github.io/gakumasu-calc](https://tyuukiti.github.io/gakumasu-calc/)）へ自動デプロイされる。
+`main` への push で `.github/workflows/deploy-web.yml` が起動し、GitHub Pages（[gakumasu.tyuukiti.com](https://gakumasu.tyuukiti.com/)）へ自動デプロイされる。
+
+同じビルドが旧 URL（`tyuukiti.github.io/gakumasu-calc/`）とカスタムドメイン（`gakumasu.tyuukiti.com`）の両方で動く。Vite の `base` は `'./'`（相対）で、配信場所は `web/index.html` 冒頭の `<base>` 注入スクリプトと `services/siteBase.ts` が実行時にホスト名から決める（`*.github.io` なら `/gakumasu-calc/`、それ以外はルート）。
+
+- カスタムドメインの ON/OFF は GitHub の Settings > Pages だけで行う。切り戻しはドメイン設定を外すだけで、リバートや再デプロイは不要（旧 URL がそのまま動く）
+- Actions デプロイでは CNAME ファイルは使われないため置いていない。ドメインは設定画面でのみ管理する
+- canonical / OGP / sitemap は常にカスタムドメインの URL を指す（最終的な正とする）。ドメイン未設定のまま長く運用すると、検索エンジン向けの参照先が存在しない URL になる点に注意
+
+### 旧 URL からのブラウザ保存データ引き継ぎ
+
+2026-09-28 に Web版の URL を `tyuukiti.github.io/gakumasu-calc` から `gakumasu.tyuukiti.com` へ変更した。ブラウザ保存データ (localStorage) はホスト単位なので、旧 URL で登録した所持カード・プリセット等は新ドメインからは読めない。`web/src/services/legacyMigration.ts` が新ドメインの初回訪問時に旧ホスト上の引き継ぎページへ往復し、利用者の操作なしで取り込む（仕組みの詳細は同ファイル冒頭のコメント）。
+
+- 引き継ぎページの実体: `web/migrate/gakumasu-calc-migrate.html`（ビルド対象外。単体で動く静的ページ）
+- 公開先: `https://tyuukiti.github.io/gakumasu-anomaly-sim/gakumasu-calc-migrate.html`。旧 URL と同じホストで公開している別プロダクト gakumasu-anomaly-sim（Vite）の `public/` にこのファイルを同じ名前で置き、通常どおりデプロイする。anomaly-sim にカスタムドメインを付けると旧ホストで動かなくなるので、期限まで付けない
+- 順序: 引き継ぎページを先に公開してから本リポジトリをマージする。未公開の間に3回訪問したブラウザは以後試みない
+- 期限: 2027-03-31（`MIGRATION_DEADLINE_MS`）。以降は往復しないので、引き継ぎページと `legacyMigration.ts`・`LegacyMigrationNotice.tsx`・`web/migrate/`・関連テストを削除してよい
+- 動作確認: 旧 URL で所持登録したことのあるブラウザで新ドメインを開くと、一瞬 tyuukiti.github.io を経由して戻り、ヘッダー下に「引き継ぎました」の案内が出る。DevTools の Application > Local Storage で `legacyMigrationDone` を消すと再試行できる

@@ -260,7 +260,7 @@ export function isShareEncodingSupported(): boolean {
   return typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
 }
 
-async function pipeThroughStream(
+export async function pipeThroughStream(
   bytes: Uint8Array<ArrayBuffer>,
   stream: { readable: ReadableStream<Uint8Array>; writable: WritableStream<BufferSource> },
 ): Promise<Uint8Array<ArrayBuffer>> {
@@ -273,13 +273,13 @@ async function pipeThroughStream(
   return new Uint8Array(buf);
 }
 
-function toBase64Url(bytes: Uint8Array): string {
+export function toBase64Url(bytes: Uint8Array): string {
   let bin = '';
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-function fromBase64Url(token: string): Uint8Array<ArrayBuffer> {
+export function fromBase64Url(token: string): Uint8Array<ArrayBuffer> {
   const b64 = token.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (token.length % 4)) % 4);
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);

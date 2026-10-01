@@ -118,11 +118,11 @@ describe('buildShareText', () => {
 
 describe('buildShareIntentUrl', () => {
   it('x.com の intent URL に text / url / hashtags を載せる', () => {
-    const url = buildShareIntentUrl('本文', 'https://tyuukiti.github.io/gakumasu-calc/hif', HASHTAGS);
+    const url = buildShareIntentUrl('本文', 'https://gakumasu.tyuukiti.com/hif', HASHTAGS);
     expect(url.startsWith('https://x.com/intent/tweet?')).toBe(true);
     const params = new URL(url).searchParams;
     expect(params.get('text')).toBe('本文');
-    expect(params.get('url')).toBe('https://tyuukiti.github.io/gakumasu-calc/hif');
+    expect(params.get('url')).toBe('https://gakumasu.tyuukiti.com/hif');
     expect(params.get('hashtags')).toBe('学マス,GakumasuCalc');
   });
 });
