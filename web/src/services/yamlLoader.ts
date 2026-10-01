@@ -1,8 +1,9 @@
 import yaml from 'js-yaml'
 import type { SupportCard, SupportCardFile, TrainingPlan, TrainingPlanFile, EventCountTemplate, EventCountTemplateFile, WeekSchedule, Character, CharacterFile } from '../types/models'
 import type { ActionType } from '../types/enums'
+import { siteBasePath } from './siteBase'
 
-const BASE = import.meta.env.BASE_URL
+const BASE = siteBasePath()
 
 async function fetchYaml<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}Data/${path}`)

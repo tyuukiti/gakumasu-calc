@@ -2,7 +2,22 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!--
+      ビルドのアセット参照は相対パス (vite の base './')。配信場所はここで実行時に決める:
+      旧ホスト tyuukiti.github.io ではプロジェクトパス /gakumasu-calc/ 配下、カスタムドメインではルート直下。
+      <base> を head の先頭に置くことで、以降の相対 URL (JS/CSS・favicon・Data・静的リンク) が
+      どの深さのパス (404.html フォールバック含む) から読まれても正しく解決される。
+      services/siteBase.ts と同じ規則 (テストで照合)。同じビルドを両方の URL で動かせるので、
+      カスタムドメインの切り戻しは GitHub の設定を外すだけで済み、再デプロイは要らない。
+    -->
+    <script>
+      (function () {
+        var base = document.createElement('base');
+        base.href = location.hostname.endsWith('.github.io') ? '/gakumasu-calc/' : '/';
+        document.head.appendChild(base);
+      })();
+    </script>
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="google-site-verification" content="7k8ngykHjfHg0i3Nm388IC62g0Im90nHZfrodg2AMcA" />
     <title>GakumasuCalc - 学マス サポカ最適化計算ツール | 学園アイドルマスター サポートカード編成最適化</title>
@@ -68,11 +83,11 @@
         <h1 style="font-size: 1.25rem;">GakumasuCalc - 学マス サポカ編成 最適化計算ツール</h1>
         <p>学園アイドルマスター（学マス）の育成で、所持しているサポートカードと凸数から、到達ステータスの理論値が最大になる6枚編成（所持5枚＋レンタル1枚）を自動で選び出すツールです。スケジュール、SPレッスン回数、キャラ補正、持ち込みメモリーを含めて計算します。インストール不要でブラウザだけで動作し、入力した所持データはブラウザ内に保存されます。</p>
         <ul>
-          <li><a href="/hif">H.I.F（Hatsuboshi IDOL FESTIVAL）のサポカ編成・理論値計算</a></li>
-          <li><a href="/legend">初レジェンドのサポカ編成・理論値計算</a></li>
-          <li><a href="/nia">N.I.A（NIAマスター）のサポカ編成・理論値計算</a></li>
-          <li><a href="/inventory">サポカ所持管理（所持カードと凸数の登録）</a></li>
-          <li><a href="/usage">使い方</a></li>
+          <li><a href="hif">H.I.F（Hatsuboshi IDOL FESTIVAL）のサポカ編成・理論値計算</a></li>
+          <li><a href="legend">初レジェンドのサポカ編成・理論値計算</a></li>
+          <li><a href="nia">N.I.A（NIAマスター）のサポカ編成・理論値計算</a></li>
+          <li><a href="inventory">サポカ所持管理（所持カードと凸数の登録）</a></li>
+          <li><a href="usage">使い方</a></li>
         </ul>
       </div>
       <!-- seo:end -->

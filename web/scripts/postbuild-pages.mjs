@@ -14,7 +14,9 @@
 //   2. dist/404.html = dist/index.html (未知パスの SPA フォールバック。従来の copy-404 相当)
 //   3. dist/sitemap.xml を全ルート分生成 (public/ に静的ファイルは置かず、ここで一元管理)
 //
-// vite の base が絶対パス (/) なので、どのパスから読まれてもアセットは正しく解決される。
+// vite の base は相対パス ('./') で、配信場所は index.html 冒頭の <base> 注入スクリプトが実行時に決める
+// (旧ホスト tyuukiti.github.io では /gakumasu-calc/ 配下、カスタムドメインではルート直下)。生成ページも同じ index.html を元にするので、
+// どのパスから読まれてもアセット・リンクは正しく解決される。
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -125,14 +127,14 @@ function setSeoBlock(html, inner) {
 function buildIntro(route) {
   const paragraphs = route.intro.map((p) => `        <p>${escapeHtml(p)}</p>`).join('\n')
   const links = ROUTES.filter((r) => r.path !== route.path)
-    .map((r) => `          <li><a href="/${r.path}">${escapeHtml(r.heading)}</a></li>`)
+    .map((r) => `          <li><a href="${r.path}">${escapeHtml(r.heading)}</a></li>`)
     .join('\n')
   return [
     `      <div class="seo-intro" style="max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem; font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; color: #333; line-height: 1.7;">`,
     `        <h1 style="font-size: 1.25rem;">${escapeHtml(route.heading)}</h1>`,
     paragraphs,
     `        <ul>`,
-    `          <li><a href="/">${SITE_NAME} トップ（学マス サポカ編成 最適化計算ツール）</a></li>`,
+    `          <li><a href="./">${SITE_NAME} トップ（学マス サポカ編成 最適化計算ツール）</a></li>`,
     links,
     `        </ul>`,
     `      </div>`,
