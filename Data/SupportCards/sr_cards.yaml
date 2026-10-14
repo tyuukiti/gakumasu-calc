@@ -2758,3 +2758,46 @@ support_cards:
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SR_0082
+  name: ふたりで衣装作り
+  rarity: SR
+  type: da
+  plan: logic
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: da
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: da
+    values: [37, 40, 43, 46, 49]
+    value_type: flat
+  - trigger: equip
+    stat: da
+    values: [10.5, 21, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: consultation
+    stat: da
+    values: [13, 13, 13, 26, 26]
+    value_type: flat
+    max_count: 2
+  - trigger: motivation_acquire
+    stat: da
+    values: [8, 8, 8, 16, 16]
+    value_type: flat
+    max_count: 4
+    condition: 所持しているやる気効果のスキルカード>=8
+  - trigger: skill_enhance
+    stat: da
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 3
+    condition: da>=700
+    source: item
+    description: お手製ぴったり衣装 (やる気効果のスキルカード強化時・ダンス700以上・プロデュース中3回)
+  - trigger: equip
+    stat: da
+    values: [50, 50, 75, 75, 100]
+    value_type: event_param_boost
