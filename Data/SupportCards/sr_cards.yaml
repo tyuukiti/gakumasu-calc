@@ -2801,3 +2801,44 @@ support_cards:
     stat: da
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SR_0083
+  name: 威風堂々・お昼寝タイム
+  rarity: SR
+  type: vi
+  plan: sense
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [37, 40, 43, 46, 49]
+    value_type: flat
+  - trigger: equip
+    stat: vi
+    values: [10.5, 21, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: vi_sp_end
+    stat: vi
+    values: [7, 7, 7, 13, 13]
+    value_type: flat
+  - trigger: activity_supply
+    stat: vi
+    values: [13, 13, 13, 26, 26]
+    value_type: flat
+    max_count: 2
+  - trigger: activity_supply
+    stat: vi
+    values: [10, 10, 10, 10, 10]
+    value_type: flat
+    max_count: 2
+    condition: vi>=700
+    source: item
+    description: ねぎらいコーヒー (活動支給・差し入れ選択時・ビジュアル700以上・プロデュース中2回)
+  - trigger: equip
+    stat: vi
+    values: [50, 50, 75, 75, 100]
+    value_type: event_param_boost
