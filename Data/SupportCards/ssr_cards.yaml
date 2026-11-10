@@ -3590,8 +3590,8 @@ support_cards:
     value_type: flat
     max_count: 2
     condition: vi>=900
-    source: item
     description: 花海ファームランタン (やる気効果のスキルカード強化時・ビジュアル900以上・プロデュース中2回)
+    source: item
   - trigger: equip
     stat: vi
     values: [50, 75, 75, 75, 100]
@@ -3633,8 +3633,89 @@ support_cards:
     value_type: flat
     max_count: 4
     condition: vo>=700
-    source: item
     description: お誘いチケット (活動支給・差し入れ選択時・ボーカル700以上・プロデュース中4回)
+    source: item
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
+- id: SP_SSR_0115
+  name: みんなも読んでみてっ！
+  rarity: SSR
+  type: vo
+  plan: logic
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vo
+    values: [6.5, 7, 7.5, 8, 8.5]
+    value_type: para_bonus
+  - trigger: equip
+    stat: vo
+    values: [21, 21, 28, 28, 28]
+    value_type: sp_rate
+  - trigger: vo_sp_end
+    stat: vo
+    values: [13, 13, 13, 17, 17]
+    value_type: flat
+  - trigger: skill_delete
+    stat: vo
+    values: [15, 15, 15, 15, 20]
+    value_type: flat
+    max_count: 4
+  - trigger: skill_acquire
+    stat: vo
+    values: [25, 25, 25, 25, 25]
+    value_type: flat
+    max_count: 2
+    condition: vo>=900
+    description: 過激め？チョイス (ロジックのスキルカード獲得時・ボーカル900以上・プロデュース中2回)
+    source: item
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
+- id: SP_SSR_0116
+  name: こんなお写真もありますわ
+  rarity: SSR
+  type: vo
+  plan: sense
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vo
+    values: [52, 55, 59, 62, 65]
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [14, 14, 21, 21, 21]
+    value_type: sp_rate
+  - trigger: activity_supply
+    stat: vo
+    values: [9, 9, 9, 9, 12]
+    value_type: flat
+  - trigger: skill_ssr_acquire
+    stat: vo
+    values: [3, 3, 3, 5, 5]
+    value_type: flat
+  - trigger: activity_supply
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 2
+    condition: vo>=400
+    description: 仲良しアルバム (活動支給・差し入れ選択時・ボーカル400以上・プロデュース中2回)
+    source: item
   - trigger: equip
     stat: vo
     values: [50, 75, 75, 75, 100]

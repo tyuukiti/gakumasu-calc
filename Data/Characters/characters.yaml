@@ -54,6 +54,9 @@ characters:
     base_status_bonus: { vo: 115, da: 140, vi: 110 }
     para_bonus: { vo: 19.0, da: 24.0, vi: 13.0 }
     uncap3_bonus: { vo: 2.0, da: 4.0, vi: 0 }
+    step4_bonus:
+      base_status_bonus: { vo: 10, da: 10, vi: 10 }
+      para_bonus: { vo: 1.0, da: 3.0, vi: 3.0 }
 
   - id: "char_mao"
     name: "有村麻央"
