@@ -174,3 +174,11 @@ characters:
     step4_bonus:
       base_status_bonus: { vo: 0, da: 10, vi: 15 }
       para_bonus: { vo: 2.0, da: 0, vi: 2.0 }
+
+  - id: "char_kanae"
+    name: "氷渡香名江"
+    color: "#008969"
+    initial: "香"
+    base_status_bonus: { vo: 95, da: 95, vi: 105 }
+    para_bonus: { vo: 22.0, da: 12.0, vi: 25.0 }
+    uncap3_bonus: { vo: 3.0, da: 0, vi: 5.0 }

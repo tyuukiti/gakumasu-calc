@@ -3720,3 +3720,45 @@ support_cards:
     stat: vo
     values: [50, 75, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SSR_0117
+  name: お嬢様、失礼いたします
+  rarity: SSR
+  type: vo
+  plan: sense
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vo
+    values: [52, 55, 59, 62, 65]
+    value_type: flat
+  - trigger: equip
+    stat: vo
+    values: [21, 21, 28, 28, 28]
+    value_type: sp_rate
+  - trigger: vo_sp_end
+    stat: vo
+    values: [13, 13, 13, 17, 17]
+    value_type: flat
+  - trigger: concentrate_acquire
+    stat: vo
+    values: [16, 16, 16, 16, 22]
+    value_type: flat
+    max_count: 4
+    condition: 所持している集中効果のスキルカード>=8
+  - trigger: concentrate_acquire
+    stat: vo
+    values: [20, 20, 20, 20, 20]
+    value_type: flat
+    max_count: 3
+    condition: vo>=900
+    description: お嬢様おでかけセット (集中効果のスキルカード獲得時・ボーカル900以上・プロデュース中3回)
+    source: item
+  - trigger: equip
+    stat: vo
+    values: [50, 75, 75, 75, 100]
+    value_type: event_param_boost
