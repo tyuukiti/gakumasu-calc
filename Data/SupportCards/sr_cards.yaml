@@ -2842,3 +2842,45 @@ support_cards:
     stat: vi
     values: [50, 50, 75, 75, 100]
     value_type: event_param_boost
+- id: SP_SR_0084
+  name: どたばた、おそうじ
+  rarity: SR
+  type: vi
+  plan: sense
+  tag: produce_item
+  effects:
+  - trigger: equip
+    stat: vi
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    event_param: true
+  - trigger: equip
+    stat: vi
+    values: [4.4, 4.9, 5.4, 5.9, 6.4]
+    value_type: para_bonus
+  - trigger: class_end
+    stat: vi
+    values: [3, 5, 5, 5, 5]
+    value_type: flat
+  - trigger: vi_sp_end
+    stat: vi
+    values: [7, 7, 7, 7, 13]
+    value_type: flat
+  - trigger: concentrate_acquire
+    stat: vi
+    values: [8, 8, 8, 16, 16]
+    value_type: flat
+    max_count: 4
+    condition: 所持している集中効果のスキルカード>=8
+  - trigger: class_end
+    stat: vi
+    values: [15, 15, 15, 15, 15]
+    value_type: flat
+    max_count: 1
+    condition: vi>=700
+    description: お掃除の成果 (授業・営業終了時・ビジュアル700以上・プロデュース中1回)
+    source: item
+  - trigger: equip
+    stat: vi
+    values: [50, 50, 75, 75, 100]
+    value_type: event_param_boost
