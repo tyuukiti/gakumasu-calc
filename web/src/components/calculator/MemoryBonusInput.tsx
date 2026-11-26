@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useCalcStore, MAX_MEMORY_PRESETS } from '../../stores/calcStore';
-import type { MemoryBonusType } from '../../types/models';
+import type { MemoryBonus, MemoryBonusType } from '../../types/models';
+import { summarizeMemoryBonuses, type MemoryStat } from '../../services/memoryBonus';
 import Accordion from '../Accordion';
 
 const STAT_LABELS: { key: 'vo' | 'da' | 'vi'; label: string; color: string }[] = [
@@ -8,6 +9,27 @@ const STAT_LABELS: { key: 'vo' | 'da' | 'vi'; label: string; color: string }[] =
   { key: 'da', label: 'Dance', color: 'var(--color-da, #6B9FFF)' },
   { key: 'vi', label: 'Visual', color: 'var(--color-vi, #FFD36B)' },
 ];
+
+/** 見出し (薄灰の背景上の小さい文字) 用。明色の --color-vo 等は特に Vi の黄色が読みにくいので濃色の -text を使う */
+const STAT_TEXT_COLORS: Record<MemoryStat, string> = {
+  vo: 'var(--color-vo-text)',
+  da: 'var(--color-da-text)',
+  vi: 'var(--color-vi-text)',
+};
+const STAT_SHORT_LABELS: Record<MemoryStat, string> = { vo: 'Vo', da: 'Da', vi: 'Vi' };
+
+/** 折りたたみ見出しの状態表示: 設定済みなら属性別の合計値を属性色のラベル付きで並べる (枚数は出さない) */
+function renderMemoryStatus(list: MemoryBonus[]): ReactNode {
+  const summary = summarizeMemoryBonuses(list);
+  if (!summary) return undefined;
+  if (summary.length === 0) return '設定済み';
+  return summary.map((s, i) => (
+    <Fragment key={s.stat}>
+      {i > 0 && ' / '}
+      <span style={{ color: STAT_TEXT_COLORS[s.stat] }}>{STAT_SHORT_LABELS[s.stat]}</span> {s.text}
+    </Fragment>
+  ));
+}
 
 /**
  * 持ち込みメモリー入力欄（最大4枚・セッション限定）。
@@ -39,10 +61,6 @@ export default function MemoryBonusInput() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memoryBonuses]);
 
-  const hasAny = memoryBonuses.some(
-    (m) => m.vo.value !== 0 || m.da.value !== 0 || m.vi.value !== 0,
-  );
-
   const onValueInput = (idx: number, key: 'vo' | 'da' | 'vi', raw: string) => {
     // ローカル表示は raw を保持（"2." や "-" などの中間状態を許可）
     setDrafts((prev) => {
@@ -61,7 +79,7 @@ export default function MemoryBonusInput() {
       onToggle={setIsOpen}
       title="持ち込みメモリー"
       note="（最大4枚・任意）"
-      status={hasAny ? '設定済み' : undefined}
+      status={renderMemoryStatus(memoryBonuses)}
       emptyStatus="未設定"
     >
       {isOpen && (
