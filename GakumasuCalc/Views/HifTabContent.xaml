@@ -585,6 +585,113 @@
                 </Expander>
             </Border>
 
+            <!-- カスタムPアイテム (ポーチ): 色→ぬいぐるみ→デコレーションの3段選択。日程から段階ごとの発動回数を自動集計しイベント回数へ加算 -->
+            <Border Style="{StaticResource SectionCard}" Visibility="{Binding HifVm.PouchSectionVisibility}">
+                <Expander IsExpanded="False">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="カスタムPアイテム（ポーチ）" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="#333" VerticalAlignment="Center"/>
+                            <TextBlock Text="（任意）" FontSize="11" Foreground="#999"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding HifVm.PouchHeaderText}" FontSize="12" Foreground="#666"
+                                       Margin="4,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                        <!-- 色 → ぬいぐるみ → デコレーション -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="色" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <ComboBox ItemsSource="{Binding HifVm.PouchColorOptions}"
+                                      SelectedValue="{Binding HifVm.PouchColor}" SelectedValuePath="Value" DisplayMemberPath="Label"
+                                      FontSize="12" Padding="6,4" Width="100" VerticalAlignment="Center"/>
+                            <TextBlock Text="ぬいぐるみ" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="16,0,6,0"/>
+                            <ComboBox ItemsSource="{Binding HifVm.AvailablePouchPlushes}"
+                                      SelectedValue="{Binding HifVm.PouchPlush}" SelectedValuePath="Value" DisplayMemberPath="Label"
+                                      FontSize="12" Padding="6,4" Width="110" VerticalAlignment="Center"/>
+                            <TextBlock Text="デコレーション" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="16,0,6,0"/>
+                            <ComboBox ItemsSource="{Binding HifVm.AvailablePouchDecorations}"
+                                      SelectedValue="{Binding HifVm.PouchDecoration}" SelectedValuePath="Value" DisplayMemberPath="Label"
+                                      FontSize="12" Padding="6,4" Width="110" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- 段階別プレビュー (段階 / 発動契機 / 効果 / この日程での発動) -->
+                        <Grid Margin="0,0,0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="200"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="段階" FontSize="11" Foreground="#999"/>
+                            <TextBlock Grid.Column="1" Text="発動契機" FontSize="11" Foreground="#999"/>
+                            <TextBlock Grid.Column="2" Text="効果 (1回あたり)" FontSize="11" Foreground="#999"/>
+                            <TextBlock Grid.Column="3" Text="この日程での発動" FontSize="11" Foreground="#999"/>
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding HifVm.PouchStageRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2,0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="130"/>
+                                            <ColumnDefinition Width="130"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="200"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding StageLabel}" FontSize="12" Foreground="{Binding Foreground}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding TriggerLabel}" FontSize="12" Foreground="{Binding Foreground}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding EffectText}" FontSize="12" Foreground="{Binding Foreground}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding FiredText}" FontSize="12" Foreground="{Binding Foreground}" VerticalAlignment="Center" FontFamily="Consolas"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding HifVm.PouchSummaryText}" FontSize="11" Foreground="#666" Margin="0,6,0,0"/>
+
+                        <!-- プリセット保存・読み込み (スケジュール調整のプリセットと同じ形式。初回は Wiki の 3 ルート) -->
+                        <Border BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Margin="0,8,0,0" Padding="0,8,0,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="プリセット" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="#666" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding HifVm.PouchPresetCountText}" FontSize="11"
+                                               Foreground="#999" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox Grid.Column="0"
+                                              ItemsSource="{Binding HifVm.PouchPresets}"
+                                              SelectedItem="{Binding HifVm.SelectedPouchPreset}"
+                                              DisplayMemberPath="Name"
+                                              FontSize="12" Padding="6,4"/>
+                                    <Button Grid.Column="1" Content="削除"
+                                            Command="{Binding HifVm.DeletePouchPresetCommand}"
+                                            Style="{StaticResource DangerButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding HifVm.NewPouchPresetName, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="12" Padding="6,4"
+                                             ToolTip="保存するプリセット名 (同名は上書き)"/>
+                                    <Button Grid.Column="1" Content="現在の選択を保存"
+                                            Command="{Binding HifVm.SavePouchPresetCommand}"
+                                            Style="{StaticResource PrimaryButton}"
+                                            FontSize="11" Padding="10,4" Margin="6,0,0,0"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
             <!-- SP枚数設定 (Vo/Da/Vi 各独立、メイン/サブ概念なし。MainViewModel の値を共有) -->
             <Border Style="{StaticResource SectionCard}">
                 <StackPanel>
@@ -914,6 +1021,9 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </StackPanel>
+                    <!-- ポーチ (カスタムPアイテム) の自動加算分。手入力と二重に数えないための表示 -->
+                    <TextBlock Text="{Binding HifVm.PouchSummaryLine}" FontSize="11" Foreground="#666"
+                               Margin="0,0,0,6" Visibility="{Binding HifVm.PouchSummaryLineVisibility}"/>
 
                     <Expander Header="詳細を編集" IsExpanded="False" FontSize="12" Foreground="#666">
                     <StackPanel>

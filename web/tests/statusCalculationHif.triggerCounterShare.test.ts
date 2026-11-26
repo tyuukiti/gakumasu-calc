@@ -7,7 +7,7 @@ import { useHifStore } from '../src/stores/hifStore';
 import { sanitizeSharePayload, type SharePayload } from '../src/services/shareState';
 import { calculate } from '../src/services/statusCalculation';
 import { defaultHifBonusLevels } from '../src/types/hifBonus';
-import { emptyAdditionalCounts, emptyMemoryBonus } from '../src/types/models';
+import { emptyAdditionalCounts, emptyMemoryBonus, emptyHifPouchSelection } from '../src/types/models';
 import type { StatusValues } from '../src/types/models';
 import {
   loadAllCards,
@@ -15,6 +15,7 @@ import {
   loadPlan,
   loadCharacters,
   loadTemplates,
+  loadHifPouch,
   REPO_ROOT,
 } from './helpers/loadRealData';
 import {
@@ -54,6 +55,7 @@ function resetStores() {
     plans: loadPlans(),
     templates: loadTemplates(),
     characters: loadCharacters(),
+    hifPouch: loadHifPouch(),
     inventory: [],
     isLoading: false,
     error: null,
@@ -64,6 +66,7 @@ function resetStores() {
     examRatio: { vo: 34, da: 33, vi: 33 },
     bulkLessonDefault: { mainStat: 'vo', subStat: 'da' },
     bulkClassStat: 'vo',
+    pouch: emptyHifPouchSelection(),
     schedulePresets: [],
     conditionPresets: [],
     bonusLevels: defaultHifBonusLevels(),

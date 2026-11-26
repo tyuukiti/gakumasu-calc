@@ -8,17 +8,21 @@ namespace GakumasuCalc.ViewModels;
 /// <summary>
 /// HIFモード (Hatsuboshi IDOL FESTIVAL) 用 ViewModel。
 /// </summary>
-public class HifViewModel : ViewModelBase
+public partial class HifViewModel : ViewModelBase
 {
     private TrainingPlan? _hifPlan;
     private string? _errorMessage;
     private readonly HifSchedulePresetService? _presetService;
     private readonly HifBonusLevelsService? _bonusLevelsService;
 
-    public HifViewModel(HifSchedulePresetService? presetService = null, HifBonusLevelsService? bonusLevelsService = null)
+    public HifViewModel(
+        HifSchedulePresetService? presetService = null,
+        HifBonusLevelsService? bonusLevelsService = null,
+        HifPouchPresetService? pouchPresetService = null)
     {
         _presetService = presetService;
         _bonusLevelsService = bonusLevelsService;
+        _pouchPresetService = pouchPresetService;
         ApplyBulkLessonChoiceCommand = new RelayCommand(_ => ExecuteApplyBulkLessonChoice());
         ApplyBulkClassChoiceCommand = new RelayCommand(_ => ExecuteApplyBulkClassChoice());
         ApplyExamPresetCommand = new RelayCommand(p => ExecuteApplyExamPreset(p as string));
@@ -29,6 +33,7 @@ public class HifViewModel : ViewModelBase
         ResetBonusLevelsCommand = new RelayCommand(_ => ExecuteResetBonusLevels());
         LoadSchedulePresets();
         LoadBonusLevels();
+        LoadPouchPresets();
     }
 
     /// <summary>HIFボーナスレベル設定 (パネル毎)</summary>
@@ -588,12 +593,20 @@ public class HifViewModel : ViewModelBase
     /// </summary>
     private void PopulateScheduleItems()
     {
+        foreach (var old in ScheduleItems)
+            old.PropertyChanged -= OnScheduleItemChanged;
         ScheduleItems.Clear();
-        if (_hifPlan == null) return;
+        if (_hifPlan == null)
+        {
+            RefreshPouchPreview();
+            return;
+        }
 
         foreach (var week in _hifPlan.Schedule)
         {
             var item = HifScheduleItemViewModel.Build(week);
+            // 日程の選択変更でポーチのプレビュー (発動日・回数) を更新する
+            item.PropertyChanged += OnScheduleItemChanged;
             ScheduleItems.Add(item);
         }
 
@@ -601,6 +614,7 @@ public class HifViewModel : ViewModelBase
         MaterializeExamRatio();
         ExamRatioChanged?.Invoke();
         OnPropertyChanged(nameof(ExamItems));
+        RefreshPouchPreview();
     }
 }
 
@@ -865,17 +879,7 @@ public class HifScheduleItemViewModel : ViewModelBase
         return item;
     }
 
-    private static string BuildDayLabel(WeekSchedule week)
-    {
-        if (week.Week <= 20) return $"Day {week.Week}";
-        return week.Week switch
-        {
-            27 => "本戦R1",
-            28 => "本戦インターバル",
-            29 => "本戦R2",
-            _ => $"本戦{week.Week - 20}日目",
-        };
-    }
+    private static string BuildDayLabel(WeekSchedule week) => HifViewModel.DayLabel(week.Week);
 
     private static string BuildTypeLabel(WeekSchedule week)
     {

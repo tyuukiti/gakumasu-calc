@@ -13,6 +13,7 @@
     { "id": "hif_davi", "planId": "hif", "mode": "hif", "mainStats": ["da", "vi"], "subStat": "vo", "templateName": "センス" },
     { "id": "hif_vivo", "planId": "hif", "mode": "hif", "mainStats": ["vi", "vo"], "subStat": "da", "templateName": "センス" },
     { "id": "hif_vida", "planId": "hif", "mode": "hif", "mainStats": ["vi", "da"], "subStat": "vo", "templateName": "センス" },
-    { "id": "hif_voda_sp_vo2", "planId": "hif", "mode": "hif", "mainStats": ["vo", "da"], "subStat": "vi", "spCounts": { "vo": 2 }, "templateName": "センス" }
+    { "id": "hif_voda_sp_vo2", "planId": "hif", "mode": "hif", "mainStats": ["vo", "da"], "subStat": "vi", "spCounts": { "vo": 2 }, "templateName": "センス" },
+    { "id": "hif_davi_pouch_hana_robo", "planId": "hif", "mode": "hif", "mainStats": ["da", "vi"], "subStat": "vo", "templateName": "センス", "pouch": { "color": "yellow", "plush": "robo", "deco": "flower" } }
   ]
 }

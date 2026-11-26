@@ -5,7 +5,7 @@ import { useHifStore, defaultChoiceForWeek } from '../src/stores/hifStore';
 import { buildSharePayload } from '../src/services/sharePayload';
 import { decodeSharePayload, encodeSharePayload } from '../src/services/shareState';
 import { defaultHifBonusLevels } from '../src/types/hifBonus';
-import { emptyAdditionalCounts, emptyMemoryBonus } from '../src/types/models';
+import { emptyAdditionalCounts, emptyMemoryBonus, emptyHifPouchSelection } from '../src/types/models';
 import type { CalculationResult, DeckResult } from '../src/types/results';
 import type { TrainingPlan, TurnChoice } from '../src/types/models';
 import {
@@ -13,6 +13,7 @@ import {
   loadPlans,
   loadCharacters,
   loadTemplates,
+  loadHifPouch,
   templateAdditionalCounts,
 } from './helpers/loadRealData';
 
@@ -35,6 +36,7 @@ function resetStores() {
     plans: loadPlans(),
     templates: loadTemplates(),
     characters,
+    hifPouch: loadHifPouch(),
     inventory: [],
     isLoading: false,
     error: null,
@@ -45,6 +47,7 @@ function resetStores() {
     examRatio: { vo: 34, da: 33, vi: 33 },
     bulkLessonDefault: { mainStat: 'vo', subStat: 'da' },
     bulkClassStat: 'vo',
+    pouch: emptyHifPouchSelection(),
     schedulePresets: [],
     conditionPresets: [],
     bonusLevels: defaultHifBonusLevels(),

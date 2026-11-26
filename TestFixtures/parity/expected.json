@@ -548,5 +548,51 @@
       ],
       "total": 3794
     }
+  ],
+  "hif_davi_pouch_hana_robo": [
+    {
+      "ids": [
+        "SP_SSR_0059",
+        "SP_SSR_0067",
+        "SP_SSR_0069",
+        "SP_SSR_0071",
+        "SP_SSR_0089",
+        "SP_SSR_0110"
+      ],
+      "total": 3702
+    },
+    {
+      "ids": [
+        "SP_SR_0008",
+        "SP_SSR_0059",
+        "SP_SSR_0064",
+        "SP_SSR_0069",
+        "SP_SSR_0071",
+        "SP_SSR_0110"
+      ],
+      "total": 3786
+    },
+    {
+      "ids": [
+        "SP_SR_0008",
+        "SP_SSR_0059",
+        "SP_SSR_0064",
+        "SP_SSR_0069",
+        "SP_SSR_0071",
+        "SP_SSR_0110"
+      ],
+      "total": 3786
+    },
+    {
+      "ids": [
+        "SP_SR_0008",
+        "SP_SSR_0059",
+        "SP_SSR_0064",
+        "SP_SSR_0069",
+        "SP_SSR_0071",
+        "SP_SSR_0110"
+      ],
+      "total": 3786
+    }
   ]
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../../stores/appStore';
 import { useCalcStore } from '../../stores/calcStore';
 import { applyCharacterToggles } from '../../services/characterBonus';
+import Accordion from '../Accordion';
 
 // 背景色の明度から白/黒の文字色を選ぶ（YIQ式）
 function foregroundFor(hex: string): string {
@@ -34,28 +35,16 @@ export default function CharacterSelector() {
   const effectivePara = effective?.para_bonus ?? null;
 
   return (
-    <div className="border-t border-gray-100 pt-3">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-gray-900 cursor-pointer"
-      >
-        <span>
-          キャラ選択
-          <span className="text-xs text-gray-400 ml-1">（任意）</span>
-          {selected && (
-            <span className="text-xs text-gray-600 ml-2">: {selected.name}</span>
-          )}
-        </span>
-        <span
-          className={`text-xs text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-        >
-          &#9654;
-        </span>
-      </button>
-
+    <Accordion
+      open={isOpen}
+      onToggle={setIsOpen}
+      title="キャラ選択"
+      note="（任意）"
+      status={selected?.name}
+      emptyStatus="未選択"
+    >
       {isOpen && (
-        <div className="mt-3">
+        <div className="border border-gray-200 rounded-md bg-gray-50 p-3">
           <div className="grid grid-cols-7 gap-2">
             {characters.map((c) => {
               const isSelected = c.id === selectedCharacterId;
@@ -122,7 +111,7 @@ export default function CharacterSelector() {
           )}
 
           {selected && effectiveBase && effectivePara && (
-            <div className="mt-2 text-xs text-gray-600 bg-gray-50 rounded p-2 leading-relaxed">
+            <div className="mt-2 text-xs text-gray-600 bg-white border border-gray-200 rounded p-2 leading-relaxed">
               <div>
                 基礎+{effectiveBase.vo}/
                 {effectiveBase.da}/
@@ -135,6 +124,6 @@ export default function CharacterSelector() {
           )}
         </div>
       )}
-    </div>
+    </Accordion>
   );
 }

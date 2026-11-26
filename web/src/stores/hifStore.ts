@@ -7,8 +7,20 @@ import type {
   WeekSchedule,
   SupportCard,
   StatusValues,
+  HifPouchSelection,
 } from '../types/models';
-import { emptyAdditionalCounts, emptyMemoryBonus, isEmptyAllMemoryBonuses } from '../types/models';
+import {
+  emptyAdditionalCounts,
+  emptyMemoryBonus,
+  isEmptyAllMemoryBonuses,
+  emptyHifPouchSelection,
+} from '../types/models';
+import {
+  computeHifPouchCounts,
+  mergeAdditionalCounts,
+  sanitizeHifPouchSelection,
+  HIF_POUCH_DEFAULT_PRESETS,
+} from '../services/hifPouch';
 import { useAppStore } from './appStore';
 import { useCalcStore, type HifConditionCalcFields } from './calcStore';
 import { selectMultiplePatternsHif } from '../services/cardScoring';
@@ -294,6 +306,53 @@ function persistSchedulePresets(presets: HifSchedulePreset[]) {
   }
 }
 
+/** カスタムPアイテム (ポーチ) のプリセット (選択を名前付きで保存・読込) */
+export interface HifPouchPreset {
+  name: string;
+  selection: HifPouchSelection;
+}
+
+const HIF_POUCH_PRESETS_KEY = 'hifPouchPresets';
+/** ポーチプリセットの保存可能件数上限 */
+export const MAX_HIF_POUCH_PRESETS = 10;
+
+/** 初期プリセット (Wiki の 3 ルート)。保存領域が未作成のときだけ投入し、以後はユーザが上書き・削除できる */
+export function defaultHifPouchPresets(): HifPouchPreset[] {
+  return HIF_POUCH_DEFAULT_PRESETS.map((p) => ({ name: p.name, selection: { ...p.selection } }));
+}
+
+function loadPouchPresetsFromStorage(): HifPouchPreset[] {
+  if (typeof window === 'undefined') return defaultHifPouchPresets();
+  try {
+    const raw = localStorage.getItem(HIF_POUCH_PRESETS_KEY);
+    // 未作成 (null) のときだけ初期プリセット。空配列 (全削除済み) はそのまま尊重する
+    if (raw == null) return defaultHifPouchPresets();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return defaultHifPouchPresets();
+    const out: HifPouchPreset[] = [];
+    for (const p of parsed) {
+      if (!p || typeof p.name !== 'string' || !p.selection || typeof p.selection !== 'object') continue;
+      const toId = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
+      out.push({
+        name: p.name,
+        selection: { color: toId(p.selection.color), plush: toId(p.selection.plush), deco: toId(p.selection.deco) },
+      });
+    }
+    return out;
+  } catch {
+    return defaultHifPouchPresets();
+  }
+}
+
+function persistPouchPresets(presets: HifPouchPreset[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(HIF_POUCH_PRESETS_KEY, JSON.stringify(presets));
+  } catch (e) {
+    console.warn('ポーチプリセット保存失敗:', e);
+  }
+}
+
 /** 条件プリセットの hifStore 側フィールド */
 export interface HifConditionHifFields {
   scheduleChoices: Record<number, HifChoice>;
@@ -301,6 +360,8 @@ export interface HifConditionHifFields {
   examRatio: ExamAllocation;
   bulkLessonDefault: BulkLessonDefault;
   bulkClassStat: 'vo' | 'da' | 'vi';
+  /** カスタムPアイテム (ポーチ) の選択。無いプリセットは未選択として読み込む (結果に影響する条件のため) */
+  pouch?: HifPouchSelection;
 }
 
 /**
@@ -360,6 +421,14 @@ interface HifState {
   /** 一括設定で使う授業のデフォルト属性 */
   bulkClassStat: 'vo' | 'da' | 'vi';
 
+  /**
+   * カスタムPアイテム (ポーチ) の選択。scheduleChoices と同じセッション状態 (永続化しない。
+   * 条件プリセットと共有 URL でのみ持ち回る)。発動回数は日程から computeHifPouchCounts で算出する。
+   */
+  pouch: HifPouchSelection;
+  /** ポーチ選択のプリセット (localStorage 永続化。未作成なら Wiki の 3 ルートを初期投入) */
+  pouchPresets: HifPouchPreset[];
+
   /** スケジュール調整のプリセット (localStorage 永続化) */
   schedulePresets: HifSchedulePreset[];
 
@@ -387,6 +456,17 @@ interface HifState {
   ensureExamAllocations: () => void;
   setBulkLessonDefault: (def: BulkLessonDefault) => void;
   setBulkClassStat: (stat: 'vo' | 'da' | 'vi') => void;
+  /**
+   * ポーチ選択を更新。色→ぬいぐるみ→デコレーションの従属で、親を変えると子はリセットされる。
+   * 定義に無い id は未選択に正規化する。
+   */
+  setPouchSelection: (sel: Partial<HifPouchSelection>) => void;
+  /** 現在のポーチ選択をプリセットとして保存 (同名は上書き) */
+  savePouchPreset: (name: string) => void;
+  /** ポーチプリセットを読み込んで選択に反映 */
+  loadPouchPreset: (name: string) => void;
+  /** ポーチプリセットを削除 */
+  deletePouchPreset: (name: string) => void;
   /** 全公開レッスン日に bulkLessonDefault を適用 */
   applyBulkLessonChoice: () => void;
   /** 全授業日に bulkClassStat を適用 */
@@ -491,9 +571,19 @@ function buildPlanAndChoices(
   });
 
   const newPlan: TrainingPlan = { ...hifPlan, schedule: newSchedule };
+  return { plan: newPlan, turnChoices: buildHifTurnChoices(hifPlan, choices) };
+}
 
+/**
+ * ユーザのスケジュール選択から計算エンジンに渡す TurnChoice[] を構築 (固定日と選択肢なしの日はスキップ)。
+ * executeCalculate とポーチのプレビュー (HifPouchConfig) が同じ規則で日程を解釈するために共有する。
+ */
+export function buildHifTurnChoices(
+  hifPlan: TrainingPlan,
+  choices: Record<number, HifChoice>,
+): TurnChoice[] {
   const turnChoices: TurnChoice[] = [];
-  for (const w of newSchedule) {
+  for (const w of hifPlan.schedule) {
     if (w.type === 'audition' || w.type === 'fixed_event' || w.type === 'exam') continue;
     // 選択肢なしの日 (本戦インターバル等) は計算対象外。
     // 過去に永続化された choice が残っていても発動させない。
@@ -502,8 +592,7 @@ function buildPlanAndChoices(
     if (!choice) continue;
     turnChoices.push({ week: w.week, chosen_action: choice.action as ActionType });
   }
-
-  return { plan: newPlan, turnChoices };
+  return turnChoices;
 }
 
 function getCandidateCards(
@@ -628,18 +717,25 @@ function applySelectedPatternImpl(
   const hasAnyMemory = !isEmptyAllMemoryBonuses(memoryBonuses);
   const hasSelectedCharacter = !!calc.selectedCharacterId;
 
+  // 手入力のイベント回数にポーチ (カスタムPアイテム) の発動回数を合算して渡す。
+  // 「補正なし」ベースラインにも同じ回数を使わないと、ポーチ分がキャラ補正の差分に紛れ込む
+  const additionalCounts = mergeAdditionalCounts(
+    calc.additionalCounts,
+    computeHifPouchCounts(app.hifPouch, state.pouch, state._lastTurnChoices).counts,
+  );
+
   const result = calculate(
     state._lastPlan,
     selectedCards,
     state._lastTurnChoices,
     uncapLevels,
-    calc.additionalCounts,
+    additionalCounts,
     effectiveChar,
     memoryBonuses,
   );
 
   const resultWithoutCharacter = (hasSelectedCharacter || hasAnyMemory || hasAnyHifBonus)
-    ? calculate(state._lastPlan, selectedCards, state._lastTurnChoices, uncapLevels, calc.additionalCounts, null, null)
+    ? calculate(state._lastPlan, selectedCards, state._lastTurnChoices, uncapLevels, additionalCounts, null, null)
     : null;
 
   return {
@@ -656,6 +752,8 @@ export const useHifStore = create<HifState>((set, get) => ({
   examRatio: { ...DEFAULT_EXAM_RATIO },
   bulkLessonDefault: { mainStat: 'vo', subStat: 'da' },
   bulkClassStat: 'vo',
+  pouch: emptyHifPouchSelection(),
+  pouchPresets: loadPouchPresetsFromStorage(),
   schedulePresets: loadSchedulePresetsFromStorage(),
   conditionPresets: loadConditionPresetsFromStorage(),
   bonusLevels: loadBonusLevelsFromStorage(),
@@ -839,6 +937,7 @@ export const useHifStore = create<HifState>((set, get) => ({
         examRatio: { ...state.examRatio },
         bulkLessonDefault: { ...state.bulkLessonDefault },
         bulkClassStat: state.bulkClassStat,
+        pouch: { ...state.pouch },
       },
       calc: {
         selectedPlanType: calc.selectedPlanType,
@@ -926,13 +1025,18 @@ export const useHifStore = create<HifState>((set, get) => ({
     }
     const bulkClassStat = isStat(hif.bulkClassStat) ? hif.bulkClassStat : state.bulkClassStat;
 
+    // ポーチ: 保存値を定義と突き合わせて採用。無いプリセット (旧スキーマ) は未選択 (結果に影響する条件のため現状維持しない)
+    const pouch = sanitizeHifPouchSelection(useAppStore.getState().hifPouch, hif.pouch);
+
     // 入力条件を差し替え、古い計算結果・内部スナップショットは全クリア
+    // (直後に executeCalculate が走るので、ポーチも同じ set で反映する)
     set({
       scheduleChoices: seededChoices,
       examAllocations: allocs,
       examRatio: deriveExamRatio(allocs),
       bulkLessonDefault,
       bulkClassStat,
+      pouch,
       deckResults: [],
       selectedPatternIndex: 0,
       calculationResult: null,
@@ -956,6 +1060,55 @@ export const useHifStore = create<HifState>((set, get) => ({
     persistConditionPresets(next);
     set({ conditionPresets: next });
     trackEvent('hif_condition_preset_deleted');
+  },
+
+  setPouchSelection: (sel) => {
+    const next: HifPouchSelection = { ...get().pouch };
+    if (sel.color !== undefined && sel.color !== next.color) {
+      next.color = sel.color;
+      next.plush = null;
+      next.deco = null;
+    }
+    if (sel.plush !== undefined && sel.plush !== next.plush) {
+      next.plush = sel.plush;
+      next.deco = null;
+    }
+    if (sel.deco !== undefined) next.deco = sel.deco;
+    set({ pouch: sanitizeHifPouchSelection(useAppStore.getState().hifPouch, next) });
+  },
+
+  savePouchPreset: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const state = get();
+    const preset: HifPouchPreset = { name: trimmed, selection: { ...state.pouch } };
+    const existingIndex = state.pouchPresets.findIndex((p) => p.name === trimmed);
+    let next: HifPouchPreset[];
+    if (existingIndex >= 0) {
+      next = state.pouchPresets.map((p, i) => (i === existingIndex ? preset : p));
+    } else {
+      if (state.pouchPresets.length >= MAX_HIF_POUCH_PRESETS) return;
+      next = [...state.pouchPresets, preset];
+    }
+    persistPouchPresets(next);
+    set({ pouchPresets: next });
+    trackEvent('hif_pouch_preset_saved', { preset_count: next.length });
+  },
+
+  loadPouchPreset: (name) => {
+    const preset = get().pouchPresets.find((p) => p.name === name);
+    if (!preset) return;
+    set({ pouch: sanitizeHifPouchSelection(useAppStore.getState().hifPouch, preset.selection) });
+    trackEvent('hif_pouch_preset_loaded');
+  },
+
+  deletePouchPreset: (name) => {
+    const state = get();
+    const next = state.pouchPresets.filter((p) => p.name !== name);
+    if (next.length === state.pouchPresets.length) return;
+    persistPouchPresets(next);
+    set({ pouchPresets: next });
+    trackEvent('hif_pouch_preset_deleted');
   },
 
   setBonusLevel: (key, level) => {
@@ -1001,7 +1154,7 @@ export const useHifStore = create<HifState>((set, get) => ({
       // 共有結果の表示中に計算したら、以降は自分の所持カード・設定での通常計算に戻る
       if (get().shareView) get().exitShareView(false);
       const state = get();
-      const { plans, cards: allCards, inventory } = useAppStore.getState();
+      const { plans, cards: allCards, inventory, hifPouch } = useAppStore.getState();
       const calc = useCalcStore.getState();
 
       const hifPlan = plans.find((p) => p.id === 'hif');
@@ -1018,6 +1171,12 @@ export const useHifStore = create<HifState>((set, get) => ({
         set({ errorMessage: 'スケジュールが未設定です' });
         return;
       }
+
+      // 手入力のイベント回数 + ポーチ (カスタムPアイテム) の発動回数。デッキ選出・パターン比較・結果表示で共通に使う
+      const additionalCounts = mergeAdditionalCounts(
+        calc.additionalCounts,
+        computeHifPouchCounts(hifPouch, state.pouch, turnChoices).counts,
+      );
 
       // mainStats 自動推論 (PostOptimize 用、HIFパターンでも保護対象計算に使う)
       const [main1, main2] = inferMainStats(turnChoices);
@@ -1153,7 +1312,7 @@ export const useHifStore = create<HifState>((set, get) => ({
         lessonAllocation,
         spCounts,
         calc.selectedPlanType,
-        calc.additionalCounts,
+        additionalCounts,
         uncapLevels,
         rentalPool,
         requiredCardIds,
@@ -1180,7 +1339,7 @@ export const useHifStore = create<HifState>((set, get) => ({
           cards,
           turnChoices,
           uc,
-          calc.additionalCounts,
+          additionalCounts,
           effectiveChar,
           calc.memoryBonuses,
         ).final_status;
@@ -1321,12 +1480,20 @@ export const useHifStore = create<HifState>((set, get) => ({
       else if (tc.chosen_action === 'vi_lesson') lessonAllocation.vi++;
     }
 
+    // ポーチ: 共有元の選択を定義と突き合わせて復元 (無い/未知の id は未選択)。
+    // 回数はここで1回算出し、固定編成の評価と後続の applySelectedPatternImpl (set 後の state.pouch) で同じ値になる
+    const pouch = sanitizeHifPouchSelection(app.hifPouch, payload.hif.pouch);
+    const additionalCounts = mergeAdditionalCounts(
+      calc.additionalCounts,
+      computeHifPouchCounts(app.hifPouch, pouch, turnChoices).counts,
+    );
+
     const deckResult = buildFixedDeckResult(
       plan,
       deck,
       lessonAllocation,
       mainStats,
-      calc.additionalCounts,
+      additionalCounts,
       turnChoices,
       payload.label || '共有された編成',
     );
@@ -1335,6 +1502,7 @@ export const useHifStore = create<HifState>((set, get) => ({
       scheduleChoices: choices,
       examAllocations: allocs,
       examRatio: deriveExamRatio(allocs),
+      pouch,
       // 一括設定の表示値も共有元に揃える (無ければ現状維持)
       bulkLessonDefault: payload.hif.bulkLessonDefault ?? get().bulkLessonDefault,
       bulkClassStat: payload.hif.bulkClassStat ?? get().bulkClassStat,

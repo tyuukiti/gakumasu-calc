@@ -105,6 +105,9 @@ public partial class MainViewModel
         if (bl.OverflowPenaltyEnabled)
             sb.AppendLine($"MAX超過再抽選: ON (閾値 {bl.OverflowPenaltyThreshold})");
 
+        // --- カスタムPアイテム (ポーチ): 選択時のみ ---
+        HifVm.AppendPouchDiagnostic(sb);
+
         // --- HIFスケジュール ---
         var schedLines = new List<string>();
         foreach (var item in HifVm.ScheduleItems)

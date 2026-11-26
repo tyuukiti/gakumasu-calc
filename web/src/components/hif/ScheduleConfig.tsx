@@ -4,6 +4,8 @@ import { useHifStore, defaultChoiceForWeek } from '../../stores/hifStore';
 import type { HifChoice } from '../../stores/hifStore';
 import type { WeekSchedule } from '../../types/models';
 import ResizablePanel from '../ResizablePanel';
+import Accordion from '../Accordion';
+import { hifDayLabel } from './hifDayLabel';
 
 type Stat = 'vo' | 'da' | 'vi';
 const STATS: Stat[] = ['vo', 'da', 'vi'];
@@ -26,14 +28,10 @@ const ACTION_LABEL: Record<string, string> = {
 };
 
 /**
- * 週情報から「Day X」ラベルを構築。本戦は別表記。
+ * 週情報から「Day X」ラベルを構築。本戦は別表記 (hifDayLabel を共用)。
  */
 function dayLabel(week: WeekSchedule): string {
-  if (week.week <= 20) return `Day ${week.week}`;
-  if (week.week === 27) return '本戦R1';
-  if (week.week === 29) return '本戦R2';
-  if (week.week === 28) return '本戦インターバル';
-  return `本戦${week.week - 20}日目`;
+  return hifDayLabel(week.week);
 }
 
 /**
@@ -77,18 +75,12 @@ export default function ScheduleConfig() {
   }
 
   return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-[var(--color-accent)] cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <span className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}>
-          &#9654;
-        </span>
-        個別調整 (全 {items.length} 日)
-        <span className="text-xs font-normal text-gray-500">— 一括設定で多くの日が設定済みです</span>
-      </button>
+    <Accordion
+      open={expanded}
+      onToggle={setExpanded}
+      title={`個別調整 (全 ${items.length} 日)`}
+      note="（一括設定で多くの日が設定済み）"
+    >
       {expanded && (
       <ResizablePanel
         storageKey="hifSchedulePanelHeight"
@@ -127,7 +119,7 @@ export default function ScheduleConfig() {
         </ul>
       </ResizablePanel>
       )}
-    </div>
+    </Accordion>
   );
 }
 

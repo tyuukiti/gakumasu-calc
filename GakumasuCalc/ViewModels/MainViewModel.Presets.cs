@@ -285,6 +285,8 @@ public partial class MainViewModel
         if (IsValidStat(hif.BulkMainStat)) HifVm.BulkMainStat = hif.BulkMainStat;
         if (IsValidStat(hif.BulkSubStat) && hif.BulkSubStat != HifVm.BulkMainStat) HifVm.BulkSubStat = hif.BulkSubStat;
         if (IsValidStat(hif.BulkClassStat)) HifVm.BulkClassStat = hif.BulkClassStat;
+        // ポーチ: 保存値を定義と突き合わせて採用。無いプリセット (旧ファイル) は未選択 (結果に影響する条件のため現状維持しない)
+        HifVm.SetPouchSelection(hif.PouchColor, hif.PouchPlush, hif.PouchDecoration);
 
         // 3. 共有側: 育成タイプ → テンプレ名 → イベント回数 → トグル（この順序が必須）
         var calc = preset.Calc ?? new HifConditionCalcFields();
@@ -374,6 +376,9 @@ public partial class MainViewModel
                 BulkMainStat = HifVm.BulkMainStat,
                 BulkSubStat = HifVm.BulkSubStat,
                 BulkClassStat = HifVm.BulkClassStat,
+                PouchColor = HifVm.PouchColorId,
+                PouchPlush = HifVm.PouchPlushId,
+                PouchDecoration = HifVm.PouchDecorationId,
             },
             Calc = new HifConditionCalcFields
             {

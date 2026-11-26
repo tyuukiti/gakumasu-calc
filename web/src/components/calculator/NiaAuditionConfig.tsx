@@ -58,7 +58,7 @@ export default function NiaAuditionConfig({ planId }: { planId: string }) {
               key={w.week}
               className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm flex-wrap"
             >
-              <span className="text-gray-700 font-medium w-28 shrink-0">
+              <span className="text-gray-700 font-medium w-36 shrink-0 whitespace-nowrap">
                 {w.event_name ?? `Week ${w.week}`}
               </span>
               <select

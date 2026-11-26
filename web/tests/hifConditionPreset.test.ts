@@ -7,10 +7,10 @@ import {
   MAX_HIF_CONDITION_PRESETS,
   type HifConditionPreset,
 } from '../src/stores/hifStore';
-import { emptyAdditionalCounts, emptyMemoryBonus } from '../src/types/models';
+import { emptyAdditionalCounts, emptyMemoryBonus, emptyHifPouchSelection } from '../src/types/models';
 import type { CalculationResult, DeckResult } from '../src/types/results';
 import type { TrainingPlan, TurnChoice } from '../src/types/models';
-import { loadAllCards, loadPlans, loadPlan, loadCharacters, loadTemplates } from './helpers/loadRealData';
+import { loadAllCards, loadPlans, loadPlan, loadCharacters, loadTemplates, loadHifPouch } from './helpers/loadRealData';
 
 /**
  * HIF条件プリセット (入力条件一式の保存・読込) のストアレベルテスト。
@@ -23,6 +23,7 @@ function resetStores() {
     plans: loadPlans(),
     templates: loadTemplates(),
     characters: loadCharacters(),
+    hifPouch: loadHifPouch(),
     inventory: [],
     isLoading: false,
     error: null,
@@ -33,6 +34,7 @@ function resetStores() {
     examRatio: { vo: 34, da: 33, vi: 33 },
     bulkLessonDefault: { mainStat: 'vo', subStat: 'da' },
     bulkClassStat: 'vo',
+    pouch: emptyHifPouchSelection(),
     schedulePresets: [],
     conditionPresets: [],
     deckResults: [],

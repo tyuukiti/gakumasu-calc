@@ -36,8 +36,8 @@ public partial class MainViewModel
 
         var lessonWeekCount = dynamicPlan.Schedule.Count(w => w.Lessons.Count > 0);
 
-        // 追加カウント
-        var additional = BuildAdditionalCounts();
+        // 追加カウント (手入力 + ポーチの発動回数)
+        var additional = BuildHifAdditionalCounts(turnChoices);
 
         // 候補カード
         var candidateCards = GetCandidateCards();
@@ -345,22 +345,34 @@ public partial class MainViewModel
             ActivitySupply = hifPlan.ActivitySupply,
         };
 
-        // TurnChoices 構築 (固定日 audition はスキップ)
-        var turnChoices = new List<TurnChoice>();
-        foreach (var w in newSchedule)
-        {
-            if (w.IsFixedEvent) continue;
-            // 選択肢なしの日 (本戦インターバル等) は計算対象外。
-            // 相談/特別指導はユーザ操作でありサポート効果が発動しないため。
-            if (w.AvailableActions.Count == 0) continue;
-            if (!itemsByWeek.TryGetValue(w.Week, out var item)) continue;
-            if (string.IsNullOrEmpty(item.SelectedAction)) continue;
-            var actionType = ParseActionType(item.SelectedAction);
-            if (actionType != null)
-                turnChoices.Add(new TurnChoice { Week = w.Week, ChosenAction = actionType.Value });
-        }
+        // TurnChoices 構築 (固定日 audition はスキップ)。ポーチのプレビューと同じ規則を使う
+        var turnChoices = HifVm.BuildTurnChoices();
 
         return (newPlan, turnChoices);
+    }
+
+    /// <summary>
+    /// HIF 用の追加イベント回数: 手入力 (BuildAdditionalCounts) にカスタムPアイテム (ポーチ) の発動回数を合算する。
+    /// プリセット保存・診断の [イベントカウント] は手入力値のままにするため、BuildAdditionalCounts 自体は変更しない。
+    /// </summary>
+    private AdditionalCounts BuildHifAdditionalCounts(IReadOnlyList<TurnChoice> turnChoices)
+        => HifPouchService.Merge(BuildAdditionalCounts(), HifVm.ComputePouchCounts(turnChoices).Counts);
+
+    /// <summary>Data/Hif/pouch.yaml からポーチ定義を読み込み HifVm に渡す (無ければポーチ機能は無効)。</summary>
+    private void LoadHifPouchDefinition(YamlDataService yamlService, string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                var file = yamlService.LoadFromFile<HifPouchFile>(filePath);
+                HifVm.PouchDefinition = file?.HifPouch;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"ポーチ定義読み込みエラー: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -387,19 +399,4 @@ public partial class MainViewModel
             .ToList();
     }
 
-    private static ActionType? ParseActionType(string s) => s switch
-    {
-        "vo_lesson" => ActionType.VoLesson,
-        "da_lesson" => ActionType.DaLesson,
-        "vi_lesson" => ActionType.ViLesson,
-        "vo_class" => ActionType.VoClass,
-        "da_class" => ActionType.DaClass,
-        "vi_class" => ActionType.ViClass,
-        "outing" => ActionType.Outing,
-        "rest" => ActionType.Rest,
-        "consultation" => ActionType.Consultation,
-        "activity_supply" => ActionType.ActivitySupply,
-        "special_training" => ActionType.SpecialTraining,
-        _ => null,
-    };
 }

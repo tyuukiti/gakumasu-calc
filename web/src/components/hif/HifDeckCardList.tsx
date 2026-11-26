@@ -144,7 +144,7 @@ export default function HifDeckCardList() {
                   </button>
                 )}
 
-                <span className={`text-xs text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
+                <span className={`text-xs text-gray-600 transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
                   &#9654;
                 </span>
               </div>

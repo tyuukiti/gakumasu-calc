@@ -14,8 +14,8 @@ pwsh ./run-tests.ps1
 個別に走らせる場合:
 
 ```powershell
-cd web; npm test                 # Web版 (TS / Vitest) … 137 件
-dotnet test GakumasuCalc.Tests   # デスクトップ版 (C# / xUnit) … 80 件
+cd web; npm test                 # Web版 (TS / Vitest) … 184 件
+dotnet test GakumasuCalc.Tests   # デスクトップ版 (C# / xUnit) … 93 件
 ```
 
 通常モード(hatsu_legend) と **HIFモード(hif)** の両方を、実データ + **実イベント回数テンプレート**で検証する。
@@ -58,7 +58,7 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 
 > 各層の符号 — **L1**=合成データで最適性・制約・決定性を厳密検証 / **L2**=実データで「自動編成≧手動編成」(このツールの核心) / **L4**=C#版とWeb版が同結果か(クロス実装パリティ)。
 
-### Web版（`web/tests/`）— 137 件
+### Web版（`web/tests/`）— 184 件
 
 | ファイル | 件数 | 検証内容 |
 |---|---|---|
@@ -76,13 +76,14 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 | `cardScoringHif.crossPlanCard.test.ts` | 3 | **L1 回帰**(ユーザ報告2026-09「別プランのサポカが1枚だけ選出される」): 十王星南+HIF Lv5・logic・VoSP3・所持のみ・必須3枚(0007/0081/0094 低凸)で、所持セット3種(報告編成の再現／プラン内全4凸所持／全カード所持)すべてで 6枚・必須全含・VoSP≧3・レンタル1枚・**必須以外に別プラン(sense/anomaly)が混ざらない**。`enforceSpCounts` のレンタルSP補充だけ planType 未フィルタだった退行ガード(必須が載ったレンタル枠を差し替えて必須が消える／レンタル候補が必須のみで5枚編成になる隣接不具合も含む) |
 | `cardScoring.rental.test.ts` | 2 | **レンタル枠**: レンタルモードで6枚・レンタル枠ちょうど1・重複なし／4凸所持を浪費せず未所持の強カードを借用 |
 | `parity.test.ts` | 2 | **L4 パリティ**: `expected.json` と一致(なければ生成)／各シナリオが非空 |
+| `hifPouch.test.ts` | 18 | **HIF カスタムPアイテム(ポーチ)**(C# `HifPouchTests` と対): `Data/Hif/pouch.yaml` の整合(3色×4体・レッスン終了時系はデコ3択・trigger/effects キーが既知・初期プリセット3ルートの id が実在)／`computeHifPouchCounts` の検算(既定日程で 花ロボ黄=2+4+4=10本・花もじゃ黄=2+2+2=6本、1段階目の窓に相談が無ければ0本、おでかけ系の強化・削除、max_count 頭打ち、部分選択、定義なし・未知id)／`sanitizeHifPouchSelection`・診断行の書式／ストア経由: 従属選択のリセット、ポーチプリセット(初期値は Wiki の3ルート・保存は同名上書き・読込・削除・上限10)、`executeCalculate` のポーチあり＝手入力に同回数を足した結果(補正なし含む)と一致しパターン切替でも維持、共有ペイロードは選択時だけ `hif.pouch` を載せ復元で同結果・不正値は落とす、条件プリセット往復と pouch 欠落→未選択、診断の `[カスタムPアイテム]` ブロック |
 | `shareState.test.ts` | 12 | **共有URL(ペイロード)**: JSON→deflate-raw→base64url の往復(HIF/日程方式、ボーナスLv0保持)／29日スケジュール込みでもトークン1500字未満／壊れたトークンは null／sanitize がバージョン違い・編成なし・レンタル2枚・重複ID・凸範囲外・育成タイプ不正を拒否、欠落フィールドは既定値(STEP4 ON等)／`#s=` ハッシュの組立・抽出 |
 | `sharedResult.test.ts` | 5 | **共有URLの結果復元**(ストアレベル・実データ): HIF／初レジェンド／NIA それぞれ、共有元の計算→ペイロード→往復→**所持カードなし・別キャラ・別ボーナスLv の環境で `applySharedResult`** すると到達ステータス・編成(ID/凸/レンタル/必須/カード別寄与)・cap後合計・turnChoices が共有元と一致。`exitShareView` でボーナスLv/凸トグルが自分の設定に戻り、計算実行・タブ切替で共有ビュー終了。不在カード・別タブのペイロードはエラーメッセージ |
 | `statusCalculation.triggerCounterPerEffect.test.ts` | 9 | **L1 回帰**(ユーザ報告2026-09「もうすぐ本番ですねを採用した方が数字が下がる」): `fireTrigger` の発動回数カウンタが `カードID_トリガー_属性` キーで、同一カード内の通常アビリティ+Pアイテム効果(同トリガー・同属性)が max_count を共有する退行ガード。上限違い(3回+2回)／上限なし+上限1回／凸別(0/1/4凸)／実データ SP_SSR_0110 で各効果が独立に上限まで発動すること、別カード・別属性の独立性が維持されること |
 | `statusCalculationHif.triggerCounterShare.test.ts` | 3 | **L2 回帰**(ユーザ報告2026-09「もうすぐ本番ですねを採用した方が数字が下がる」、C# `ReproHifTriggerCounterShareTests` と対): 報告の共有URL 2本を復号した `TestFixtures/hif_trigger_counter_share.json`(HIF/アノマリー/咲季/3凸OFF/STEP4 ON/ボーナスLv MAX、差は 0110(1凸)↔SR_0063 の1枚)で、手動再構築(`helpers/hifScenario`)がストア復元 `applySharedResult` と一致し、0110 採用編成の cap 後合計が SR_0063 編成を上回る(修正前 6705<6720 で赤) |
 | `statusCalculation.triggerCounterDeck.test.ts` | 8 | **L1 回帰**(C# `ReproTriggerCounterDeckTests` と対): 通常アビ+Pアイテム(同トリガー・同属性)の6型(0110型/試験型/SR_0067型/0108型/SR_0056型/休む型)を合成した6枚編成を、週次処理(Voレッスン/試験/休む)+追加イベントの両経路で発火。各カード単体の寄与と6枚合計が効果ごとの上限回数の手計算値に一致し、6枚の寄与=単体の和(カード間干渉なし) |
 
-### デスクトップ版（`GakumasuCalc.Tests/`）— 80 件
+### デスクトップ版（`GakumasuCalc.Tests/`）— 93 件
 
 | ファイル | 件数 | 検証内容 |
 |---|---|---|
@@ -99,7 +100,8 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 | `ReproSpTotal6Tests.cs` | 3 | **L1 回帰**(Web版 `cardScoringHif.spTotal6` と対): SP合計6でもパターンが返り各6枚・必須全含・SP充足・レンタル1枚。レンタルなし時は従来どおり0件 |
 | `ReproHifCrossPlanCardTests.cs` | 3 | **L1 回帰**(Web版 `cardScoringHif.crossPlanCard` と対): 所持セット3種で 6枚・必須全含・VoSP≧3・レンタル1枚・必須以外に別プランが混ざらない (`EnforceSpCounts` レンタル補充の planType フィルタ／必須レンタル枠の保護／レンタル候補フォールバック) |
 | `RentalTests.cs` | 2 | **レンタル枠**（Web版と同等） |
-| `ParityTests.cs` | 1 | **L4 パリティ**: TS生成の `expected.json`(11シナリオ) に C#実装が完全一致 |
+| `ParityTests.cs` | 1 | **L4 パリティ**: TS生成の `expected.json`(12シナリオ) に C#実装が完全一致 |
+| `HifPouchTests.cs` | 13 | **HIF カスタムPアイテム(ポーチ)**(Web版 `hifPouch` と対): 定義の整合／`HifPouchService.Compute` の検算(花ロボ黄10本・花もじゃ黄6本・相談なし窓で0本・おでかけ系・部分選択・定義なし)／`Merge` は元を変更せず未知キーを無視／診断行・合計行の書式が Web版と同一／`HifViewModel`: 従属選択のリセットと候補絞り込み、ポーチプリセット(ファイル未作成なら Wiki の3ルート・読込・保存・同名上書き・削除の永続化・全削除は空のまま・上限10)、`BuildTurnChoices` が固定日と選択肢なしの日を除く、日程変更(Day19→特別指導)でプレビューが「発動なし」注意色に更新、`AppendPouchDiagnostic` の文面、条件プリセット YAML の往復と旧ファイルの null |
 | `ReproTriggerCounterPerEffectTests.cs` | 9 | **L1 回帰**(Web版 `statusCalculation.triggerCounterPerEffect` と対): 同一カード内の同トリガー・同属性の flat 効果2つ(通常+Pアイテム)が max_count を共有しない。上限違い／上限なし+上限1回／凸別／実データ SP_SSR_0110／別カード・別属性の独立性 |
 | `ReproHifTriggerCounterShareTests.cs` | 1 | **L2 回帰**(Web版 `statusCalculationHif.triggerCounterShare` と対): 同フィクスチャを `Helpers/HifScenario`(hifStore の再構築規則の複製)で再構築し、0110(1凸)採用編成の cap 後合計が SR_0063 編成を上回る(最終値は Web版と一致) |
 | `ReproTriggerCounterDeckTests.cs` | 8 | **L1 回帰**(Web版 `statusCalculation.triggerCounterDeck` と対): 合成6枚編成の週次+追加イベント両経路で、各カード・6枚合計が効果ごとの上限回数の手計算値に一致、6枚の寄与=単体の和 |
@@ -108,8 +110,9 @@ HIF はメイン属性の**順序込み全6通り**(vo/da, vo/vi, da/vo, da/vi, 
 
 ## クロス実装パリティの仕組み（`TestFixtures/parity/`）
 
-- `configs.json` … 手書きの正準シナリオ（プラン・メイン属性・サブ・SP指定・テンプレ名）。
-  通常モード4 + **HIFモード7** = 計11シナリオ（`"mode": "hif"` / `"planId"` / `"templateName"` で切替）。
+- `configs.json` … 手書きの正準シナリオ（プラン・メイン属性・サブ・SP指定・テンプレ名・ポーチ）。
+  通常モード4 + **HIFモード8** = 計12シナリオ（`"mode": "hif"` / `"planId"` / `"templateName"` で切替、
+  `"pouch": { color, plush, deco }` は HIF のカスタムPアイテムで、既定日程から発動回数を集計して counts に合算する）。
 - `expected.json` … TS パリティテストが**初回に生成**（編成カードID＋cap後合計）。コミット対象。
 - Web版・C#版の両パリティテストが**同じ `expected.json`** に突合する。
   → 2実装が乖離したら必ずどちらかが赤くなる（`fix both` ルールの自動検証）。

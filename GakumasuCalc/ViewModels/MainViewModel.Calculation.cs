@@ -376,11 +376,14 @@ public partial class MainViewModel
             ? GetHifEffectiveCharacter(out hasAnyHifBonus)
             : GetEffectiveCharacter();
         var memoryBonuses = BuildMemoryBonuses();
+        // HIFモードはポーチ (カスタムPアイテム) の発動回数を手入力に合算する。
+        // 「補正なし結果」にも同じ回数を使わないと、ポーチ分がキャラ補正の差分に紛れ込む
+        var additionalCounts = _isHifMode ? BuildHifAdditionalCounts(choices) : BuildAdditionalCounts();
         // キャラ補正・メモリー補正・HIFボーナスのいずれかが有効なら「補正なし結果」を別途算出し差分表示に使う
         _resultWithoutCharacter = (_selectedCharacter != null || HasAnyMemoryBonus || hasAnyHifBonus)
-            ? _calculationService.Calculate(baselinePlan, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), null, null)
+            ? _calculationService.Calculate(baselinePlan, selectedCards, choices, uncapLevels, additionalCounts, null, null)
             : null;
-        Result = _calculationService.Calculate(planForCalc, selectedCards, choices, uncapLevels, BuildAdditionalCounts(), effectiveChar, memoryBonuses);
+        Result = _calculationService.Calculate(planForCalc, selectedCards, choices, uncapLevels, additionalCounts, effectiveChar, memoryBonuses);
 
         DeckCards.Clear();
         foreach (var cs in pattern.SelectedCards)
