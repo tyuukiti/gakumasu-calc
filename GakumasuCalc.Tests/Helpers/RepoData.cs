@@ -95,6 +95,21 @@ public static class RepoData
         }
     }
 
+    private static HifPouchDefinition? _hifPouch;
+
+    /// <summary>HIF カスタムPアイテム (ポーチ) 定義 (Data/Hif/pouch.yaml) を読み込む。結果はキャッシュ。</summary>
+    public static HifPouchDefinition LoadHifPouch()
+    {
+        lock (_lock)
+        {
+            if (_hifPouch != null) return _hifPouch;
+            var yaml = new YamlDataService();
+            var file = yaml.LoadFromFile<HifPouchFile>(Path.Combine(DataDir(), "Hif", "pouch.yaml"));
+            _hifPouch = file?.HifPouch ?? throw new InvalidDataException("Data/Hif/pouch.yaml に hif_pouch がありません");
+            return _hifPouch;
+        }
+    }
+
     /// <summary>(planId, name) でテンプレートの AdditionalCounts を取得 (Counts は既に AdditionalCounts 型)。</summary>
     public static AdditionalCounts TemplateCounts(string planId, string name)
     {

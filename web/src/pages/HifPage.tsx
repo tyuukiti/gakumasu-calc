@@ -7,6 +7,8 @@ import HifBulkSettings from '../components/hif/HifBulkSettings';
 import HifSchedulePresets from '../components/hif/HifSchedulePresets';
 import HifConditionPresets from '../components/hif/HifConditionPresets';
 import HifBonusConfig from '../components/hif/HifBonusConfig';
+import HifPouchConfig from '../components/hif/HifPouchConfig';
+import { useHifPouchCounts } from '../components/hif/useHifPouchCounts';
 import HifOverflowPenaltyToggle from '../components/hif/HifOverflowPenaltyToggle';
 import SpCountConfig from '../components/hif/SpCountConfig';
 import HifResultDisplay from '../components/hif/HifResultDisplay';
@@ -36,6 +38,9 @@ export default function HifPage() {
 
   // 共有 URL (#s=...) で開かれた場合は共有元の結果を復元して表示する
   const shareError = useSharedResultFromUrl('hif', applySharedResult);
+
+  // ポーチ (カスタムPアイテム) の自動加算分。イベント回数欄の「（＋ポーチ N）」表示に使う
+  const pouchCounts = useHifPouchCounts();
 
   const hifPlan = plans.find((p) => p.id === 'hif');
 
@@ -80,11 +85,14 @@ export default function HifPage() {
         {/* HIFボーナス (囲いの外、SP枚数設定の上) */}
         <HifBonusConfig />
 
+        {/* カスタムPアイテム (ポーチ): 日程から発動回数を自動集計してイベント回数へ加算 */}
+        <HifPouchConfig />
+
         {/* SP枚数設定（Vo/Da/Vi 独立） */}
         <SpCountConfig />
 
-        {/* イベント回数 (HIFテンプレートで絞り込み) */}
-        <EventCountConfig planIdOverride="hif" />
+        {/* イベント回数 (HIFテンプレートで絞り込み。ポーチの自動加算分を各欄の横に表示) */}
+        <EventCountConfig planIdOverride="hif" autoCounts={{ label: 'ポーチ', counts: pouchCounts.counts }} />
 
         {/* 必須カード */}
         <RequiredCardSelector />

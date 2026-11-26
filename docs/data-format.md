@@ -183,6 +183,36 @@ templates:
     # ...
 ```
 
+## HIF カスタムPアイテム (Hif/pouch.yaml)
+
+HIF の「ポーチ」の 3 段階（色 → ぬいぐるみ → デコレーション）ごとの効果。`Plans/` 配下はデスクトップ版が全ファイルをプランとして読むため、別フォルダに置く。
+
+```yaml
+hif_pouch:
+  stage_windows:                     # 段階ごとの有効週 (0=未カスタマイズ, 1=ぬいぐるみ, 2=デコレーション)
+    - { stage: 0, from_week: 8,  to_week: 12 }
+    - { stage: 1, from_week: 14, to_week: 19 }
+    - { stage: 2, from_week: 21, to_week: 26 }
+  colors:
+    - id: yellow
+      name: "黄"
+      base:                          # 段階0 の効果
+        trigger: lesson_end          # lesson_end / consultation / activity_supply / outing_end
+        max_count: 2                 # プロデュース中の発動回数上限
+        effects: { p_drink_acquire: 1 }   # 1回の発動で追加する回数 (キーは trigger 名)
+        description: "レッスン終了時、ランダムな特定のPドリンクを獲得"
+      plushes:
+        - id: moja
+          name: "もじゃ"
+          trigger: consultation
+          max_count: 1
+          effects: { p_drink_acquire: 2 }
+          decorations:
+            - { id: flower, name: "花", trigger: consultation, max_count: 1, effects: { p_drink_acquire: 2 } }
+```
+
+有効週内で `trigger` に合う日程（公開レッスン / 相談 / 差し入れ / おでかけ）を踏んだ回数（`max_count` 上限）× `effects` を追加イベント回数に加算する。Pポイント・割引・体力回復は計算対象外。
+
 ## キャラ定義 (Characters/characters.yaml)
 
 ```yaml

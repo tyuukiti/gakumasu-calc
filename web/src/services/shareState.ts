@@ -68,6 +68,14 @@ export interface SharePayloadHif {
   /** 一括設定の表示値 (計算には日ごとの選択が使われる。UI の見た目を共有元に揃えるため) */
   bulkLessonDefault?: { mainStat: SharedStat; subStat: SharedStat };
   bulkClassStat?: SharedStat;
+  /** カスタムPアイテム (ポーチ) の選択。未選択なら省略。id の実在確認はストア側 (定義読込後) で行う */
+  pouch?: SharedPouch;
+}
+
+export interface SharedPouch {
+  color: string;
+  plush: string | null;
+  deco: string | null;
 }
 
 /** 日程方式 (初レジェンド / NIA) 固有の条件 */
@@ -161,6 +169,17 @@ function toIntRecord(v: unknown, max: number, keepZero: boolean): Record<string,
   return out;
 }
 
+/** ポーチ選択。色が無ければ未選択 (undefined)。親が無い子は null に落とす */
+function toPouch(v: unknown): SharedPouch | undefined {
+  if (!isRecord(v)) return undefined;
+  const str = (x: unknown): string | null => (typeof x === 'string' && x.length > 0 ? x : null);
+  const color = str(v.color);
+  if (!color) return undefined;
+  const plush = str(v.plush);
+  const deco = plush ? str(v.deco) : null;
+  return { color, plush, deco };
+}
+
 function toMemoryBonuses(v: unknown): MemoryBonus[] {
   if (!Array.isArray(v)) return [];
   const toAttr = (raw: unknown) => {
@@ -233,6 +252,8 @@ export function sanitizeSharePayload(raw: unknown): SharePayload | null {
       payload.hif.bulkLessonDefault = { mainStat: bld.mainStat, subStat: bld.subStat };
     }
     if (isStat(raw.hif.bulkClassStat)) payload.hif.bulkClassStat = raw.hif.bulkClassStat;
+    const pouch = toPouch(raw.hif.pouch);
+    if (pouch) payload.hif.pouch = pouch;
   }
   if (isRecord(raw.sched)) {
     const tiers: Record<string, string> = {};

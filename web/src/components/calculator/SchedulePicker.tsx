@@ -5,6 +5,7 @@ import type { ScheduleChoice } from '../../stores/calcStore';
 import type { WeekSchedule } from '../../types/models';
 import type { ActionType } from '../../types/enums';
 import ResizablePanel from '../ResizablePanel';
+import Accordion from '../Accordion';
 
 type Stat = 'vo' | 'da' | 'vi';
 const STAT_LABEL: Record<Stat, string> = { vo: 'Vo', da: 'Da', vi: 'Vi' };
@@ -66,18 +67,12 @@ export default function SchedulePicker({ planId }: { planId: string }) {
   }
 
   return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-[var(--color-accent)] cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <span className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}>
-          &#9654;
-        </span>
-        個別調整 (全 {items.length} 週)
-        <span className="text-xs font-normal text-gray-500">— 一括設定で多くの週が設定済みです</span>
-      </button>
+    <Accordion
+      open={expanded}
+      onToggle={setExpanded}
+      title={`個別調整 (全 ${items.length} 週)`}
+      note="（一括設定で多くの週が設定済み）"
+    >
       {expanded && (
         <ResizablePanel
           storageKey="schedulePanelHeight"
@@ -107,7 +102,7 @@ export default function SchedulePicker({ planId }: { planId: string }) {
           </ul>
         </ResizablePanel>
       )}
-    </div>
+    </Accordion>
   );
 }
 

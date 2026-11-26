@@ -78,6 +78,10 @@ export function buildSharePayload(
       bulkLessonDefault: { ...hif.bulkLessonDefault },
       bulkClassStat: hif.bulkClassStat,
     };
+    // ポーチは選択時のみ載せる (回数は復元側が日程から再計算するので additionalCounts には混ぜない)
+    if (hif.pouch?.color) {
+      payload.hif.pouch = { color: hif.pouch.color, plush: hif.pouch.plush, deco: hif.pouch.deco };
+    }
   } else {
     payload.sched = {
       scheduleChoices: toStringKeyed(calc.scheduleChoices[planId] ?? {}),

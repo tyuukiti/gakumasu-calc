@@ -39,6 +39,9 @@ Data/EventCountPresets/
 # HIF condition preset data (user-specific)
 Data/HifConditionPresets/
 
+# HIF pouch (custom P-item) preset data (user-specific)
+Data/HifPouchPresets/
+
 # UI state (user-specific)
 Data/UiState/
 

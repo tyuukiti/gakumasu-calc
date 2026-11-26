@@ -1,7 +1,7 @@
 ﻿import { create } from 'zustand'
-import type { SupportCard, TrainingPlan, EventCountTemplate, Character } from '../types/models'
+import type { SupportCard, TrainingPlan, EventCountTemplate, Character, HifPouchDefinition } from '../types/models'
 import type { CardInventoryEntry } from '../types/inventory'
-import { loadSupportCards, loadTrainingPlans, loadEventCountTemplates, loadCharacters } from '../services/yamlLoader'
+import { loadSupportCards, loadTrainingPlans, loadEventCountTemplates, loadCharacters, loadHifPouch } from '../services/yamlLoader'
 import { loadInventory } from '../services/inventory'
 import { trackEvent, setUserProperties } from '../utils/analytics'
 
@@ -10,6 +10,8 @@ interface AppState {
   plans: TrainingPlan[]
   templates: EventCountTemplate[]
   characters: Character[]
+  /** HIF カスタムPアイテム (ポーチ) 定義。読込失敗時は null (ポーチ機能は無効) */
+  hifPouch: HifPouchDefinition | null
   inventory: CardInventoryEntry[]
   isLoading: boolean
   error: string | null
@@ -22,6 +24,7 @@ export const useAppStore = create<AppState>((set) => ({
   plans: [],
   templates: [],
   characters: [],
+  hifPouch: null,
   inventory: [],
   isLoading: true,
   error: null,
@@ -29,14 +32,15 @@ export const useAppStore = create<AppState>((set) => ({
   initialize: async () => {
     const startTime = Date.now()
     try {
-      const [cards, plans, templates, characters] = await Promise.all([
+      const [cards, plans, templates, characters, hifPouch] = await Promise.all([
         loadSupportCards(),
         loadTrainingPlans(),
         loadEventCountTemplates(),
         loadCharacters(),
+        loadHifPouch(),
       ])
       const inventory = loadInventory()
-      set({ cards, plans, templates, characters, inventory, isLoading: false })
+      set({ cards, plans, templates, characters, hifPouch, inventory, isLoading: false })
 
       // ユーザープロパティ設定
       const ownedCount = inventory.filter(e => e.owned).length;

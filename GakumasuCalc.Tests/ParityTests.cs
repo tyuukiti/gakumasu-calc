@@ -25,6 +25,14 @@ public class ParityTests
         public string? Mode { get; set; }   // "hif" なら HIF モード
         public string? PlanId { get; set; } // シナリオ個別プランID (省略時は config.PlanId)
         public string? TemplateName { get; set; } // イベント回数テンプレート名
+        public PouchScenario? Pouch { get; set; } // HIF のポーチ選択 (hif モードのみ)
+    }
+
+    private sealed class PouchScenario
+    {
+        public string Color { get; set; } = "";
+        public string? Plush { get; set; }
+        public string? Deco { get; set; }
     }
 
     private sealed class ParityConfig
@@ -49,6 +57,12 @@ public class ParityTests
         {
             var tc = CardScoringService.BuildTurnChoices(plan, sc.MainStats);
             var alloc = LessonAllocationFrom(tc);
+            if (sc.Pouch != null)
+            {
+                // Merge は新しいインスタンスを返す (RepoData.TemplateCounts のキャッシュ実体を汚さない)
+                var pouchCounts = HifPouchService.Compute(RepoData.LoadHifPouch(), sc.Pouch.Color, sc.Pouch.Plush, sc.Pouch.Deco, tc).Counts;
+                counts = HifPouchService.Merge(counts ?? new AdditionalCounts(), pouchCounts);
+            }
             var hifPatterns = Svc.SelectMultiplePatternsHif(
                 plan, allCards, sc.MainStats, alloc, sc.SpCounts,
                 additionalCounts: counts, turnChoicesOverride: tc);

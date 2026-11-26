@@ -1,7 +1,9 @@
 import { selectMultiplePatterns, selectMultiplePatternsHif, buildTurnChoices } from '../../src/services/cardScoring';
 import { scoreDeck } from './scoreDeck';
 import { lessonAllocationFrom } from './hif';
-import { templateAdditionalCounts } from './loadRealData';
+import { templateAdditionalCounts, loadHifPouch } from './loadRealData';
+import { computeHifPouchCounts, mergeAdditionalCounts } from '../../src/services/hifPouch';
+import { emptyAdditionalCounts } from '../../src/types/models';
 import type { SupportCard, TrainingPlan, AdditionalCounts } from '../../src/types/models';
 
 /**
@@ -21,6 +23,8 @@ export interface ParityScenario {
   planId?: string;
   /** イベント回数テンプレート名 (plan は plan.id で解決)。指定時は counts を additionalCounts に渡す。 */
   templateName?: string;
+  /** HIF のポーチ選択 (hif モードのみ)。日程 (buildTurnChoices) から発動回数を集計して counts に合算する。 */
+  pouch?: { color: string; plush: string | null; deco: string | null };
 }
 
 export interface ParityConfig {
@@ -45,13 +49,17 @@ export function computeScenario(
   allCards: SupportCard[],
   scenario: ParityScenario,
 ): PatternResult[] {
-  const counts: AdditionalCounts | undefined = scenario.templateName
+  let counts: AdditionalCounts | undefined = scenario.templateName
     ? templateAdditionalCounts(plan.id, scenario.templateName)
     : undefined;
 
   if (scenario.mode === 'hif') {
     const tc = buildTurnChoices(plan, scenario.mainStats);
     const alloc = lessonAllocationFrom(tc);
+    if (scenario.pouch) {
+      const pouchCounts = computeHifPouchCounts(loadHifPouch(), scenario.pouch, tc).counts;
+      counts = mergeAdditionalCounts(counts ?? emptyAdditionalCounts(), pouchCounts);
+    }
     const patterns = selectMultiplePatternsHif(
       plan, allCards, scenario.mainStats, alloc,
       scenario.spCounts, undefined, counts, undefined, undefined, undefined,

@@ -195,6 +195,70 @@ export interface EventCountPreset {
   counts: AdditionalCounts;
 }
 
+// --- HifPouch (HIF カスタムPアイテム: ポーチ) ---
+
+/** ポーチ効果の発動契機 (computeBaseTriggerCounts のキーと同じ語) */
+export type HifPouchTrigger = 'lesson_end' | 'consultation' | 'activity_supply' | 'outing_end';
+
+/** ポーチ1段階分の効果 */
+export interface HifPouchStageEffect {
+  trigger: HifPouchTrigger;
+  /** プロデュース中の発動回数上限 (段階ごと) */
+  max_count: number;
+  /** 1回の発動で追加する回数 (キーは AdditionalCounts と同じ trigger 名) */
+  effects: Record<string, number>;
+  /** 表示用の効果文 (Pポイント・割引などの計算対象外効果も含む) */
+  description?: string;
+}
+
+/** 2段階目: デコレーション */
+export interface HifPouchDecoration extends HifPouchStageEffect {
+  id: string;
+  name: string;
+}
+
+/** 1段階目: ぬいぐるみ */
+export interface HifPouchPlush extends HifPouchStageEffect {
+  id: string;
+  name: string;
+  decorations: HifPouchDecoration[];
+}
+
+/** 色 (段階0=未カスタマイズの効果を base に持つ) */
+export interface HifPouchColor {
+  id: string;
+  name: string;
+  base: HifPouchStageEffect;
+  plushes: HifPouchPlush[];
+}
+
+/** 段階ごとの有効週 */
+export interface HifPouchStageWindow {
+  stage: number;
+  from_week: number;
+  to_week: number;
+}
+
+export interface HifPouchDefinition {
+  stage_windows: HifPouchStageWindow[];
+  colors: HifPouchColor[];
+}
+
+export interface HifPouchFile {
+  hif_pouch: HifPouchDefinition;
+}
+
+/** ユーザのポーチ選択 (未選択は null。親が null なら子も null) */
+export interface HifPouchSelection {
+  color: string | null;
+  plush: string | null;
+  deco: string | null;
+}
+
+export function emptyHifPouchSelection(): HifPouchSelection {
+  return { color: null, plush: null, deco: null };
+}
+
 // --- Character ---
 
 export interface StatBonusPercent {

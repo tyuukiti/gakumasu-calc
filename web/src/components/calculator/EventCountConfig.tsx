@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../../stores/appStore';
 import { useCalcStore, MAX_EVENT_COUNT_PRESETS } from '../../stores/calcStore';
 import { trackEvent, trackFunnelStep } from '../../utils/analytics';
+import Accordion from '../Accordion';
 
 const COUNT_LABELS: { key: string; label: string }[] = [
   { key: 'p_drink_acquire', label: 'Pドリンク獲得' },
@@ -38,9 +39,14 @@ const PLAN_TYPE_KEYWORDS: Record<string, string> = {
 interface Props {
   /** テンプレート絞り込み用の plan_id 上書き (HIFタブでは "hif" を渡す) */
   planIdOverride?: string;
+  /**
+   * 手入力とは別に自動で加算される回数 (HIF のポーチ等)。各入力欄の横に「（＋ラベル N）」と表示して
+   * 二重に数えないようにする。0 のキーは表示しない
+   */
+  autoCounts?: { label: string; counts: Record<string, number> };
 }
 
-export default function EventCountConfig({ planIdOverride }: Props = {}) {
+export default function EventCountConfig({ planIdOverride, autoCounts }: Props = {}) {
   const [expanded, setExpanded] = useState(false);
   const [selectedPresetName, setSelectedPresetName] = useState('');
   const [newPresetName, setNewPresetName] = useState('');
@@ -92,132 +98,131 @@ export default function EventCountConfig({ planIdOverride }: Props = {}) {
         </select>
       </div>
 
-      <button
-        type="button"
-        className="text-sm text-[var(--color-accent)] hover:underline flex items-center gap-1"
-        onClick={() => {
-          const next = !expanded;
+      <Accordion
+        open={expanded}
+        onToggle={(next) => {
           trackEvent('event_count_expanded', { expanded: next });
           setExpanded(next);
         }}
+        title="イベント回数の個別設定"
       >
-        <span className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}>
-          &#9654;
-        </span>
-        イベント回数を個別設定
-      </button>
-
-      {expanded && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2 bg-gray-50 rounded-md p-3 border border-gray-200">
-            {COUNT_LABELS.map(({ key, label }) => (
-              <label key={key} className="flex items-center gap-2 text-sm">
-                <span className="text-gray-600 min-w-[8rem]">{label}</span>
-                <input
-                  type="number"
-                  min={0}
-                  className="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-center bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-                  value={(additionalCounts as Record<string, number>)[key] ?? 0}
-                  onChange={(e) => setAdditionalCount(key, parseInt(e.target.value) || 0)}
-                />
-              </label>
-            ))}
-          </div>
-
-          {/* ユーザ入力の保存プリセット */}
-          <div className="border border-gray-200 rounded-md p-3 space-y-2">
-            <div className="flex items-center gap-2 text-xs text-gray-600">
-              <span className="font-semibold">マイプリセット</span>
-              <span className="text-gray-400">
-                {eventCountPresets.length}/{MAX_EVENT_COUNT_PRESETS}
-              </span>
+        {expanded && (
+          <div className="border border-gray-200 rounded-md bg-gray-50 p-3 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
+              {COUNT_LABELS.map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-600 min-w-[8rem]">{label}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-center bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                    value={(additionalCounts as Record<string, number>)[key] ?? 0}
+                    onChange={(e) => setAdditionalCount(key, parseInt(e.target.value) || 0)}
+                  />
+                  {autoCounts && (autoCounts.counts[key] ?? 0) > 0 && (
+                    <span className="text-xs text-gray-400 whitespace-nowrap">
+                      （＋{autoCounts.label} {autoCounts.counts[key]}）
+                    </span>
+                  )}
+                </label>
+              ))}
             </div>
 
-            {/* 呼び出し行: ボタンリスト + 削除 */}
-            <div className="flex items-start gap-2">
-              <div className="flex-1 flex flex-wrap gap-1 min-h-[28px] items-center">
-                {eventCountPresets.length === 0 ? (
-                  <span className="text-xs text-gray-400">プリセット未登録</span>
-                ) : (
-                  eventCountPresets.map((p) => {
-                    const isSelected = selectedPresetName === p.name;
-                    return (
-                      <button
-                        key={p.name}
-                        type="button"
-                        onClick={() => {
-                          setSelectedPresetName(p.name);
-                          setNewPresetName(p.name);
-                          loadEventCountPreset(p.name);
-                          trackEvent('event_count_preset_loaded', { preset_name: p.name });
-                        }}
-                        className={`text-xs border rounded px-2 py-1 cursor-pointer transition-colors ${
-                          isSelected
-                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-white'
-                            : 'border-gray-300 hover:bg-gray-50 text-gray-700'
-                        }`}
-                      >
-                        {p.name}
-                      </button>
-                    );
-                  })
-                )}
+            {/* ユーザ入力の保存プリセット (持ち込みメモリー・カスタムPアイテムと同じ白囲い) */}
+            <div className="border border-gray-200 rounded-md bg-white p-3 space-y-2">
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span className="font-semibold">マイプリセット</span>
+                <span className="text-gray-400">
+                  {eventCountPresets.length}/{MAX_EVENT_COUNT_PRESETS}
+                </span>
               </div>
-              <button
-                type="button"
-                disabled={
-                  !selectedPresetName ||
-                  !eventCountPresets.some((p) => p.name === selectedPresetName)
-                }
-                onClick={() => {
-                  if (!selectedPresetName) return;
-                  deleteEventCountPreset(selectedPresetName);
-                  setSelectedPresetName('');
-                }}
-                className="text-xs border border-gray-300 rounded px-2 py-1 text-red-600 hover:bg-red-50 disabled:text-gray-300 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
-              >
-                削除
-              </button>
-            </div>
 
-            {/* 保存行: 名前入力 + 保存 */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newPresetName}
-                onChange={(e) => setNewPresetName(e.target.value)}
-                placeholder="プリセット名"
-                className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-              />
-              <button
-                type="button"
-                disabled={
-                  !newPresetName.trim() ||
-                  (eventCountPresets.length >= MAX_EVENT_COUNT_PRESETS &&
-                    !eventCountPresets.some((p) => p.name === newPresetName.trim()))
-                }
-                onClick={() => {
-                  const name = newPresetName.trim();
-                  if (!name) return;
-                  saveEventCountPreset(name);
-                  setSelectedPresetName(name);
-                  setNewPresetName('');
-                  trackEvent('event_count_preset_saved', { preset_name: name });
-                }}
-                className="text-xs border border-[var(--color-accent)] rounded px-2 py-1 text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
-                title={
-                  eventCountPresets.length >= MAX_EVENT_COUNT_PRESETS &&
-                  !eventCountPresets.some((p) => p.name === newPresetName.trim())
-                    ? `上限 ${MAX_EVENT_COUNT_PRESETS} 件に達しています`
-                    : '現在のイベント回数をこの名前で保存'
-                }
-              >
-                保存
-              </button>
+              {/* 呼び出し行: ボタンリスト + 削除 */}
+              <div className="flex items-start gap-2">
+                <div className="flex-1 flex flex-wrap gap-1 min-h-[28px] items-center">
+                  {eventCountPresets.length === 0 ? (
+                    <span className="text-xs text-gray-400">プリセット未登録</span>
+                  ) : (
+                    eventCountPresets.map((p) => {
+                      const isSelected = selectedPresetName === p.name;
+                      return (
+                        <button
+                          key={p.name}
+                          type="button"
+                          onClick={() => {
+                            setSelectedPresetName(p.name);
+                            setNewPresetName(p.name);
+                            loadEventCountPreset(p.name);
+                            trackEvent('event_count_preset_loaded', { preset_name: p.name });
+                          }}
+                          className={`text-xs border rounded px-2 py-1 cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-white'
+                              : 'border-gray-300 hover:bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          {p.name}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+                <button
+                  type="button"
+                  disabled={
+                    !selectedPresetName ||
+                    !eventCountPresets.some((p) => p.name === selectedPresetName)
+                  }
+                  onClick={() => {
+                    if (!selectedPresetName) return;
+                    deleteEventCountPreset(selectedPresetName);
+                    setSelectedPresetName('');
+                  }}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 text-red-600 hover:bg-red-50 disabled:text-gray-300 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
+                >
+                  削除
+                </button>
+              </div>
+
+              {/* 保存行: 名前入力 + 保存 */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  placeholder="プリセット名"
+                  className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                />
+                <button
+                  type="button"
+                  disabled={
+                    !newPresetName.trim() ||
+                    (eventCountPresets.length >= MAX_EVENT_COUNT_PRESETS &&
+                      !eventCountPresets.some((p) => p.name === newPresetName.trim()))
+                  }
+                  onClick={() => {
+                    const name = newPresetName.trim();
+                    if (!name) return;
+                    saveEventCountPreset(name);
+                    setSelectedPresetName(name);
+                    setNewPresetName('');
+                    trackEvent('event_count_preset_saved', { preset_name: name });
+                  }}
+                  className="text-xs border border-[var(--color-accent)] rounded px-2 py-1 text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent cursor-pointer disabled:cursor-not-allowed"
+                  title={
+                    eventCountPresets.length >= MAX_EVENT_COUNT_PRESETS &&
+                    !eventCountPresets.some((p) => p.name === newPresetName.trim())
+                      ? `上限 ${MAX_EVENT_COUNT_PRESETS} 件に達しています`
+                      : '現在のイベント回数をこの名前で保存'
+                  }
+                >
+                  保存
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Accordion>
     </div>
   );
 }

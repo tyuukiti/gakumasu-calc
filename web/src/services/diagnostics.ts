@@ -2,7 +2,14 @@ import type { useCalcStore } from '../stores/calcStore';
 import { SCHEDULE_PLAN_IDS, computeNiaAuditionGain, type ScheduleChoice } from '../stores/calcStore';
 import type { useAppStore } from '../stores/appStore';
 import type { useHifStore } from '../stores/hifStore';
+import { buildHifTurnChoices } from '../stores/hifStore';
 import { applyCharacterToggles } from '../services/characterBonus';
+import {
+  computeHifPouchCounts,
+  describeHifPouchSelection,
+  formatHifPouchCountSummary,
+  formatHifPouchStageLine,
+} from '../services/hifPouch';
 import type { MemoryBonus, Character, TrainingPlan } from '../types/models';
 import { ACTION_TYPE_DISPLAY } from '../types/enums';
 
@@ -321,8 +328,29 @@ export function buildHifDiagnosticReport(
     lines.push(`MAX超過再抽選: ON (閾値 ${hif.overflowPenalty.threshold})`);
   }
 
-  // --- HIFスケジュール ---
   const hifPlan = app.plans.find((p) => p.id === 'hif');
+
+  // --- カスタムPアイテム (ポーチ): 選択時のみ (デスクトップ版 AppendPouchDiagnostic と同一文面) ---
+  // 古いスナップショット (pouch 無し) でも落ちないようガードする
+  if (hifPlan && hif.pouch?.color) {
+    const desc = describeHifPouchSelection(app.hifPouch, hif.pouch);
+    if (desc) {
+      const pouchRes = computeHifPouchCounts(
+        app.hifPouch,
+        hif.pouch,
+        buildHifTurnChoices(hifPlan, hif.scheduleChoices),
+      );
+      lines.push('');
+      lines.push('[カスタムPアイテム]');
+      lines.push(`選択: ${desc}`);
+      for (const st of pouchRes.stages) {
+        if (st) lines.push(formatHifPouchStageLine(st));
+      }
+      lines.push(`加算: ${formatHifPouchCountSummary(pouchRes.counts)}`);
+    }
+  }
+
+  // --- HIFスケジュール ---
   if (hifPlan) {
     const schedLines: string[] = [];
     for (const w of hifPlan.schedule) {

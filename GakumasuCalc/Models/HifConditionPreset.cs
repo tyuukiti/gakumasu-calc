@@ -37,6 +37,11 @@ public class HifConditionHifFields
     public string BulkSubStat { get; set; } = "da";
     /// <summary>一括設定: 授業の属性（vo/da/vi）</summary>
     public string BulkClassStat { get; set; } = "vo";
+
+    /// <summary>カスタムPアイテム (ポーチ) の選択。null=未選択。無いプリセット (旧ファイル) は未選択として復元する</summary>
+    public string? PouchColor { get; set; }
+    public string? PouchPlush { get; set; }
+    public string? PouchDecoration { get; set; }
 }
 
 public class HifConditionCalcFields

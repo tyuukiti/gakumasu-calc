@@ -38,7 +38,7 @@ export default function AbilitySummaryRow({ entries }: { entries: AbilitySummary
         </span>
         <span className="flex-1 text-sm text-gray-800">アビリティまとめ（行動別）</span>
         <span className="text-xs text-gray-400">{entries.length}項目</span>
-        <span className={`text-xs text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}>
+        <span className={`text-xs text-gray-600 transition-transform ${expanded ? 'rotate-90' : ''}`}>
           &#9654;
         </span>
       </div>

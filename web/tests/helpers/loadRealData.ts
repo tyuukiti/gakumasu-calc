@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import yaml from 'js-yaml';
-import { normalizeCard, normalizePlan, normalizeTemplate } from '../../src/services/yamlLoader';
+import { normalizeCard, normalizePlan, normalizeTemplate, normalizeHifPouch } from '../../src/services/yamlLoader';
 import { emptyAdditionalCounts } from '../../src/types/models';
 import type {
   SupportCard,
@@ -14,6 +14,8 @@ import type {
   EventCountTemplate,
   EventCountTemplateFile,
   AdditionalCounts,
+  HifPouchDefinition,
+  HifPouchFile,
 } from '../../src/types/models';
 
 /**
@@ -114,6 +116,16 @@ export function getTemplate(planId: string, name: string): EventCountTemplate {
 /** テンプレートの counts を完全な AdditionalCounts に変換 (未指定キーは 0)。 */
 export function templateAdditionalCounts(planId: string, name: string): AdditionalCounts {
   return { ...emptyAdditionalCounts(), ...getTemplate(planId, name).counts };
+}
+
+let _hifPouch: HifPouchDefinition | null = null;
+
+/** HIF カスタムPアイテム (ポーチ) 定義を読み込む。結果はキャッシュされる。 */
+export function loadHifPouch(): HifPouchDefinition {
+  if (_hifPouch) return _hifPouch;
+  const data = loadYaml<HifPouchFile>('Hif/pouch.yaml');
+  _hifPouch = normalizeHifPouch(data.hif_pouch);
+  return _hifPouch;
 }
 
 export { DATA_DIR, REPO_ROOT };

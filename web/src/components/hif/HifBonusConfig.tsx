@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useHifStore } from '../../stores/hifStore';
+import Accordion from '../Accordion';
 import {
   type HifBonusLevels,
   HIF_BONUS_MAX_LEVELS,
@@ -50,20 +51,12 @@ export default function HifBonusConfig() {
   const allMax = PANELS.every((p) => levels[p.key] >= HIF_BONUS_MAX_LEVELS[p.key]);
 
   return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-[var(--color-accent)] cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <span className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}>
-          &#9654;
-        </span>
-        HIFボーナス
-        <span className="text-xs font-normal text-gray-500">
-          {allMax ? '— 全パネル MAX' : '— 一部 MAX 未満'}
-        </span>
-      </button>
+    <Accordion
+      open={expanded}
+      onToggle={setExpanded}
+      title="HIFボーナス"
+      status={allMax ? '全パネル MAX' : '一部 MAX 未満'}
+    >
       {expanded && (
         <div className="border border-gray-200 rounded-md bg-gray-50 p-3 space-y-2">
           <div className="flex items-center justify-between text-xs text-gray-600">
@@ -127,6 +120,6 @@ export default function HifBonusConfig() {
           </table>
         </div>
       )}
-    </div>
+    </Accordion>
   );
 }

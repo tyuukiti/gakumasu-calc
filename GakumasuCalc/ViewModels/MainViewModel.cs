@@ -193,7 +193,8 @@ public partial class MainViewModel : ViewModelBase
         _hifConditionPresetService = new HifConditionPresetService(Path.Combine(dataDir, "HifConditionPresets", "hif_condition_presets.yaml"));
         HifVm = new HifViewModel(
             new HifSchedulePresetService(Path.Combine(dataDir, "HifSchedulePresets", "hif_schedule_presets.yaml")),
-            new HifBonusLevelsService(Path.Combine(dataDir, "HifBonusLevels", "hif_bonus_levels.yaml")));
+            new HifBonusLevelsService(Path.Combine(dataDir, "HifBonusLevels", "hif_bonus_levels.yaml")),
+            new HifPouchPresetService(Path.Combine(dataDir, "HifPouchPresets", "hif_pouch_presets.yaml")));
         // 日程方式プラン (初レジェンド / NIA) のプリセットはプランごとに別ファイル
         _schedulePresetServices["hatsu_legend"] =
             new SchedulePresetService(Path.Combine(dataDir, "SchedulePresets", "hatsu_legend.yaml"));
@@ -211,6 +212,7 @@ public partial class MainViewModel : ViewModelBase
             SchedulePanelMinHeight, SchedulePanelMaxHeight);
 
         LoadEventCountTemplates(yamlService, Path.Combine(dataDir, "Templates", "event_count_templates.yaml"));
+        LoadHifPouchDefinition(yamlService, Path.Combine(dataDir, "Hif", "pouch.yaml"));
 
         CalculateCommand = new RelayCommand(ExecuteCalculate);
         ResetCommand = new RelayCommand(ExecuteReset);

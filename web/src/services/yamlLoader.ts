@@ -1,5 +1,6 @@
 import yaml from 'js-yaml'
-import type { SupportCard, SupportCardFile, TrainingPlan, TrainingPlanFile, EventCountTemplate, EventCountTemplateFile, WeekSchedule, Character, CharacterFile } from '../types/models'
+import type { SupportCard, SupportCardFile, TrainingPlan, TrainingPlanFile, EventCountTemplate, EventCountTemplateFile, WeekSchedule, Character, CharacterFile, HifPouchDefinition, HifPouchFile, HifPouchStageEffect, HifPouchStageWindow, HifPouchTrigger } from '../types/models'
+import { emptyAdditionalCounts } from '../types/models'
 import type { ActionType } from '../types/enums'
 import { siteBasePath } from './siteBase'
 
@@ -116,5 +117,70 @@ export async function loadCharacters(): Promise<Character[]> {
   } catch (e) {
     console.warn('キャラデータ読み込みエラー:', e)
     return []
+  }
+}
+
+// --- HIF カスタムPアイテム (ポーチ) ---
+
+const HIF_POUCH_TRIGGERS: readonly HifPouchTrigger[] = ['lesson_end', 'consultation', 'activity_supply', 'outing_end']
+
+/** stage_windows が省略されたときの既定 (選抜①〜② / ②〜③ / 本戦) */
+const DEFAULT_HIF_POUCH_WINDOWS: readonly HifPouchStageWindow[] = [
+  { stage: 0, from_week: 8, to_week: 12 },
+  { stage: 1, from_week: 14, to_week: 19 },
+  { stage: 2, from_week: 21, to_week: 26 },
+]
+
+/** 1段階分の効果を正規化。未知の trigger は発動しない (max_count 0)、未知の effects キーは警告して除外 */
+function normalizeHifPouchEffect(e: Partial<HifPouchStageEffect> | undefined, label: string): HifPouchStageEffect {
+  const known = emptyAdditionalCounts()
+  const effects: Record<string, number> = {}
+  for (const [k, v] of Object.entries(e?.effects ?? {})) {
+    if (!(k in known)) {
+      console.warn(`ポーチ効果の未知キーを無視 (${label}): ${k}`)
+      continue
+    }
+    if (typeof v === 'number' && v > 0) effects[k] = v
+  }
+  const triggerOk = HIF_POUCH_TRIGGERS.includes(e?.trigger as HifPouchTrigger)
+  if (!triggerOk) console.warn(`ポーチ効果の未知トリガー (${label}): ${String(e?.trigger)}`)
+  return {
+    trigger: triggerOk ? (e!.trigger as HifPouchTrigger) : 'lesson_end',
+    max_count: triggerOk ? Math.max(0, Math.floor(e?.max_count ?? 0)) : 0,
+    effects,
+    description: e?.description,
+  }
+}
+
+export function normalizeHifPouch(def: Partial<HifPouchDefinition> | undefined | null): HifPouchDefinition {
+  const colors = (def?.colors ?? []).map((c) => ({
+    id: c.id,
+    name: c.name ?? c.id,
+    base: normalizeHifPouchEffect(c.base, c.id),
+    plushes: (c.plushes ?? []).map((p) => ({
+      ...normalizeHifPouchEffect(p, `${c.id}/${p.id}`),
+      id: p.id,
+      name: p.name ?? p.id,
+      decorations: (p.decorations ?? []).map((d) => ({
+        ...normalizeHifPouchEffect(d, `${c.id}/${p.id}/${d.id}`),
+        id: d.id,
+        name: d.name ?? d.id,
+      })),
+    })),
+  }))
+  const rawWindows = def?.stage_windows ?? []
+  const stage_windows = rawWindows.length > 0
+    ? rawWindows.map((w) => ({ stage: w.stage ?? 0, from_week: w.from_week ?? 0, to_week: w.to_week ?? 0 }))
+    : [...DEFAULT_HIF_POUCH_WINDOWS]
+  return { stage_windows, colors }
+}
+
+export async function loadHifPouch(): Promise<HifPouchDefinition | null> {
+  try {
+    const data = await fetchYaml<HifPouchFile>('Hif/pouch.yaml')
+    return normalizeHifPouch(data.hif_pouch)
+  } catch (e) {
+    console.warn('ポーチ定義読み込みエラー:', e)
+    return null
   }
 }

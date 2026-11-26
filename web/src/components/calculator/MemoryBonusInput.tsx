@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useCalcStore, MAX_MEMORY_PRESETS } from '../../stores/calcStore';
 import type { MemoryBonusType } from '../../types/models';
+import Accordion from '../Accordion';
 
 const STAT_LABELS: { key: 'vo' | 'da' | 'vi'; label: string; color: string }[] = [
   { key: 'vo', label: 'Vocal', color: 'var(--color-vo, #FF6B8A)' },
@@ -55,46 +56,33 @@ export default function MemoryBonusInput() {
   };
 
   return (
-    <div className="border-t border-gray-100 pt-3">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-gray-900 cursor-pointer"
-      >
-        <span>
-          持ち込みメモリー
-          <span className="text-xs text-gray-400 ml-1">（最大4枚・任意）</span>
-          {hasAny && <span className="text-xs text-gray-600 ml-2">: 設定済み</span>}
-        </span>
-        <span
-          className={`text-xs text-gray-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-        >
-          &#9654;
-        </span>
-      </button>
-
+    <Accordion
+      open={isOpen}
+      onToggle={setIsOpen}
+      title="持ち込みメモリー"
+      note="（最大4枚・任意）"
+      status={hasAny ? '設定済み' : undefined}
+      emptyStatus="未設定"
+    >
       {isOpen && (
-        <div className="mt-3">
-          {/* 列ヘッダ */}
-          <div className="grid grid-cols-[28px_1fr_1fr_1fr] gap-2 mb-1 text-[11px] font-semibold">
+        <div className="border border-gray-200 rounded-md bg-gray-50 p-3 space-y-3">
+          {/* 入力表: 列ヘッダ + 4スロット。列は内容幅にして左に寄せる (1fr だと本文幅いっぱいに間延びする) */}
+          <div className="inline-grid grid-cols-[auto_auto_auto_auto] gap-x-4 gap-y-1.5 items-center">
             <span></span>
             {STAT_LABELS.map((s) => (
-              <span key={s.key} className="text-center" style={{ color: s.color }}>
+              <span
+                key={s.key}
+                className="text-center text-[11px] font-semibold"
+                style={{ color: s.color }}
+              >
                 {s.label}
               </span>
             ))}
-          </div>
-
-          {/* 4スロット */}
-          <div className="space-y-1.5">
             {memoryBonuses.map((m, idx) => (
-              <div
-                key={idx}
-                className="grid grid-cols-[28px_1fr_1fr_1fr] gap-2 items-center"
-              >
+              <Fragment key={idx}>
                 <span className="text-xs text-gray-500">{idx + 1}</span>
                 {STAT_LABELS.map((s) => (
-                  <div key={s.key} className="flex items-center gap-1 justify-center">
+                  <div key={s.key} className="flex items-center gap-1">
                     <input
                       type="number"
                       step="any"
@@ -117,14 +105,14 @@ export default function MemoryBonusInput() {
                     </select>
                   </div>
                 ))}
-              </div>
+              </Fragment>
             ))}
           </div>
 
-          {/* プリセット管理 */}
-          <div className="border-t border-gray-100 mt-3 pt-3 space-y-2">
+          {/* プリセット管理 (カスタムPアイテムのマイプリセットと同じ白囲い) */}
+          <div className="border border-gray-200 rounded-md bg-white p-3 space-y-2">
             <div className="flex items-center gap-2 text-xs text-gray-600">
-              <span className="font-semibold">プリセット</span>
+              <span className="font-semibold">マイプリセット</span>
               <span className="text-gray-400">{memoryPresets.length}/{MAX_MEMORY_PRESETS}</span>
             </div>
 
@@ -218,6 +206,6 @@ export default function MemoryBonusInput() {
           </div>
         </div>
       )}
-    </div>
+    </Accordion>
   );
 }
